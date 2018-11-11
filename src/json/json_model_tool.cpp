@@ -15,6 +15,7 @@
 // Author: Fankux (fankux@gmail.com)
 //
 
+#include <memory>
 #include "json_model_tool.h"
 
 namespace rellaf {

@@ -21,6 +21,7 @@
 #pragma once
 
 #include <string>
+#include <string.h>
 
 namespace rellaf {
 
@@ -108,8 +109,8 @@ private:
     static int valid_mbcharlen_utf8mb3(const unsigned char* s, const unsigned char* e);
 
 private:
-    ismbchar_func _ismbchar_func = NULL;
-    mbcharlen_func _mbcharlen_func = NULL;
+    ismbchar_func _ismbchar_func = nullptr;
+    mbcharlen_func _mbcharlen_func = nullptr;
 };
 
 }

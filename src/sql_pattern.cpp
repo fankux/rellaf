@@ -68,7 +68,7 @@ bool SqlPattern::explode(const std::string& pattern, std::deque<Stub>& pieces, P
     int state = STATE_INIT;
     for (char c : pattern) {
         if (state == STATE_INIT) {
-            if (tokens[c]) {
+            if (tokens[(int)c]) {
                 if (c == '#') {
                     if (!section.empty()) {
                         stub.set_value(section);
@@ -89,7 +89,7 @@ bool SqlPattern::explode(const std::string& pattern, std::deque<Stub>& pieces, P
         }
 
         if (state == STATE_MATCH_TOKEN) {
-            if (!token_pairs[c]) {
+            if (!token_pairs[(int)c]) {
                 err = ILL_BEGIN;
                 RELLAF_DEBUG("unexpected begin token : %c", c);
                 return false;
@@ -102,9 +102,9 @@ bool SqlPattern::explode(const std::string& pattern, std::deque<Stub>& pieces, P
         }
 
         if (state == STATE_FETCH) {
-            if (tokens[c]) {
-                if (end_tokens[c]) {
-                    if (c != token_pairs[token]) {
+            if (tokens[(int)c]) {
+                if (end_tokens[(int)c]) {
+                    if (c != token_pairs[(int)token]) {
                         err = UNMATCH;
                         RELLAF_DEBUG("unmatch end token %c of %c", c, token);
                         return false;

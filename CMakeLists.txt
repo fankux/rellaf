@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.0.2)
 project(rellaf)
 
-set(CMAKE_CXX_STANDARD 11)
-
 file(GLOB SRC
         include/*.h
         include/*.hpp
@@ -20,7 +18,7 @@ include_directories(
 )
 
 option(WITH_JSON "enable rellaf model to json converter, default ON" ON)
-option(WITH_MYSQL "enable simple mysql conntection pool, default ON" ON)
+option(WITH_MYSQL "enable simple mysql connection pool, default ON" ON)
 option(WITH_TEST "enable test, default ON" ON)
 
 set(THIRD_DEPS)
@@ -61,17 +59,22 @@ if (WITH_TEST)
     list(APPEND THIRD_DEPS ${GTEST_LIB})
 endif ()
 
-
 message("THIRD_DEPS : ${THIRD_DEPS}")
 
 link_libraries(
         ${THIRD_DEPS}
+        pthread
 )
 
-add_library(rellaf STATIC ${SRC})
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -O2 -pipe -Wall -W -fPIC -Wno-unused-parameter")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -O2 -pipe -Wall -W -fPIC -Wno-unused-parameter")
+
+add_library(rellaf STATIC ${SRC} include/enum.h)
 
 if (WITH_TEST)
     link_libraries(rellaf)
     add_executable(test_model test/test_model.cpp)
+    add_executable(test_enum test/test_enum.cpp)
     add_executable(test_mapper test/test_mapper.cpp)
 endif ()

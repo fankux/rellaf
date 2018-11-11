@@ -69,6 +69,7 @@ const std::map<std::string, int>& int_names = Object::ints();
 | ---- | ------- |  
 | int | int |   
 | int64 | int64_t |   
+| uint16 | uint16_t |   
 | uint32 | uint32_t |   
 | uint64 | uint64_t |   
 | bool | bool |   
@@ -82,13 +83,13 @@ class SubObject : public Model {
 RELLAF_MODEL_DCL(SubObject)
 RELLAF_MODEL_DEF_uint16(port, 18765);
 };
-RELLAF_MODEL_DEF(SubObject)
+RELLAF_MODEL_DEF(SubObject);
 
 class List : public Model {
 RELLAF_MODEL_DCL(List)
 RELLAF_MODEL_DEF_float(ratio, 11.8);
 };
-RELLAF_MODEL_DEF(List)
+RELLAF_MODEL_DEF(List);
 
 class Object : public Model {
 RELLAF_MODEL_DCL(Object)
@@ -101,7 +102,7 @@ RELLAF_MODEL_DEF_object(sub, SubObject);
 // 定义数组，字段名，类型名（必须是Model类）
 RELLAF_MODEL_DEF_list(list, List);
 };
-RELLAF_MODEL_DEF(Object)
+RELLAF_MODEL_DEF(Object);
 ```
 定义好了，对象操作
 ```c++

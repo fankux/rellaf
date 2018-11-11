@@ -41,7 +41,7 @@ public:
     template<class T>
     void build_arg(std::map<std::string, std::map<std::string, std::string>>& vals, T& arg) {
         std::map<std::string, std::string> val;
-        ModelUtil::str_sql_vals(&arg, val);
+//        str_sql_vals(&arg, val);
         vals.emplace(arg.name(), val);
     }
 
@@ -65,7 +65,7 @@ public:
             } else if (stub.type() == SqlPattern::FIELD) {
                 auto val_e = val.find(stub.value());
                 if (val_e == val.end()) {
-                    REFFAL_DEBUG("no field : %s", stub.value().c_str());
+                    RELLAF_DEBUG("no field : %s", stub.value().c_str());
                     return -1;
                 }
                 sql += val_e->second;
@@ -86,12 +86,13 @@ public:
         std::deque<SqlPattern::Stub> pices;
         SqlPattern::PatternErr err;
         if (!SqlPattern::explode(pattern, pices, err)) {
-            REFFAL_DEBUG("reg sql failed, explode pattern failed : %s", pattern.c_str());
+            RELLAF_DEBUG("reg sql failed, explode pattern failed : %s", pattern.c_str());
             return false;
         }
 
         _patterns.insert({key, pattern});
         _pices.insert({key, pices});
+        return true;
     }
 
 private:
