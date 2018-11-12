@@ -26,7 +26,7 @@ namespace rellaf {
 
 #define RELLAF_ENUM_DCL(_clazz_)                                                \
 public:                                                                         \
-    static _clazz_& instance() {                                                \
+    static _clazz_& e() {                                                       \
         static _clazz_ _enum_(#_clazz_);                                        \
         return _enum_;                                                          \
 }                                                                               \

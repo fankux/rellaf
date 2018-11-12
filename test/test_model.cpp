@@ -43,14 +43,25 @@ RELLAF_MODEL_DEF_int(sub_model_id, 111);
 
 RELLAF_MODEL_DEF(SubModel);
 
-class List : public Model {
-RELLAF_MODEL_DCL(List)
+class ListItem : public Model {
+RELLAF_MODEL_DCL(ListItem)
 
 RELLAF_MODEL_DEF_int(list_id, 111);
 
 };
 
-RELLAF_MODEL_DEF(List);
+RELLAF_MODEL_DEF(ListItem);
+
+//std::function<std::string(Model*)> _str_func =
+
+class ListInt : public Plain {
+RELLAF_PLAIN_DCL(ListInt, uint32_t, 0);
+
+public:
+    std::string str() override {
+        return std::to_string(_val);
+    }
+};
 
 class Object : public Model {
 RELLAF_MODEL_DCL(Object)
@@ -67,7 +78,9 @@ RELLAF_MODEL_DEF_str(val_str, "aaa");
 
 RELLAF_MODEL_DEF_object(val_object, SubModel);
 
-RELLAF_MODEL_DEF_list(val_list, List);
+RELLAF_MODEL_DEF_list(val_list, ListItem);
+
+RELLAF_MODEL_DEF_list(plain_list, ListInt);
 
 };
 
@@ -86,7 +99,7 @@ static bool map_keys_equal_set(const std::map<K, V>& map, const std::set<K>& set
     return true;
 }
 
-TEST_F(TestModel, test_plain) {
+TEST_F(TestModel, test_primitive) {
 
     Object object;
 
@@ -297,7 +310,7 @@ TEST_F(TestModel, test_object) {
 }
 
 TEST_F(TestModel, test_list) {
-    List list;
+    ListItem list;
     ASSERT_EQ(list.list_id(), list.list_id_default());
     ASSERT_EQ(list.list_id(), 111);
 
@@ -311,7 +324,7 @@ TEST_F(TestModel, test_list) {
     ASSERT_NE(object.val_list().back(), nullptr);
     ASSERT_EQ(object.val_list().front(), object.val_list().back());
 
-    List* list_ptr = (List*)object.val_list().front();
+    ListItem* list_ptr = (ListItem*)object.val_list().front();
     ASSERT_EQ(list_ptr->list_id(), 111);
 
     // modify list member
@@ -327,12 +340,12 @@ TEST_F(TestModel, test_list) {
     ASSERT_NE(object.val_list().front(), object.val_list().back());
 
     // idx 0 still
-    list_ptr = (List*)object.val_list().front();
+    list_ptr = (ListItem*)object.val_list().front();
     ASSERT_EQ(list_ptr->list_id(), 222);
     ASSERT_EQ(object.val_list().front()->get_int("list_id"), 222);
 
     // idx 1 added
-    list_ptr = (List*)object.val_list().back();
+    list_ptr = (ListItem*)object.val_list().back();
     ASSERT_NE(list_ptr, nullptr);
     ASSERT_EQ(list_ptr->list_id(), 111);
     ASSERT_EQ(object.val_list().back()->get_int("list_id"), 111);
@@ -372,6 +385,27 @@ TEST_F(TestModel, test_list) {
     ASSERT_EQ(object.val_list().front(), object.val_list().back());
     object.val_list().pop_back();
     ASSERT_EQ(object.val_list().size(), 0);
+}
+
+TEST_F(TestModel, test_plain) {
+    ListInt list_int;
+    ASSERT_EQ(list_int.value(), 0);
+    list_int.set_value(2);
+    ASSERT_EQ(list_int.value(), 2);
+    ASSERT_STREQ(list_int.name().c_str(), "ListInt");
+
+    Object object;
+    object.plain_list().push_back(&list_int);
+    list_int.set_value(3);
+    object.plain_list().push_back(&list_int);
+
+    ASSERT_EQ(((ListInt*)object.plain_list().front())->value(), 2);
+    ASSERT_EQ(((ListInt*)object.plain_list().back())->value(), 3);
+
+    for (Model* item : object.val_list()) {
+        ASSERT_STREQ(item->name().c_str(), "ListInt");
+        ASSERT_NE(item, nullptr);
+    }
 }
 
 }

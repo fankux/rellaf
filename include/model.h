@@ -64,53 +64,81 @@ public:                                                                         
 RELLAF_MODEL_TYPE_NAMES(_type_, _sign_)                                                 \
 RELLAF_MODEL_IS_TYPE_DEFAULT(_type_, _sign_)                                            \
 RELLAF_MODEL_TYPE_CONCERN(_sign_)                                                       \
-void set_##_sign_(const std::string& key, _type_ val) override;                         \
-_type_ get_##_sign_(const std::string& key) const override;                             \
-const std::map<std::string, _type_>& get_##_sign_##_names() const override;             \
-bool is_##_sign_##_member(const std::string& key) override;                             \
-const std::map<std::string, _type_>& _sign_##s() override;                              \
+void set_##_sign_(const std::string& key, _type_ val) override {                        \
+    auto entry = _s_##_sign_##s.find(key);                                              \
+    if (entry != _s_##_sign_##s.end()) {                                                \
+        _##_sign_##s[key] = val;                                                        \
+    }                                                                                   \
+}                                                                                       \
+_type_ get_##_sign_(const std::string& key) const override {                            \
+    auto entry = _##_sign_##s.find(key);                                                \
+    return entry == _##_sign_##s.end() ? _s_##_sign_##s[key] : entry->second;           \
+}                                                                                       \
+const std::map<std::string, _type_>& get_##_sign_##_names() const override {            \
+    return _sign_##_names();                                                            \
+}                                                                                       \
+bool is_##_sign_##_member(const std::string& key) override {                            \
+    return _sign_##_concern(key);                                                       \
+}                                                                                       \
+const std::map<std::string, _type_>& _sign_##s() override {                             \
+    return _##_sign_##s;                                                                \
+}                                                                                       \
 private:                                                                                \
-static std::map<std::string, _type_> _s_##_sign_##s;
+static std::map<std::string, _type_> _s_##_sign_##s
 
 #define RELLAF_MODEL_DCL_TYPE_REF(_type_, _sign_)                                       \
 public:                                                                                 \
 RELLAF_MODEL_TYPE_NAMES(_type_, _sign_)                                                 \
 RELLAF_MODEL_IS_TYPE_DEFAULT_REF(_type_, _sign_)                                        \
 RELLAF_MODEL_TYPE_CONCERN(_sign_)                                                       \
-void set_##_sign_(const std::string& key, const _type_& val) override;                  \
-const _type_& get_##_sign_(const std::string& key) const override;                      \
-const std::map<std::string, _type_>& get_##_sign_##_names() const override;             \
-bool is_##_sign_##_member(const std::string& key) override;                             \
-const std::map<std::string, _type_>& _sign_##s() override;                              \
+void set_##_sign_(const std::string& key, const _type_& val) override {                 \
+    auto entry = _s_##_sign_##s.find(key);                                              \
+    if (entry != _s_##_sign_##s.end()) {                                                \
+        _##_sign_##s[key] = val;                                                        \
+    }                                                                                   \
+}                                                                                       \
+const _type_& get_##_sign_(const std::string& key) const override {                     \
+    auto entry = _##_sign_##s.find(key);                                                \
+    return entry == _##_sign_##s.end() ? _s_##_sign_##s[key] : entry->second;           \
+}                                                                                       \
+const std::map<std::string, _type_>& get_##_sign_##_names() const override {            \
+    return _sign_##_names();                                                            \
+}                                                                                       \
+bool is_##_sign_##_member(const std::string& key) override {                            \
+    return _sign_##_concern(key);                                                       \
+}                                                                                       \
+const std::map<std::string, _type_>& _sign_##s() override {                             \
+    return _##_sign_##s;                                                                \
+}                                                                                       \
 private:                                                                                \
-static std::map<std::string, _type_> _s_##_sign_##s;
+static std::map<std::string, _type_> _s_##_sign_##s
 
 #define RELLAF_MODEL_TYPE_REG(_clazz_, _type_, _sign_)                                  \
 Reg(const std::string& name, _clazz_* inst, _type_ dft) {                               \
     _clazz_::_s_##_sign_##s.emplace(name, dft);                                         \
     inst->_##_sign_##s.emplace(name, dft);                                              \
-}                                                                                       \
+}
 
 #define RELLAF_MODEL_TYPE_REG_REF(_clazz_, _type_, _sign_)                              \
 Reg(const std::string& name, _clazz_* inst, const _type_& dft) {                        \
     _clazz_::_s_##_sign_##s.emplace(name, dft);                                         \
     inst->_##_sign_##s.emplace(name, dft);                                              \
-}                                                                                       \
+}
 
 /////////////////////// type declaration without complex model //////////////////////
-#define RELLAF_MODEL_DCL_PLAIN(_clazz_)                                                 \
-public:                                                                                 \
+#define RELLAF_MODEL_DCL_PRIMITIVE(_clazz_)                                             \
 RELLAF_DEFMOVE(_clazz_)                                                                 \
+public:                                                                                 \
 std::string name() const override { return #_clazz_; }                                  \
-RELLAF_MODEL_DCL_TYPE(int, int)                                                         \
-RELLAF_MODEL_DCL_TYPE(int64_t, int64)                                                   \
-RELLAF_MODEL_DCL_TYPE(uint16_t, uint16)                                                 \
-RELLAF_MODEL_DCL_TYPE(uint32_t, uint32)                                                 \
-RELLAF_MODEL_DCL_TYPE(uint64_t, uint64)                                                 \
-RELLAF_MODEL_DCL_TYPE(bool, bool)                                                       \
-RELLAF_MODEL_DCL_TYPE(float, float)                                                     \
-RELLAF_MODEL_DCL_TYPE(double, double)                                                   \
-RELLAF_MODEL_DCL_TYPE_REF(std::string, str)                                             \
+RELLAF_MODEL_DCL_TYPE(int, int);                                                        \
+RELLAF_MODEL_DCL_TYPE(int64_t, int64);                                                  \
+RELLAF_MODEL_DCL_TYPE(uint16_t, uint16);                                                \
+RELLAF_MODEL_DCL_TYPE(uint32_t, uint32);                                                \
+RELLAF_MODEL_DCL_TYPE(uint64_t, uint64);                                                \
+RELLAF_MODEL_DCL_TYPE(bool, bool);                                                      \
+RELLAF_MODEL_DCL_TYPE(float, float);                                                    \
+RELLAF_MODEL_DCL_TYPE(double, double);                                                  \
+RELLAF_MODEL_DCL_TYPE_REF(std::string, str);                                            \
 public:                                                                                 \
 static bool is_member(const std::string& key) {                                         \
     if (int_concern(key)) { return true; }                                              \
@@ -176,7 +204,7 @@ RELLAF_MODEL_TYPE_REG_REF(_clazz_, std::string, str)                            
 /////////////////////// type declaration //////////////////////
 
 #define RELLAF_MODEL_DCL(_clazz_)                                                       \
-RELLAF_MODEL_DCL_PLAIN(_clazz_)                                                         \
+RELLAF_MODEL_DCL_PRIMITIVE(_clazz_)                                                     \
 public:                                                                                 \
 Model* create() override { return new(std::nothrow)_clazz_; }                           \
 Model* clone() override {                                                               \
@@ -199,86 +227,31 @@ public:                                                                         
     }                                                                                   \
 };                                                                                      \
 static std::set<std::string> _s_list_names;                                             \
-static std::set<std::string> _s_object_names;                                           \
+static std::set<std::string> _s_object_names;
 
 /////////////////////// type definition type stub ////////////////////
-#define RELLAF_MODEL_SET_TYPE(_clazz_, _type_, _sign_)                                  \
-void _clazz_::set_##_sign_(const std::string& key, _type_ val) {                        \
-    auto entry = _s_##_sign_##s.find(key);                                              \
-    if (entry != _s_##_sign_##s.end()) {                                                \
-        _##_sign_##s[key] = val;                                                        \
-    }                                                                                   \
-}
-
-#define RELLAF_MODEL_SET_TYPE_REF(_clazz_, _type_, _sign_)                              \
-void _clazz_::set_##_sign_(const std::string& key, const _type_& val) {                 \
-    auto entry = _s_##_sign_##s.find(key);                                              \
-    if (entry != _s_##_sign_##s.end()) {                                                \
-        _##_sign_##s[key] = val;                                                        \
-    }                                                                                   \
-}
-
-#define RELLAF_MODEL_GET_TYPE(_clazz_, _type_, _sign_)                                  \
-_type_ _clazz_::get_##_sign_(const std::string& key) const {                            \
-    auto entry = _##_sign_##s.find(key);                                                \
-    return entry == _##_sign_##s.end() ? _s_##_sign_##s[key] : entry->second;           \
-}
-
-#define RELLAF_MODEL_GET_TYPE_REF(_clazz_, _type_, _sign_)                              \
-const _type_& _clazz_::get_##_sign_(const std::string& key) const {                     \
-    auto entry = _##_sign_##s.find(key);                                                \
-    return entry == _##_sign_##s.end() ? _s_##_sign_##s[key] : entry->second;           \
-}
-
-#define RELLAF_MODEL_TYPE_NAMES_WRAP(_clazz_, _type_, _sign_)                           \
-const std::map<std::string, _type_>& _clazz_::get_##_sign_##_names() const {            \
-    return _clazz_::_sign_##_names();                                                   \
-}
-
-#define RELLAF_MODEL_TYPE_CONCERN_WRAP(_clazz_, _type_, _sign_)                         \
-bool _clazz_::is_##_sign_##_member(const std::string& key) {                            \
-    return _clazz_::_sign_##_concern(key);                                              \
-}
-
-#define RELLAF_MODEL_TYPE_VALS_WRAP(_clazz_, _type_, _sign_)                            \
-const std::map<std::string, _type_>& _clazz_::_sign_##s() {                             \
-    return _##_sign_##s;                                                                \
-}
 
 #define RELLAF_MODEL_DEF_TYPE(_clazz_, _type_, _sign_)                                  \
-std::map<std::string, _type_> _clazz_::_s_##_sign_##s;                                  \
-RELLAF_MODEL_SET_TYPE(_clazz_, _type_, _sign_)                                          \
-RELLAF_MODEL_GET_TYPE(_clazz_, _type_, _sign_)                                          \
-RELLAF_MODEL_TYPE_NAMES_WRAP(_clazz_, _type_, _sign_)                                   \
-RELLAF_MODEL_TYPE_CONCERN_WRAP(_clazz_, _type_, _sign_)                                 \
-RELLAF_MODEL_TYPE_VALS_WRAP(_clazz_, _type_, _sign_)
-
-#define RELLAF_MODEL_DEF_TYPE_REF(_clazz_, _type_, _sign_)                              \
-std::map<std::string, _type_> _clazz_::_s_##_sign_##s;                                  \
-RELLAF_MODEL_SET_TYPE_REF(_clazz_, _type_, _sign_)                                      \
-RELLAF_MODEL_GET_TYPE_REF(_clazz_, _type_, _sign_)                                      \
-RELLAF_MODEL_TYPE_NAMES_WRAP(_clazz_, _type_, _sign_)                                   \
-RELLAF_MODEL_TYPE_CONCERN_WRAP(_clazz_, _type_, _sign_)                                 \
-RELLAF_MODEL_TYPE_VALS_WRAP(_clazz_, _type_, _sign_)
+std::map<std::string, _type_> _clazz_::_s_##_sign_##s
 
 /////////////////////// type definition without complex model ////////////////////
-#define RELLAF_MODEL_DEF_PLAIN(_clazz_)                                                 \
-RELLAF_MODEL_DEF_TYPE(_clazz_, int, int)                                                \
-RELLAF_MODEL_DEF_TYPE(_clazz_, int64_t, int64)                                          \
-RELLAF_MODEL_DEF_TYPE(_clazz_, uint16_t, uint16)                                        \
-RELLAF_MODEL_DEF_TYPE(_clazz_, uint32_t, uint32)                                        \
-RELLAF_MODEL_DEF_TYPE(_clazz_, uint64_t, uint64)                                        \
-RELLAF_MODEL_DEF_TYPE(_clazz_, bool, bool)                                              \
-RELLAF_MODEL_DEF_TYPE(_clazz_, float, float)                                            \
-RELLAF_MODEL_DEF_TYPE(_clazz_, double, double)                                          \
-RELLAF_MODEL_DEF_TYPE_REF(_clazz_, std::string, str)                                    \
+#define RELLAF_MODEL_DEF_PRIMITIVE(_clazz_)                                             \
+RELLAF_MODEL_DEF_TYPE(_clazz_, int, int);                                               \
+RELLAF_MODEL_DEF_TYPE(_clazz_, int64_t, int64);                                         \
+RELLAF_MODEL_DEF_TYPE(_clazz_, uint16_t, uint16);                                       \
+RELLAF_MODEL_DEF_TYPE(_clazz_, uint32_t, uint32);                                       \
+RELLAF_MODEL_DEF_TYPE(_clazz_, uint64_t, uint64);                                       \
+RELLAF_MODEL_DEF_TYPE(_clazz_, bool, bool);                                             \
+RELLAF_MODEL_DEF_TYPE(_clazz_, float, float);                                           \
+RELLAF_MODEL_DEF_TYPE(_clazz_, double, double);                                         \
+RELLAF_MODEL_DEF_TYPE(_clazz_, std::string, str);                                       \
 static volatile _clazz_ _s_c_##_clazz_; // force init static context
 
 /////////////////////// type definition ////////////////////
 #define RELLAF_MODEL_DEF(_clazz_)                                                       \
 std::set<std::string> _clazz_::_s_list_names;                                           \
 std::set<std::string> _clazz_::_s_object_names;                                         \
-RELLAF_MODEL_DEF_PLAIN(_clazz_)
+RELLAF_MODEL_DEF_PRIMITIVE(_clazz_)
 
 /////////////////////// abstract interface class method sign ////////////////////
 #define RELLAF_MODEL_DCL_ENTRY_SIGN(_type_, _sign_)                                     \
@@ -301,11 +274,9 @@ virtual const std::map<std::string, _type_>& _sign_##s() = 0;                   
 protected:                                                                              \
 std::map<std::string, _type_> _##_sign_##s;
 
-/////////////////////// model list ////////////////////
-
+/////////////////////// base model class ////////////////////
 class ModelList;
 
-/////////////////////// base model class ////////////////////
 class Model {
 RELLAF_DEFMOVE(Model)
 
@@ -350,6 +321,47 @@ protected:
     std::map<std::string, ModelList> _lists;
     std::map<std::string, Model*> _objects;
 };
+
+/////////////////////// model list ////////////////////
+class Plain : public Model {
+    // TODO make primitive types private
+RELLAF_DEFMOVE(Plain)
+
+public:
+    virtual std::string name() const = 0;
+
+    virtual Model* create() = 0;
+
+    virtual Model* clone() = 0;
+
+    virtual std::string str() = 0;
+
+private:
+RELLAF_MODEL_DCL_TYPE(int, int);
+RELLAF_MODEL_DCL_TYPE(int64_t, int64);
+RELLAF_MODEL_DCL_TYPE(uint16_t, uint16);
+RELLAF_MODEL_DCL_TYPE(uint32_t, uint32);
+RELLAF_MODEL_DCL_TYPE(uint64_t, uint64);
+RELLAF_MODEL_DCL_TYPE(bool, bool);
+RELLAF_MODEL_DCL_TYPE(float, float);
+RELLAF_MODEL_DCL_TYPE(double, double);
+RELLAF_MODEL_DCL_TYPE_REF(std::string, str);
+};
+
+#define RELLAF_PLAIN_DCL(_clazz_, _type_, _dft_)                        \
+RELLAF_DEFMOVE(_clazz_)                                                 \
+public:                                                                 \
+std::string name() const override { return #_clazz_; }                  \
+Model* create() override { return new(std::nothrow)_clazz_; }           \
+Model* clone() override {                                               \
+    Model* new_model = new(std::nothrow)_clazz_;                        \
+    *((_clazz_*)new_model) = *((_clazz_*)this);                         \
+    return new_model;                                                   \
+}                                                                       \
+_type_ value() const { return _val; }                                   \
+void set_value(const _type_& val) { _val = val; }                       \
+private:                                                                \
+_type_ _val = _dft_;
 
 class ModelList {
 RELLAF_DEFMOVE(ModelList)

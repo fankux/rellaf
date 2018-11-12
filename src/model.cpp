@@ -20,6 +20,16 @@
 
 namespace rellaf {
 
+RELLAF_MODEL_DEF_TYPE(Plain, int, int);
+RELLAF_MODEL_DEF_TYPE(Plain, int64_t, int64);
+RELLAF_MODEL_DEF_TYPE(Plain, uint16_t, uint16);
+RELLAF_MODEL_DEF_TYPE(Plain, uint32_t, uint32);
+RELLAF_MODEL_DEF_TYPE(Plain, uint64_t, uint64);
+RELLAF_MODEL_DEF_TYPE(Plain, bool, bool);
+RELLAF_MODEL_DEF_TYPE(Plain, float, float);
+RELLAF_MODEL_DEF_TYPE(Plain, double, double);
+RELLAF_MODEL_DEF_TYPE(Plain, std::string, str);
+
 Model::~Model() {
     for (auto& entry : _objects) {
         delete entry.second;

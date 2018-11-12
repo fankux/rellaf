@@ -56,9 +56,21 @@ static bool map_keys_equal_set(const std::map<K, V>& map, const std::set<K>& set
 }
 
 TEST_F(TestEnum, test_enum) {
-    map_keys_equal_set<std::string, const EnumItem*>(TestType::instance().names(), {"INT", "UINT",
-            "FLOAT"});
-    map_keys_equal_set<int, const EnumItem*>(TestType::instance().codes(), {0, 1, 2});
+    ASSERT_TRUE(map_keys_equal_set(TestType::e().names(), {"INT", "UINT", "FLOAT"}));
+    ASSERT_TRUE(map_keys_equal_set(TestType::e().codes(), {0, 1, 2}));
+
+    ASSERT_EQ(TestType::e().INT.code, 0);
+    ASSERT_EQ(TestType::e().UINT.code, 1);
+    ASSERT_EQ(TestType::e().FLOAT.code, 2);
+
+    ASSERT_STREQ(TestType::e().INT.name.c_str(), "INT");
+    ASSERT_STREQ(TestType::e().UINT.name.c_str(), "UINT");
+    ASSERT_STREQ(TestType::e().FLOAT.name.c_str(), "FLOAT");
+
+//    ASSERT_TRUE(TestType::e().exist(0));
+//    ASSERT_TRUE(TestType::e().exist(1));
+//    ASSERT_TRUE(TestType::e().exist(2));
+
 }
 
 }
