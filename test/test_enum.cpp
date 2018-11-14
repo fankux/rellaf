@@ -19,6 +19,7 @@
 #include "gtest/gtest.h"
 #include "common.h"
 #include "enum.h"
+#include "test_common.h"
 
 namespace rellaf {
 namespace test {
@@ -32,7 +33,7 @@ protected:
     void SetUp() override {}
 };
 
-class TestType : IEnum {
+class TestType : public IEnum {
 RELLAF_ENUM_DCL(TestType);
 
 RELLAF_ENUM_ITEM_DEF(0, INT);
@@ -42,34 +43,42 @@ RELLAF_ENUM_ITEM_DEF(2, FLOAT);
 
 RELLAF_ENUM_DEF(TestType);
 
-template<class K, class V>
-static bool map_keys_equal_set(const std::map<K, V>& map, const std::set<K>& set) {
-    if (map.size() != set.size()) {
-        return false;
-    }
-    for (auto& entry : map) {
-        if (set.count(entry.first) == 0) {
-            return false;
-        }
-    }
-    return true;
-}
-
 TEST_F(TestEnum, test_enum) {
-    ASSERT_TRUE(map_keys_equal_set(TestType::e().names(), {"INT", "UINT", "FLOAT"}));
-    ASSERT_TRUE(map_keys_equal_set(TestType::e().codes(), {0, 1, 2}));
+    ASSERT_TRUE(map_keys_equal_set(RELLAF_ENUM(TestType).names(), {"INT", "UINT", "FLOAT"}));
+    ASSERT_TRUE(map_keys_equal_set(RELLAF_ENUM(TestType).codes(), {0, 1, 2}));
 
-    ASSERT_EQ(TestType::e().INT.code, 0);
-    ASSERT_EQ(TestType::e().UINT.code, 1);
-    ASSERT_EQ(TestType::e().FLOAT.code, 2);
+    ASSERT_EQ(RELLAF_ENUM(TestType).INT.code, 0);
+    ASSERT_EQ(RELLAF_ENUM(TestType).UINT.code, 1);
+    ASSERT_EQ(RELLAF_ENUM(TestType).FLOAT.code, 2);
 
-    ASSERT_STREQ(TestType::e().INT.name.c_str(), "INT");
-    ASSERT_STREQ(TestType::e().UINT.name.c_str(), "UINT");
-    ASSERT_STREQ(TestType::e().FLOAT.name.c_str(), "FLOAT");
+    ASSERT_STREQ(RELLAF_ENUM(TestType).INT.name.c_str(), "INT");
+    ASSERT_STREQ(RELLAF_ENUM(TestType).UINT.name.c_str(), "UINT");
+    ASSERT_STREQ(RELLAF_ENUM(TestType).FLOAT.name.c_str(), "FLOAT");
 
-//    ASSERT_TRUE(TestType::e().exist(0));
-//    ASSERT_TRUE(TestType::e().exist(1));
-//    ASSERT_TRUE(TestType::e().exist(2));
+    ASSERT_TRUE(TestType::e().exist(0));
+    ASSERT_TRUE(TestType::e().exist(1));
+    ASSERT_TRUE(TestType::e().exist(2));
+    ASSERT_FALSE(TestType::e().exist(3));
+
+    ASSERT_TRUE(TestType::e().exist("INT"));
+    ASSERT_TRUE(TestType::e().exist("UINT"));
+    ASSERT_TRUE(TestType::e().exist("FLOAT"));
+    ASSERT_FALSE(TestType::e().exist("vvv"));
+
+    ASSERT_TRUE(TestType::e().exist("INT"));
+    ASSERT_TRUE(TestType::e().exist("UINT"));
+    ASSERT_TRUE(TestType::e().exist("FLOAT"));
+    ASSERT_FALSE(TestType::e().exist("vvv"));
+
+    ASSERT_EQ(TestType::e().get_by_name("INT"), &TestType::e().INT);
+    ASSERT_EQ(TestType::e().get_by_name("UINT"), &TestType::e().UINT);
+    ASSERT_EQ(TestType::e().get_by_name("FLOAT"), &TestType::e().FLOAT);
+    ASSERT_EQ(TestType::e().get_by_name("vvv"), nullptr);
+
+    ASSERT_EQ(TestType::e().get_by_code(0), &TestType::e().INT);
+    ASSERT_EQ(TestType::e().get_by_code(1), &TestType::e().UINT);
+    ASSERT_EQ(TestType::e().get_by_code(2), &TestType::e().FLOAT);
+    ASSERT_EQ(TestType::e().get_by_code(4), nullptr);
 
 }
 

@@ -17,7 +17,7 @@
 
 
 #include <deque>
-#include "mysql_simple_poll.h"
+#include "mysql_simple_pool.h"
 
 namespace rellaf {
 

@@ -24,6 +24,8 @@
 
 namespace rellaf {
 
+#define RELLAF_ENUM(_clazz_) _clazz_::e()
+
 #define RELLAF_ENUM_DCL(_clazz_)                                                \
 public:                                                                         \
     static _clazz_& e() {                                                       \
@@ -55,9 +57,9 @@ std::map<int, const EnumItem*> _clazz_::_s_code_refs;                           
 
 #define RELLAF_ENUM_ITEM_DEF(_code_, _name_)                                    \
 public:                                                                         \
-    EnumItem _name_{_code_, #_name_};                                           \
+    const EnumItem _name_{_code_, #_name_};                                     \
 private:                                                                        \
-    Reg _reg_##_name_{_code_, #_name_, &_name_}
+    const Reg _reg_##_name_{_code_, #_name_, &_name_}
 
 class IEnum {
 public:
@@ -90,10 +92,6 @@ public:
         std::string name;
     };
 
-public:
-
-    explicit IEnum(std::string name) : _name(std::move(name)) {}
-
     virtual const std::map<std::string, const EnumItem*>& names() const = 0;
 
     virtual const std::map<int, const EnumItem*>& codes() const = 0;
@@ -105,6 +103,9 @@ public:
     bool exist(const std::string& name);
 
     bool exist(int code);
+
+protected:
+    explicit IEnum(std::string name) : _name(std::move(name)) {}
 
 protected:
     std::string _name;

@@ -21,6 +21,7 @@
 #include "common.h"
 #include "model.h"
 #include "sql_model_tool.h"
+#include "test_common.h"
 
 namespace rellaf {
 namespace test {
@@ -85,19 +86,6 @@ RELLAF_MODEL_DEF_list(plain_list, ListInt);
 };
 
 RELLAF_MODEL_DEF(Object);
-
-template<class K, class V>
-static bool map_keys_equal_set(const std::map<K, V>& map, const std::set<K>& set) {
-    if (map.size() != set.size()) {
-        return false;
-    }
-    for (auto& entry : map) {
-        if (set.count(entry.first) == 0) {
-            return false;
-        }
-    }
-    return true;
-}
 
 TEST_F(TestModel, test_primitive) {
 
@@ -364,18 +352,18 @@ TEST_F(TestModel, test_list) {
     ASSERT_EQ(object.val_list()[1]->get_int("list_id"), 333);
 
     for (Model* item : object.val_list()) {
-        ASSERT_STREQ(item->name().c_str(), "List");
+        ASSERT_STREQ(item->name().c_str(), "ListItem");
         ASSERT_NE(item, nullptr);
     }
 
     for (const Model* item : object.val_list()) {
-        ASSERT_STREQ(item->name().c_str(), "List");
+        ASSERT_STREQ(item->name().c_str(), "ListItem");
         ASSERT_NE(item, nullptr);
     }
 
     auto iter = object.val_list().begin();
     for (; iter != object.val_list().end(); ++iter) {
-        ASSERT_STREQ((*iter)->name().c_str(), "List");
+        ASSERT_STREQ((*iter)->name().c_str(), "ListItem");
         ASSERT_NE((*iter), nullptr);
     }
 
