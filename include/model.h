@@ -187,6 +187,33 @@ static bool is_default(const std::string& key, const std::string& val) {        
     }                                                                                   \
     return false;                                                                       \
 }                                                                                       \
+bool set(const std::string& key, const std::string& val) {                              \
+    try {                                                                               \
+        if (int_concern(key)) {                                                         \
+            set_int(key, cast<int>(val));                                               \
+        } else if (int64_concern(key)) {                                                \
+            set_int64(key, cast<uint64_t>(val));                                        \
+        } else if (uint16_concern(key)) {                                               \
+            set_uint16(key, cast<uint16_t>(val));                                       \
+        } else if (uint32_concern(key)) {                                               \
+            set_uint32(key, cast<uint32_t>(val));                                       \
+        } else if (uint64_concern(key)) {                                               \
+            set_uint64(key, cast<uint64_t>(val));                                       \
+        } else if (bool_concern(key)) {                                                 \
+            set_bool(key, cast<bool>(val));                                             \
+        } else if (float_concern(key)) {                                                \
+            set_float(key, cast<float>(val));                                           \
+        } else if (double_concern(key)) {                                               \
+            set_double(key, cast<double>(val));                                         \
+        } else if (str_concern(key)) {                                                  \
+            set_str(key, val);                                                          \
+        }                                                                               \
+    } catch (std::exception& e) {                                                       \
+        RELLAF_DEBUG("%s set val failed : %s", key.c_str(), e.what());                  \
+        return false;                                                                   \
+    }                                                                                   \
+    return true;                                                                        \
+}                                                                                       \
 private:                                                                                \
 class Reg {                                                                             \
 public:                                                                                 \

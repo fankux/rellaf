@@ -89,52 +89,51 @@ private:
     size_t _field_count = 0;
 };
 
+class SqlField {
+RELLAF_DEFMOVE_NO_CTOR(SqlField);
+
+public:
+    SqlField() = default;
+
+    friend class SqlRes;
+
+    const std::string& name() const {
+        return _name;
+    }
+
+    enum_field_types type() const {
+        return _type;
+    }
+
+private:
+    SqlField(const std::string& name, enum enum_field_types type) : _name(name), _type(type) {}
+
+private:
+    std::string _name;
+    enum enum_field_types _type;
+};
+
 class SqlRes {
 RELLAF_AVOID_COPY(SqlRes)
 
 public:
     explicit SqlRes(MYSQL_RES* res) : _res(res) {}
 
-    virtual ~SqlRes() {
-        reset();
-    }
+    virtual ~SqlRes();
 
-    void reset() {
-        if (_res != nullptr) {
-            mysql_free_result(_res);
-            _res = nullptr;
-        }
-    }
+    void reset();
 
-    void operator()(MYSQL_RES* res) {
-        reset();
-        _res = res;
-    }
+    void operator()(MYSQL_RES* res);
 
-    bool good() {
-        return _res != nullptr;
-    }
+    bool good();
 
-    size_t row_count() {
-        if (_res != nullptr) {
-            return mysql_num_rows(_res);
-        }
-        return 0;
-    }
+    size_t row_count();
 
-    size_t field_count() {
-        if (_res != nullptr) {
-            return mysql_num_fields(_res);
-        }
-        return 0;
-    }
+    size_t field_count();
 
-    SqlRow fetch_row() {
-        if (_res != nullptr) {
-            return {mysql_fetch_row(_res), field_count()};
-        }
-        return {};
-    }
+    SqlRow fetch_row();
+
+    void fetch_fields(std::deque<SqlField>& fields);
 
 private:
     MYSQL_RES* _res;

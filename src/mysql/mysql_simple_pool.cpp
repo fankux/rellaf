@@ -75,7 +75,8 @@ bool MysqlSimplePool::init(const std::string& host, uint16_t port, const std::st
         thread->status = 1;
         thread->tid = 0;
         thread->inst = this;
-        thread->tasks = new(std::nothrow) Queue<SqlContext*>(MysqlSimplePool::_s_task_queue_size, true);
+        thread->tasks = new(std::nothrow) Queue<SqlContext*>(MysqlSimplePool::_s_task_queue_size,
+                true);
         if (thread->tasks == nullptr) {
             delete thread->tasks;
             delete thread;
@@ -481,6 +482,64 @@ MYSQL_RES* MysqlSimplePool::query(const std::string& sql, SqlTx* tx) {
         return nullptr;
     }
     return res;
+}
+
+SqlRes::~SqlRes() {
+    reset();
+}
+
+void SqlRes::reset() {
+    if (_res != nullptr) {
+        mysql_free_result(_res);
+        _res = nullptr;
+    }
+}
+
+void SqlRes::operator()(MYSQL_RES* res) {
+    reset();
+    _res = res;
+}
+
+bool SqlRes::good() {
+    return _res != nullptr;
+}
+
+size_t SqlRes::row_count() {
+    if (_res != nullptr) {
+        return mysql_num_rows(_res);
+    }
+    return 0;
+}
+
+size_t SqlRes::field_count() {
+    if (_res != nullptr) {
+        return mysql_num_fields(_res);
+    }
+    return 0;
+}
+
+SqlRow SqlRes::fetch_row() {
+    if (_res != nullptr) {
+        return {mysql_fetch_row(_res), field_count()};
+    }
+    return {};
+}
+
+void SqlRes::fetch_fields(std::deque<SqlField>& fields) {
+    if (_res == nullptr) {
+        return;
+    }
+
+    MYSQL_FIELD* fields_ptr = mysql_fetch_fields(_res);
+    if (fields_ptr == nullptr) {
+        return;
+    }
+
+    uint32_t num = mysql_num_fields(_res);
+    for (uint32_t i = 0; i < num; ++i) {
+        std::string name(fields_ptr[i].name, fields_ptr[i].name_length);
+        fields.emplace_back(SqlField(name, fields_ptr[i].type));
+    }
 }
 
 SqlTxEx::SqlTxEx() {

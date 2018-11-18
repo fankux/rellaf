@@ -24,6 +24,54 @@ namespace rellaf {
 
 RELLAF_ENUM_DEF(Dao::Charset);
 
+void DaoResultList::push(const DaoResultRow& row) {
+    _datas.emplace_back(row);
+}
+
+void DaoResultList::push(DaoResultRow&& row) {
+    _datas.emplace_back(row);
+}
+
+size_t DaoResultList::size() const {
+    return _datas.size();
+}
+
+bool DaoResultList::empty() const {
+    return _datas.empty();
+}
+
+DaoResultRow& DaoResultList::front() {
+    return _datas.front();
+}
+
+const DaoResultRow& DaoResultList::front() const {
+    return _datas.front();
+}
+
+DaoResultRow& DaoResultList::back() {
+    return _datas.back();
+}
+
+const DaoResultRow& DaoResultList::back() const {
+    return _datas.back();
+}
+
+const DaoResultRow& DaoResultList::get(size_t idx) const {
+    return _datas[idx];
+}
+
+const DaoResultRow& DaoResultList::operator[](size_t idx) const {
+    return _datas[idx];
+}
+
+std::deque<DaoResultRow>::const_iterator DaoResultList::begin() const {
+    return _datas.begin();
+}
+
+std::deque<DaoResultRow>::const_iterator DaoResultList::end() const {
+    return _datas.end();
+}
+
 void Dao::split_section(const std::string& section_str, std::deque<std::string>& sections) {
     sections.clear();
     if (section_str.empty()) {

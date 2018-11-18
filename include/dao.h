@@ -51,6 +51,56 @@ private:
     const Model* _model;
 };
 
+class DaoResultRow {
+public:
+    void set(const std::string& name, const std::string& val) {
+        _row.emplace(name, val);
+    }
+
+    void set(std::string&& name, std::string&& val) {
+        _row.emplace(name, val);
+    }
+
+    const std::map<std::string, std::string>& row() const {
+        return _row;
+    }
+
+private:
+    std::map<std::string, std::string> _row;
+};
+
+class DaoResultList {
+public:
+    friend class Dao;
+
+    void push(const DaoResultRow& row);
+
+    void push(DaoResultRow&& row);
+
+    size_t size() const;
+
+    bool empty() const;
+
+    DaoResultRow& front();
+
+    const DaoResultRow& front() const;
+
+    DaoResultRow& back();
+
+    const DaoResultRow& back() const;
+
+    const DaoResultRow& get(size_t idx) const;
+
+    const DaoResultRow& operator[](size_t idx) const;
+
+    std::deque<DaoResultRow>::const_iterator begin() const;
+
+    std::deque<DaoResultRow>::const_iterator end() const;
+
+private:
+    std::deque<DaoResultRow> _datas;
+};
+
 class Dao {
 
 public:
@@ -171,6 +221,21 @@ protected:
         if (!prepare_statement(method, sql, args...)) {
             return -1;
         }
+        if (_s_select_func) {
+            DaoResultList ret_list;
+            int retval = _s_select_func(sql, ret_list);
+            if (retval <= 0) {
+                return retval;
+            }
+
+            for (const auto& entry : ret_list.front().row()) {
+                if (!ret.set(entry.first, entry.second)) {
+                    RELLAF_DEBUG("select impl set result key %s failed", entry.first.c_str());
+                    return -1;
+                }
+            }
+            return retval;
+        }
         return 0;
     }
 
@@ -180,6 +245,25 @@ protected:
         std::string sql;
         if (!prepare_statement(method, sql, args...)) {
             return -1;
+        }
+        if (_s_select_func) {
+            DaoResultList dao_ret_list;
+            int retval = _s_select_func(sql, dao_ret_list);
+            if (retval <= 0) {
+                return retval;
+            }
+
+            for (auto& item : dao_ret_list) {
+                Ret ret;
+                for (const auto& entry : item.row()) {
+                    if (!ret.set(entry.first, entry.second)) {
+                        RELLAF_DEBUG("select impl set result key %s failed", entry.first.c_str());
+                        return -1;
+                    }
+                }
+                ret_list.emplace_back(ret);
+            }
+            return retval;
         }
         return 0;
     }
@@ -198,10 +282,14 @@ protected:
 
     bool append_sql(std::string& sql, const std::string& val, bool need_quote, bool need_escape);
 
+protected:
+    std::function<int(const std::string&, DaoResultList&)> _s_select_func;
+
 private:
     CharsetType _charset = Charset::e().UTF8;
     std::map<std::string, std::string> _patterns;
     std::map<std::string, std::deque<SqlPattern::Stub>> _pices;
+
 };
 
 #define RELLAF_DAO_SELECT(_method_, _pattern_, _Ret_)                               \
