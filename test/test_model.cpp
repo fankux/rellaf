@@ -20,7 +20,6 @@
 #include "gtest/gtest.h"
 #include "common.h"
 #include "model.h"
-#include "sql_model_tool.h"
 #include "test_common.h"
 
 namespace rellaf {
@@ -55,11 +54,11 @@ RELLAF_MODEL_DEF(ListItem);
 
 //std::function<std::string(Model*)> _str_func =
 
-class ListInt : public Plain {
+class ListInt : public PlainWrap {
 RELLAF_PLAIN_DCL(ListInt, uint32_t, 0);
 
 public:
-    std::string str() override {
+    std::string str() const override {
         return std::to_string(_val);
     }
 };
@@ -92,16 +91,27 @@ TEST_F(TestModel, test_primitive) {
     Object object;
 
     // member
-    ASSERT_TRUE(Object::is_member("val_int"));
-    ASSERT_TRUE(Object::is_member("val_int64"));
-    ASSERT_TRUE(Object::is_member("val_uint16"));
-    ASSERT_TRUE(Object::is_member("val_uint32"));
-    ASSERT_TRUE(Object::is_member("val_uint64"));
-    ASSERT_TRUE(Object::is_member("val_bool"));
-    ASSERT_TRUE(Object::is_member("val_float"));
-    ASSERT_TRUE(Object::is_member("val_double"));
-    ASSERT_TRUE(Object::is_member("val_str"));
-    ASSERT_FALSE(Object::is_member("not_exist"));
+    ASSERT_TRUE(Object::plain_concern("val_int"));
+    ASSERT_TRUE(Object::plain_concern("val_int64"));
+    ASSERT_TRUE(Object::plain_concern("val_uint16"));
+    ASSERT_TRUE(Object::plain_concern("val_uint32"));
+    ASSERT_TRUE(Object::plain_concern("val_uint64"));
+    ASSERT_TRUE(Object::plain_concern("val_bool"));
+    ASSERT_TRUE(Object::plain_concern("val_float"));
+    ASSERT_TRUE(Object::plain_concern("val_double"));
+    ASSERT_TRUE(Object::plain_concern("val_str"));
+    ASSERT_FALSE(Object::plain_concern("not_exist"));
+
+    ASSERT_TRUE(object.is_plain_member("val_int"));
+    ASSERT_TRUE(object.is_plain_member("val_int64"));
+    ASSERT_TRUE(object.is_plain_member("val_uint16"));
+    ASSERT_TRUE(object.is_plain_member("val_uint32"));
+    ASSERT_TRUE(object.is_plain_member("val_uint64"));
+    ASSERT_TRUE(object.is_plain_member("val_bool"));
+    ASSERT_TRUE(object.is_plain_member("val_float"));
+    ASSERT_TRUE(object.is_plain_member("val_double"));
+    ASSERT_TRUE(object.is_plain_member("val_str"));
+    ASSERT_FALSE(object.is_plain_member("not_exist"));
 
     ASSERT_TRUE(object.is_int_member("val_int"));
     ASSERT_TRUE(object.is_int64_member("val_int64"));

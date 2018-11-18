@@ -77,7 +77,7 @@ _type_ get_##_sign_(const std::string& key) const override {                    
 const std::map<std::string, _type_>& get_##_sign_##_names() const override {            \
     return _sign_##_names();                                                            \
 }                                                                                       \
-bool is_##_sign_##_member(const std::string& key) override {                            \
+bool is_##_sign_##_member(const std::string& key) const override {                      \
     return _sign_##_concern(key);                                                       \
 }                                                                                       \
 const std::map<std::string, _type_>& _sign_##s() override {                             \
@@ -104,7 +104,7 @@ const _type_& get_##_sign_(const std::string& key) const override {             
 const std::map<std::string, _type_>& get_##_sign_##_names() const override {            \
     return _sign_##_names();                                                            \
 }                                                                                       \
-bool is_##_sign_##_member(const std::string& key) override {                            \
+bool is_##_sign_##_member(const std::string& key) const override {                      \
     return _sign_##_concern(key);                                                       \
 }                                                                                       \
 const std::map<std::string, _type_>& _sign_##s() override {                             \
@@ -140,7 +140,7 @@ RELLAF_MODEL_DCL_TYPE(float, float);                                            
 RELLAF_MODEL_DCL_TYPE(double, double);                                                  \
 RELLAF_MODEL_DCL_TYPE_REF(std::string, str);                                            \
 public:                                                                                 \
-static bool is_member(const std::string& key) {                                         \
+static bool plain_concern(const std::string& key) {                                     \
     if (int_concern(key)) { return true; }                                              \
     if (int64_concern(key)) { return true; }                                            \
     if (uint16_concern(key)) { return true; }                                           \
@@ -212,6 +212,9 @@ Model* clone() override {                                                       
     *((_clazz_*)new_model) = *((_clazz_*)this);                                         \
     return new_model;                                                                   \
 }                                                                                       \
+bool is_plain_member(const std::string& key) const override {                           \
+    return _clazz_::plain_concern(key);                                                 \
+}                                                                                       \
 private:                                                                                \
 class RegList {                                                                         \
 public:                                                                                 \
@@ -259,7 +262,7 @@ public:                                                                         
 virtual void set_##_sign_(const std::string& key, _type_ val) = 0;                      \
 virtual _type_ get_##_sign_(const std::string& key) const = 0;                          \
 virtual const std::map<std::string, _type_>& get_##_sign_##_names() const = 0;          \
-virtual bool is_##_sign_##_member(const std::string& key) = 0;                          \
+virtual bool is_##_sign_##_member(const std::string& key) const = 0;                    \
 virtual const std::map<std::string, _type_>& _sign_##s() = 0;                           \
 protected:                                                                              \
 std::map<std::string, _type_> _##_sign_##s;
@@ -269,7 +272,7 @@ public:                                                                         
 virtual void set_##_sign_(const std::string& key, const _type_& val) = 0;               \
 virtual const _type_& get_##_sign_(const std::string& key) const = 0;                   \
 virtual const std::map<std::string, _type_>& get_##_sign_##_names() const = 0;          \
-virtual bool is_##_sign_##_member(const std::string& key) = 0;                          \
+virtual bool is_##_sign_##_member(const std::string& key) const = 0;                    \
 virtual const std::map<std::string, _type_>& _sign_##s() = 0;                           \
 protected:                                                                              \
 std::map<std::string, _type_> _##_sign_##s;
@@ -299,10 +302,20 @@ public:
 
     virtual Model* clone() = 0;
 
-    virtual std::string str() const;
+    virtual std::string debug_str() const;
+
+    virtual bool is_plain() const {
+        return false;
+    }
+
+    virtual bool is_plain_member(const std::string& key) const = 0;
 
     const std::map<std::string, Model*>& get_objects() const {
         return _objects;
+    }
+
+    bool is_object_member(const std::string& name) const {
+        return _objects.count(name) != 0;
     }
 
     Model* get_object(const std::string& name);
@@ -311,6 +324,10 @@ public:
 
     const std::map<std::string, ModelList>& get_lists() const {
         return _lists;
+    }
+
+    bool is_list_member(const std::string& name) const {
+        return _lists.count(name) != 0;
     }
 
     ModelList& get_list(const std::string& name);
@@ -323,20 +340,34 @@ protected:
 };
 
 /////////////////////// model list ////////////////////
-class Plain : public Model {
+class PlainWrap : public Model {
     // TODO make primitive types private
-RELLAF_DEFMOVE(Plain)
+RELLAF_DEFMOVE(PlainWrap)
 
 public:
-    virtual std::string name() const = 0;
+//    virtual std::string name() const = 0;
 
-    virtual Model* create() = 0;
+//    virtual Model* create() = 0;
 
-    virtual Model* clone() = 0;
+//    virtual Model* clone() = 0;
 
-    virtual std::string str() = 0;
+//    virtual std::string debug_str() { return ""; };
+
+    bool is_plain() const override {
+        return true;
+    }
+
+    std::string debug_str() const override {
+        return str();
+    }
+
+    virtual std::string str() const = 0;
 
 private:
+    bool is_plain_member(const std::string& key) const override {
+        return false;
+    }
+
 RELLAF_MODEL_DCL_TYPE(int, int);
 RELLAF_MODEL_DCL_TYPE(int64_t, int64);
 RELLAF_MODEL_DCL_TYPE(uint16_t, uint16);
@@ -358,6 +389,7 @@ Model* clone() override {                                               \
     *((_clazz_*)new_model) = *((_clazz_*)this);                         \
     return new_model;                                                   \
 }                                                                       \
+_clazz_(const _type_& val) : _val(val) {}                               \
 _type_ value() const { return _val; }                                   \
 void set_value(const _type_& val) { _val = val; }                       \
 private:                                                                \
@@ -393,7 +425,9 @@ public:
 
     void set(size_t idx, Model* model);
 
-    const Model* operator[](int idx) const;
+    const Model* get(size_t idx) const;
+
+    const Model* operator[](size_t idx) const;
 
     std::deque<Model*>::const_iterator begin() const;
 

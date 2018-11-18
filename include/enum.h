@@ -64,6 +64,7 @@ private:                                                                        
 class IEnum {
 public:
     class EnumItem {
+    RELLAF_DEFMOVE_NO_CTOR(EnumItem)
 
     public:
         EnumItem() = default;
@@ -73,8 +74,6 @@ public:
         std::string str() const {
             return name + "[" + std::to_string(code) + "]";
         }
-
-        EnumItem& operator=(const EnumItem&) = default;
 
         friend bool operator==(const EnumItem& lhs, const EnumItem& rhs) {
             return lhs.code == rhs.code;

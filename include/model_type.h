@@ -15,14 +15,28 @@
 // Author: Fankux (fankux@gmail.com)
 //
 
-
 #pragma once
 
-#include "json/json.h"
-#include "model.h"
+#include "enum.h"
 
 namespace rellaf {
 
-void model_to_sql_vals(Model* model, std::map<std::string, std::string>& vals);
+class ModelTypeEnum : public IEnum {
+RELLAF_ENUM_DCL(ModelTypeEnum);
+
+RELLAF_ENUM_ITEM_DEF(0, no);
+RELLAF_ENUM_ITEM_DEF(1, INT);
+RELLAF_ENUM_ITEM_DEF(2, INT64);
+RELLAF_ENUM_ITEM_DEF(3, UINT16);
+RELLAF_ENUM_ITEM_DEF(4, UINT32);
+RELLAF_ENUM_ITEM_DEF(5, UINT64);
+RELLAF_ENUM_ITEM_DEF(6, BOOL);
+RELLAF_ENUM_ITEM_DEF(7, FLOAT);
+RELLAF_ENUM_ITEM_DEF(8, DOUBLE);
+RELLAF_ENUM_ITEM_DEF(9, STR);
+
+};
+
+typedef EnumItem ModelType;
 
 }

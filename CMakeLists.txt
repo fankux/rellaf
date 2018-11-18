@@ -67,14 +67,14 @@ link_libraries(
 )
 
 set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -O2 -pipe -Wall -W -fPIC -Wno-unused-parameter")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -O2 -pipe -Wall -W -fPIC -Wno-unused-parameter")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g -pipe -Wall -W -fPIC -Wno-unused-parameter")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -g -pipe -Wall -W -fPIC -Wno-unused-parameter")
 
-add_library(rellaf STATIC ${SRC} include/enum.h)
+add_library(rellaf STATIC ${SRC})
 
 if (WITH_TEST)
     link_libraries(rellaf)
     add_executable(test_model test/test_model.cpp)
-    add_executable(test_enum test/test_enum.cpp test/test_common.h)
+    add_executable(test_enum test/test_enum.cpp)
     add_executable(test_mapper test/test_mapper.cpp)
 endif ()

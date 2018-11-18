@@ -20,15 +20,15 @@
 
 namespace rellaf {
 
-RELLAF_MODEL_DEF_TYPE(Plain, int, int);
-RELLAF_MODEL_DEF_TYPE(Plain, int64_t, int64);
-RELLAF_MODEL_DEF_TYPE(Plain, uint16_t, uint16);
-RELLAF_MODEL_DEF_TYPE(Plain, uint32_t, uint32);
-RELLAF_MODEL_DEF_TYPE(Plain, uint64_t, uint64);
-RELLAF_MODEL_DEF_TYPE(Plain, bool, bool);
-RELLAF_MODEL_DEF_TYPE(Plain, float, float);
-RELLAF_MODEL_DEF_TYPE(Plain, double, double);
-RELLAF_MODEL_DEF_TYPE(Plain, std::string, str);
+RELLAF_MODEL_DEF_TYPE(PlainWrap, int, int);
+RELLAF_MODEL_DEF_TYPE(PlainWrap, int64_t, int64);
+RELLAF_MODEL_DEF_TYPE(PlainWrap, uint16_t, uint16);
+RELLAF_MODEL_DEF_TYPE(PlainWrap, uint32_t, uint32);
+RELLAF_MODEL_DEF_TYPE(PlainWrap, uint64_t, uint64);
+RELLAF_MODEL_DEF_TYPE(PlainWrap, bool, bool);
+RELLAF_MODEL_DEF_TYPE(PlainWrap, float, float);
+RELLAF_MODEL_DEF_TYPE(PlainWrap, double, double);
+RELLAF_MODEL_DEF_TYPE(PlainWrap, std::string, str);
 
 Model::~Model() {
     for (auto& entry : _objects) {
@@ -36,19 +36,31 @@ Model::~Model() {
     }
 }
 
-std::string Model::str() const {
+std::string Model::debug_str() const {
     std::stringstream ss;
     for (auto& key : get_int_names()) {
         ss << key.first << ":" << get_int(key.first) << ",";
     }
+    for (auto& key : get_int64_names()) {
+        ss << key.first << ":" << get_int64(key.first) << ",";
+    }
+    for (auto& key : get_uint16_names()) {
+        ss << key.first << ":" << get_uint16(key.first) << ",";
+    }
     for (auto& key : get_uint32_names()) {
-        ss << key.first << ":" << get_int(key.first) << ",";
+        ss << key.first << ":" << get_uint32(key.first) << ",";
+    }
+    for (auto& key : get_uint64_names()) {
+        ss << key.first << ":" << get_uint64(key.first) << ",";
     }
     for (auto& key : get_bool_names()) {
-        ss << key.first << ":" << get_int(key.first) << ",";
+        ss << key.first << ":" << get_bool(key.first) << ",";
+    }
+    for (auto& key : get_float_names()) {
+        ss << key.first << ":" << get_float(key.first) << ",";
     }
     for (auto& key : get_double_names()) {
-        ss << key.first << ":" << get_int(key.first) << ",";
+        ss << key.first << ":" << get_double(key.first) << ",";
     }
     for (auto& key : get_str_names()) {
         ss << key.first << ":" << get_str(key.first) << ",";
@@ -57,12 +69,12 @@ std::string Model::str() const {
         ss << entry.first << ":[";
         const ModelList& list = get_list(entry.first);
         for (auto& item : list) {
-            ss << "{" << item->str() << "}";
+            ss << "{" << item->debug_str() << "}";
         }
         ss << "],";
     }
     for (auto& entry : get_objects()) {
-        ss << entry.first << ":{" << entry.second->str() << "},";
+        ss << entry.first << ":{" << entry.second->debug_str() << "},";
     }
     std::string str = ss.str();
     return str.empty() ? "" : (str.pop_back(), str);
@@ -151,8 +163,15 @@ void ModelList::set(size_t idx, Model* model) {
     _items[idx] = model;
 }
 
-const Model* ModelList::operator[](int idx) const {
+const Model* ModelList::get(size_t idx) const {
+    if (idx >= _items.size()) {
+        return nullptr;
+    }
     return _items[idx];
+}
+
+const Model* ModelList::operator[](size_t idx) const {
+    return get(idx);
 }
 
 std::deque<Model*>::const_iterator ModelList::begin() const {

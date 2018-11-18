@@ -82,6 +82,29 @@ size_t SqlEscape::escape_field_quote(const std::string& from, char quote, char* 
     return escape_string_for_mysql(to, 0, from.c_str(), from.size());
 }
 
+bool SqlEscape::escape_field(const std::string& field, std::string& out) {
+    out.clear();
+
+    char field_buf[1024];
+    bool alloc_flag = false;
+    char* p = field_buf;
+    if (field.size() > 768) { // rest space(1024-768-1) for blackslash added after escaped
+        p = (char*)malloc((size_t)(field.size() * 1.5));
+        if (p == nullptr) {
+            return false;
+        }
+        alloc_flag = true;
+    }
+    p[0] = '\0';
+    escape_field(field, p);
+
+    out = p;
+    if (alloc_flag) {
+        free(p);
+    }
+    return true;
+}
+
 size_t SqlEscape::escape_string_for_mysql(char* to, size_t to_length, const char* from,
         size_t length) {
     const char* to_start = to;
@@ -159,7 +182,7 @@ size_t SqlEscape::escape_string_for_mysql(char* to, size_t to_length, const char
         }
     }
     *to = 0;
-    return overflow ? (size_t) -1 : (size_t) (to - to_start);
+    return overflow ? (size_t)-1 : (size_t)(to - to_start);
 }
 
 /**
@@ -225,7 +248,7 @@ size_t SqlEscape::escape_quotes_for_mysql(char* to, size_t to_length, const char
         }
     }
     *to = 0;
-    return overflow ? (size_t) ~0 : (size_t) (to - to_start);
+    return overflow ? (size_t)~0 : (size_t)(to - to_start);
 }
 
 /**
@@ -241,7 +264,7 @@ size_t SqlEscape::escape_quotes_for_mysql(char* to, size_t to_length, const char
   @return     The length of the first code, or 0 for invalid code
 */
 size_t SqlEscape::my_mbcharlen_ptr(const char* s, const char* e) {
-    return _mbcharlen_func((unsigned char) *s);
+    return _mbcharlen_func((unsigned char)*s);
 
 //    if (len == 0 && my_mbmaxlenlen(cs) == 2 && s + 1 < e) {
 //        len = my_mbcharlen_2(cs, (uchar) * s, (uchar) * (s + 1));

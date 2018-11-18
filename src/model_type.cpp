@@ -15,21 +15,11 @@
 // Author: Fankux (fankux@gmail.com)
 //
 
-#pragma once
+#include "model_type.h"
 
 namespace rellaf {
 
-template<class K, class V>
-static bool map_keys_equal_set(const std::map<K, V>& map, const std::set<K>& set) {
-    if (map.size() != set.size()) {
-        return false;
-    }
-    for (auto& entry : map) {
-        if (set.count(entry.first) == 0) {
-            return false;
-        }
-    }
-    return true;
-}
+RELLAF_ENUM_DEF(ModelTypeEnum)
 
 }
+

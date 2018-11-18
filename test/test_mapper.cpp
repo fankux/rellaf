@@ -17,12 +17,13 @@
 
 #include "gtest/gtest.h"
 #include "common.h"
-#include "sql_pattern.h"
+#include "dao.h"
 
 namespace rellaf {
 namespace test {
 class TestSqlPattern : public testing::Test {
 protected:
+
     TestSqlPattern() = default;
 
     ~TestSqlPattern() override = default;
@@ -49,7 +50,7 @@ void print_pieces(std::deque<SqlPattern::Stub>& pieces) {
     }                                                       \
 }
 
-TEST_F(TestSqlPattern, process_deploy_finish) {
+TEST_F(TestSqlPattern, test_pattern) {
     test_explode_pattern_item("#", SqlPattern::ILL_BEGIN);
     test_explode_pattern_item("##", SqlPattern::ILL_BEGIN);
     test_explode_pattern_item("###", SqlPattern::ILL_BEGIN);
@@ -156,6 +157,112 @@ TEST_F(TestSqlPattern, process_deploy_finish) {
     test_explode_pattern_item("#[c1]a#{c2}b", SqlPattern::OK);
     test_explode_pattern_item("a#[c1]#{c2}b", SqlPattern::OK);
     test_explode_pattern_item("a#[c1]b#{c2}d", SqlPattern::OK);
+}
+
+class Id : public PlainWrap {
+RELLAF_PLAIN_DCL(Id, int, 1);
+
+public:
+    std::string str() const override {
+        return std::to_string(_val);
+    }
+};
+
+class Arg : public Model {
+RELLAF_MODEL_DCL(Arg);
+
+RELLAF_MODEL_DEF_str(cond, "str' cond");
+RELLAF_MODEL_DEF_list(ids, Id);
+
+};
+
+RELLAF_MODEL_DEF(Arg);
+
+class Ret : public Model {
+RELLAF_MODEL_DCL(Ret);
+
+RELLAF_MODEL_DEF_str(a, "");
+RELLAF_MODEL_DEF_int(b, 0);
+RELLAF_MODEL_DEF_float(c, 0);
+};
+
+RELLAF_MODEL_DEF(Ret);
+
+class TestDao : public Dao {
+RELLAF_SINGLETON(TestDao);
+
+RELLAF_DAO_SELECT(select, "SELECT a, b, c FROM table WHERE cond=#{cond}", Ret);
+
+RELLAF_DAO_SELECT(select_single, "SELECT a, b, c FROM table WHERE cond=#{a.cond}", Ret);
+
+RELLAF_DAO_SELECT(select_multi,
+        "SELECT a, b, c FROM table WHERE cond=#{a.cond} AND id IN #[b.ids]", Ret);
+
+RELLAF_DAO_SELECT_list(select_list,
+        "SELECT a, b, c FROM table WHERE cond=#{a.cond} AND id IN #[b.ids]", Ret);
+
+public:
+    void test_split_sections(const std::string& section_str, std::deque<std::string>& sections) {
+        return split_section(section_str, sections);
+    }
+};
+
+static bool deque_equal(const std::deque<std::string>& a, const std::deque<std::string>& b) {
+    if (a.size() != b.size()) {
+        return false;
+    }
+    for (size_t i = 0; i < a.size(); ++i) {
+        if (a[i] != b[i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+static bool test_split_section_item(const std::string& section_str,
+        const std::deque<std::string>& expect) {
+    std::deque<std::string> sections;
+    TestDao::instance().test_split_sections(section_str, sections);
+    return deque_equal(sections, expect);
+}
+
+TEST_F(TestSqlPattern, test_split_section) {
+    ASSERT_TRUE(test_split_section_item("", {}));
+    ASSERT_TRUE(test_split_section_item(" ", {" "}));
+    ASSERT_TRUE(test_split_section_item("  ", {"  "}));
+    ASSERT_TRUE(test_split_section_item(".", {}));
+    ASSERT_TRUE(test_split_section_item(" .", {" "}));
+    ASSERT_TRUE(test_split_section_item(". ", {" "}));
+    ASSERT_TRUE(test_split_section_item("..", {}));
+    ASSERT_TRUE(test_split_section_item(" ..", {" "}));
+    ASSERT_TRUE(test_split_section_item(".. ", {" "}));
+    ASSERT_TRUE(test_split_section_item(". .", {" "}));
+    ASSERT_TRUE(test_split_section_item("...", {}));
+    ASSERT_TRUE(test_split_section_item(". . .", {" ", " "}));
+    ASSERT_TRUE(test_split_section_item("a.", {"a"}));
+    ASSERT_TRUE(test_split_section_item(" a.", {" a",}));
+    ASSERT_TRUE(test_split_section_item("a . ", {"a ", " "}));
+    ASSERT_TRUE(test_split_section_item(" a . ", {" a ", " "}));
+    ASSERT_TRUE(test_split_section_item(".a", {"a"}));
+    ASSERT_TRUE(test_split_section_item(". a", {" a"}));
+    ASSERT_TRUE(test_split_section_item(".a ", {"a "}));
+    ASSERT_TRUE(test_split_section_item(". a ", {" a "}));
+    ASSERT_TRUE(test_split_section_item(" .a", {" ", "a"}));
+    ASSERT_TRUE(test_split_section_item("a.b", {"a", "b"}));
+
+}
+
+TEST_F(TestSqlPattern, test_sql_mapper) {
+    Ret ret;
+    Arg arg;
+    Id id(1);
+    arg.ids().push_back(&id);
+    id.set_value(2);
+    arg.ids().push_back(&id);
+
+    ASSERT_GE(TestDao::instance().select(ret, DaoModel(arg)), 0);
+    ASSERT_EQ(TestDao::instance().select_single(ret, DaoModel("a", arg)), -1);
+    ASSERT_GE(TestDao::instance().select_multi(ret, DaoModel("a", arg), DaoModel("b", arg)), 0);
 }
 
 }

@@ -53,14 +53,21 @@ public:
      */
     size_t escape_field(const std::string& from, char* to);
 
+    /**
+     * auto detect string length version
+     * TODO... test
+     */
+    bool escape_field(const std::string& field, std::string& out);
+
     size_t escape_field_quote(const std::string& from, char quote, char* to);
 
+
 private:
-    SqlEscape(const std::string& encode) {
-        if (strcasecmp(encode.c_str(), "gbk") == 0) {
+    explicit SqlEscape(const std::string& encode) {
+        if (strcasecmp(encode.c_str(), "GBK") == 0) {
             _ismbchar_func = SqlEscape::ismbchar_gbk;
             _mbcharlen_func = SqlEscape::mbcharlen_gbk;
-        } else if (strcasecmp(encode.c_str(), "utf8") == 0) {
+        } else if (strcasecmp(encode.c_str(), "UTF8") == 0) {
             _ismbchar_func = SqlEscape::ismbchar_utf8;
             _mbcharlen_func = SqlEscape::mbcharlen_utf8;
         } else {
