@@ -35,6 +35,14 @@ const EnumItem* IEnum::get_by_code(int code) {
     return it->second;
 }
 
+const EnumItem* IEnum::get(const std::string& name) {
+    return get_by_name(name);
+}
+
+const EnumItem* IEnum::get(int code) {
+    return get_by_code(code);
+}
+
 bool IEnum::exist(const std::string& name) {
     return names().find(name) != names().end();
 }

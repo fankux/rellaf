@@ -80,6 +80,16 @@ TEST_F(TestEnum, test_enum) {
     ASSERT_EQ(TestType::e().get_by_code(2), &TestType::e().FLOAT);
     ASSERT_EQ(TestType::e().get_by_code(4), nullptr);
 
+    ASSERT_EQ(TestType::e().get("INT"), &TestType::e().INT);
+    ASSERT_EQ(TestType::e().get("UINT"), &TestType::e().UINT);
+    ASSERT_EQ(TestType::e().get("FLOAT"), &TestType::e().FLOAT);
+    ASSERT_EQ(TestType::e().get("vvv"), nullptr);
+
+    ASSERT_EQ(TestType::e().get(0), &TestType::e().INT);
+    ASSERT_EQ(TestType::e().get(1), &TestType::e().UINT);
+    ASSERT_EQ(TestType::e().get(2), &TestType::e().FLOAT);
+    ASSERT_EQ(TestType::e().get(4), nullptr);
+
 }
 
 }

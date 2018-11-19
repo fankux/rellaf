@@ -172,12 +172,59 @@ list.clear();
 ```
 详细的API见：参考手册。
 
-
-##  编译
+## 枚举
+C/C++枚举（`enum`）能力很有限，只是一个数字，没有从字符串获得枚举的能力，也不能判断一个枚举是否存在。  
+`Rellaf`实现了灵活的枚举类，使用同样非常简单。
+1. 包含头文件`"enum.h"`，申明枚举类
 ```shell
-mkdir build && cd build
-cmake .. && make
+class DemoEnum : public IEnum {
+RELLAF_ENUM_DCL(DemoEnum);
+
+//  按照 code(int)，name(std::string) 定义，都保证唯一。
+RELLAF_ENUM_ITEM_DEF(0, A);
+RELLAF_ENUM_ITEM_DEF(1, B);
+RELLAF_ENUM_ITEM_DEF(2, C);
+};
 ```
+2. 源文件定义枚举类
+```shell
+RELLAF_ENUM_DEF(DemoEnum);
+```
+3. 可以使用了, 枚举类的成员类型都是`rellaf::EnumItem`
+```shell
+// 枚举都是单例类，通过单例方法或者 RELLAF_ENUM宏 访问
+std::string name = DemoEnum::e().A.name;                    // 返回 "A"
+int code = RELLAF_ENUM(DemoEnum).B.code;                    // 返回 1
+
+// 比较
+if (DemoEnum::e().B != DemoEnum::e().C) {
+    // B not equal C
+}
+
+// 判断是否存在
+DemoEnum::e().exist(2);                                     // 返回 true
+DemoEnum::e().exist("D");                                   // 返回 false
+
+// 取值
+const EnumItem* name_ptr = DemoEnum::e().get("B");
+if (name_ptr != nullptr) {
+    // exist, do something
+}
+const EnumItem* code_ptr = DemoEnum::e().get(1);
+if (code_ptr != nullptr) {
+    // exist, do something
+}
+
+// 获得取值范围
+const std::map<std::string, const EnumItem*>& names = DemoEnum::e().names();
+const std::map<int, const EnumItem*>& codes = DemoEnum::e().codes();
+
+```
+
+## Dao
+这是一个`Java Mybatis like`的SQL语句生成器。并不是说使用方式和语法与`Mybatis`一样，我们强调写代码体验，`Rellaf`做到的是在写Dao的体验上，尽可能靠近`Mybatis`，简单灵活而'自动化'。用户简单配置一个SQL模板，然后`Rellaf`将生成Dao执行方法，运行过程中'自动'将`Model`填入SQL模板，生成可执行SQL语句，*执行SQL*（需要实现Mysql数据传递接口）后，将返回值'自动'转换为Model对象返回用户。
+
+demo TODO。。
 
 ## 功能扩展
 `src/json`   
@@ -185,6 +232,38 @@ cmake .. && make
 
 `src/mysql`  
 包含一个简单的Mysql连接池实现（比较low，轻喷），这个模块为了对接SQL生成后的执行过程。
+
+##  编译
+不开启扩展的话，不依赖第三方组件。开启不同扩展依赖不同第三方库。  
+编译选项：
+
+| 选项 | 默认 | 说明 | 依赖 |   
+| ------- | ----- | ------- | --------- | 
+| WITH_JSON | ON | json扩展 | jsoncpp |  
+| WITH_MYSQL | ON | 简单mysql连接池 |  mysqlclient |  
+| WITH_TEST | ON | 单元测试 | gtest |   
+
+安装依赖（可选）：
+```shell
+# ubuntu
+sudo apt-get install libjsoncpp-dev libmysqlclient-dev libgtest-dev
+# 注意，libgtest-dev这个源安装是源码，需要进入目录/usr/src/gtest(也可能是/usr/src/googletest/googletest)
+# 执行 sudo mkdir build && cd build && sudo cmake .. && sudo make && sudo make install
+
+# centos
+sudo yum install libjsoncpp-devel libmysqlclient-devel gtest-devel 
+
+# macOS
+brew install jsoncpp mysql-connector-c
+# 注意，gtest需要从源码安装，见 https://github.com/google/googletest
+``` 
+
+最小化编译：  
+```shell
+mkdir build && cd build
+cmake —DWITH_JSON=OFF -DWITH_MYSQL=OFF -DWITH_TEST=OFF .. && make
+```
+
 
 **如何实现？**  
 C++11特性，成员变量就地初始化，可变参模板。静态注册套路。另外，宏, 大量的宏, 对, 多到令人发指的宏。虽然，宏在课堂里或者大部分编程规范里，是badcase，然而我们不得不这么做，至少C++11的语法范围，不得不用宏。  

@@ -99,6 +99,10 @@ public:
 
     const EnumItem* get_by_code(int code);
 
+    const EnumItem* get(const std::string& name);
+
+    const EnumItem* get(int code);
+
     bool exist(const std::string& name);
 
     bool exist(int code);
