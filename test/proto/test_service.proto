@@ -1,0 +1,14 @@
+syntax = "proto2";
+
+option cc_generic_services = true;
+
+package rellaf;
+
+message TestRequest {
+};
+message TestResponse {
+};
+
+service TestService {
+    rpc echo (TestRequest) returns (TestResponse);
+}

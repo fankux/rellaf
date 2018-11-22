@@ -367,6 +367,7 @@ protected:
 };
 
 /////////////////////// model list ////////////////////
+// TODO..to template
 class PlainWrap : public Model {
     // TODO make primitive types private
 RELLAF_DEFMOVE(PlainWrap)

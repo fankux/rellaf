@@ -18,9 +18,9 @@
 
 
 #include "gtest/gtest.h"
+#include "test_common.h"
 #include "common.h"
 #include "model.h"
-#include "test_common.h"
 
 namespace rellaf {
 namespace test {

@@ -33,3 +33,5 @@
 
 cmake-build-debug
 .idea
+
+*.pb.*
