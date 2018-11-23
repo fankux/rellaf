@@ -34,10 +34,11 @@ public:
     /**
      * @brief   processing in one step
      * @param   body
-     * @param   ret_body output data
+     * @param   ret_header response header
+     * @param   ret_body response paylaod
      * @return  http status code
      */
-    virtual int process(const butil::IOBuf& body, std::string& ret_body) = 0;
+    virtual int process(const butil::IOBuf& body, HttpHeader& ret_header, std::string& ret_body) = 0;
 
 protected:
     const HttpHeader& _header;

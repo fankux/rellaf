@@ -116,5 +116,5 @@ if (WITH_TEST)
     file(GLOB PROTOS
             test/proto/*.pb.*
             )
-    add_executable(test_brpc_serive test/test_brpc_service.cpp test/http_client.hpp ${PROTOS})
+    add_executable(test_brpc_serive test/test_brpc_service.cpp ${PROTOS})
 endif ()

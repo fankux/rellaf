@@ -160,7 +160,7 @@ TEST_F(TestSqlPattern, test_pattern) {
 }
 
 class Id : public PlainWrap {
-RELLAF_PLAIN_DCL(Id, int, 1);
+rellaf_plain_dcl(Id, int, 1);
 
 public:
     std::string str() const override {
@@ -169,36 +169,36 @@ public:
 };
 
 class Arg : public Model {
-RELLAF_MODEL_DCL(Arg);
+rellaf_model_dcl(Arg);
 
-RELLAF_MODEL_DEF_str(cond, "str' cond");
-RELLAF_MODEL_DEF_list(ids, Id);
+rellaf_model_def_str(cond, "str' cond");
+rellaf_model_def_list(ids, Id);
 
 };
 
-RELLAF_MODEL_DEF(Arg);
+rellaf_model_def(Arg);
 
 class Ret : public Model {
-RELLAF_MODEL_DCL(Ret);
+rellaf_model_dcl(Ret);
 
-RELLAF_MODEL_DEF_str(a, "");
-RELLAF_MODEL_DEF_int(b, 0);
-RELLAF_MODEL_DEF_float(c, 0);
+rellaf_model_def_str(a, "");
+rellaf_model_def_int(b, 0);
+rellaf_model_def_float(c, 0);
 };
 
-RELLAF_MODEL_DEF(Ret);
+rellaf_model_def(Ret);
 
 class TestDao : public Dao {
-RELLAF_SINGLETON(TestDao);
+rellaf_singleton(TestDao);
 
-RELLAF_DAO_SELECT(select, "SELECT a, b, c FROM table WHERE cond=#{cond}", Ret);
+rellaf_dao_select(select, "SELECT a, b, c FROM table WHERE cond=#{cond}", Ret);
 
-RELLAF_DAO_SELECT(select_single, "SELECT a, b, c FROM table WHERE cond=#{a.cond}", Ret);
+rellaf_dao_select(select_single, "SELECT a, b, c FROM table WHERE cond=#{a.cond}", Ret);
 
-RELLAF_DAO_SELECT(select_multi,
+rellaf_dao_select(select_multi,
         "SELECT a, b, c FROM table WHERE cond=#{a.cond} AND id IN #[b.ids]", Ret);
 
-RELLAF_DAO_SELECT_list(select_list,
+rellaf_dao_select_list(select_list,
         "SELECT a, b, c FROM table WHERE cond=#{a.cond} AND id IN #[b.ids]", Ret);
 
 public:

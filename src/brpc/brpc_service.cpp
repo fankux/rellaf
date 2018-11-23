@@ -27,35 +27,35 @@ void BrpcService::entry(RpcController* controller, Message* req, Message* resp,
     brpc::ClosureGuard done_guard(done);
     brpc::Controller* cntl = dynamic_cast<brpc::Controller*>(controller);
 
-    RELLAF_DEBUG("instance http income, method : %d, content_type : %s",
-            cntl->http_request().method(), cntl->http_request().content_type().c_str());
-
     // check if current api need to forward to master
-    std::shared_ptr<Handler> handler = HandlerMapper::instance().create(cntl->http_request());
-    if (handler == nullptr) {
+    bool exist;
+    std::shared_ptr<Handler> hdr = HandlerMapper::instance().create(cntl->http_request(), exist);
+    if (hdr == nullptr) {
         RELLAF_DEBUG("create handler failed");
-        cntl->http_request().set_status_code(brpc::HTTP_STATUS_INTERNAL_SERVER_ERROR);
+        cntl->http_response().set_status_code(
+                exist ? brpc::HTTP_STATUS_INTERNAL_SERVER_ERROR : brpc::HTTP_STATUS_NOT_FOUND);
         return_response(cntl, "");
         return;
     }
 
     std::string ret_body;
-    int status = handler->process(cntl->request_attachment(), ret_body);
+    int status = hdr->process(cntl->request_attachment(), cntl->http_response(), ret_body);
     cntl->http_response().set_status_code(status);
     return_response(cntl, ret_body);
 }
 
 void BrpcService::bind_api_sign(const std::string& api, const std::string& sign) {
+    if (api.empty()) {
+        RELLAF_DEBUG("ignore empty api of %s", sign.c_str());
+        return;
+    }
     _api_sign_mapper.emplace(api, sign);
     RELLAF_DEBUG("api sign map : %s <==> %s", api.c_str(), sign.c_str());
 }
 
 void BrpcService::return_response(brpc::Controller* cntl, const std::string& raw) {
-    cntl->http_response().set_content_type("application/json");
-    RELLAF_DEBUG("instance operation finish, response : %s", raw.c_str());
-
     butil::IOBufBuilder os;
-    os << raw << std::endl;
+    os << raw;
     os.move_to(cntl->response_attachment());
 }
 

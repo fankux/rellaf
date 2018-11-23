@@ -22,7 +22,7 @@
 
 namespace rellaf {
 
-RELLAF_ENUM_DEF(Dao::Charset);
+rellaf_enum_def(Dao::Charset);
 
 void DaoResultList::push(const DaoResultRow& row) {
     _datas.emplace_back(row);

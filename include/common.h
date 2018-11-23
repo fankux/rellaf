@@ -28,7 +28,7 @@ namespace rellaf {
 
 #define RELLAF_ATOMIC_DEC(_it_) __sync_add_and_fetch(&_it_, -1)
 
-#define RELLAF_SINGLETON(__clazz__)                     \
+#define rellaf_singleton(__clazz__)                     \
 public:                                                 \
     static __clazz__& instance() {                      \
         static __clazz__ __clazz__##_singleton;         \

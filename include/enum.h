@@ -24,9 +24,9 @@
 
 namespace rellaf {
 
-#define RELLAF_ENUM(_clazz_) _clazz_::e()
+#define rellaf_enum(_clazz_) _clazz_::e()
 
-#define RELLAF_ENUM_DCL(_clazz_)                                                \
+#define rellaf_enum_dcl(_clazz_)                                                \
 public:                                                                         \
     static _clazz_& e() {                                                       \
         static _clazz_ _enum_(#_clazz_);                                        \
@@ -50,12 +50,12 @@ public:                                                                         
     }                                                                           \
 }
 
-#define RELLAF_ENUM_DEF(_clazz_)                                                \
+#define rellaf_enum_def(_clazz_)                                                \
 std::map<std::string, const EnumItem*> _clazz_::_s_name_refs;                   \
 std::map<int, const EnumItem*> _clazz_::_s_code_refs;                           \
 
 
-#define RELLAF_ENUM_ITEM_DEF(_code_, _name_)                                    \
+#define rellaf_enum_item_def(_code_, _name_)                                    \
 public:                                                                         \
     const EnumItem _name_{_code_, #_name_};                                     \
 private:                                                                        \

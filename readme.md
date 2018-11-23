@@ -33,18 +33,18 @@ std::string sql = "INSERT INTO XXX_OOO(product, stream, profile, environment, "
 1. 包含头文件`rellaf.h`，在头文件申明反射类：
 ```c++
 // 1.申明对象Object 继承 rellaf::Model
-// 2. RELLAF_MODEL_DCL宏申明这个类是一个Model反射类
-// 3. RELLAF_MODEL_DEF_${type}宏用来定义各个类型的数据字段名和默认值
+// 2. rellaf_model_dcl宏申明这个类是一个Model反射类
+// 3. rellaf_model_def_${type}宏用来定义各个类型的数据字段名和默认值
 
 class Object : public Model {
-RELLAF_MODEL_DCL(Object)
-RELLAF_MODEL_DEF_int(id, -222);
+rellaf_model_dcl(Object)
+rellaf_model_def_int(id, -222);
 };
 ```
 2. 在源文件中定义反射类
 ```c++
-// 4. 在类定义外，用宏RELLAF_MODEL_DEF定义Model反射类
-RELLAF_MODEL_DEF(Object);
+// 4. 在类定义外，用宏rellaf_model_def定义Model反射类
+rellaf_model_def(Object);
 ```
 3. 好了，可以使用了：
 ```c++
@@ -80,29 +80,29 @@ const std::map<std::string, int>& int_names = Object::ints();
 当然，成员可以加多个。更加重要的是，**支持嵌套！支持数组！** 我们来看相对复杂的例子，两个基本类型，一个对象成员，一个数组。
 ```c++
 class SubObject : public Model {
-RELLAF_MODEL_DCL(SubObject)
-RELLAF_MODEL_DEF_uint16(port, 18765);
+rellaf_model_dcl(SubObject)
+rellaf_model_def_uint16(port, 18765);
 };
-RELLAF_MODEL_DEF(SubObject);
+rellaf_model_def(SubObject);
 
 class List : public Model {
-RELLAF_MODEL_DCL(List)
-RELLAF_MODEL_DEF_float(ratio, 11.8);
+rellaf_model_dcl(List)
+rellaf_model_def_float(ratio, 11.8);
 };
-RELLAF_MODEL_DEF(List);
+rellaf_model_def(List);
 
 class Object : public Model {
-RELLAF_MODEL_DCL(Object)
-RELLAF_MODEL_DEF_int(id, -111);
-RELLAF_MODEL_DEF_str(name, "aaa");
+rellaf_model_dcl(Object)
+rellaf_model_def_int(id, -111);
+rellaf_model_def_str(name, "aaa");
 
 // 定义对象，字段名，类型名（必须是Model类）
-RELLAF_MODEL_DEF_object(sub, SubObject);
+rellaf_model_def_object(sub, SubObject);
 
 // 定义数组，字段名，类型名（必须是Model类）
-RELLAF_MODEL_DEF_list(list, List);
+rellaf_model_def_list(list, List);
 };
-RELLAF_MODEL_DEF(Object);
+rellaf_model_def(Object);
 ```
 定义好了，对象操作
 ```c++
@@ -178,23 +178,23 @@ C/C++枚举（`enum`）能力很有限，只是一个数字，没有从字符串
 1. 包含头文件`"enum.h"`，申明枚举类
 ```shell
 class DemoEnum : public IEnum {
-RELLAF_ENUM_DCL(DemoEnum);
+rellaf_enum_dcl(DemoEnum);
 
 //  按照 code(int)，name(std::string) 定义，都保证唯一。
-RELLAF_ENUM_ITEM_DEF(0, A);
-RELLAF_ENUM_ITEM_DEF(1, B);
-RELLAF_ENUM_ITEM_DEF(2, C);
+rellaf_enum_item_def(0, A);
+rellaf_enum_item_def(1, B);
+rellaf_enum_item_def(2, C);
 };
 ```
 2. 源文件定义枚举类
 ```shell
-RELLAF_ENUM_DEF(DemoEnum);
+rellaf_enum_def(DemoEnum);
 ```
 3. 可以使用了, 枚举类的成员类型都是`rellaf::EnumItem`
 ```shell
-// 枚举都是单例类，通过单例方法或者 RELLAF_ENUM宏 访问
+// 枚举都是单例类，通过单例方法或者 rellaf_enum宏 访问
 std::string name = DemoEnum::e().A.name;                    // 返回 "A"
-int code = RELLAF_ENUM(DemoEnum).B.code;                    // 返回 1
+int code = rellaf_enum(DemoEnum).B.code;                    // 返回 1
 
 // 比较
 if (DemoEnum::e().B != DemoEnum::e().C) {
@@ -243,17 +243,21 @@ demo TODO。。
 | WITH_MYSQL | ON | 简单mysql连接池 |  mysqlclient |  
 | WITH_TEST | ON | 单元测试 | gtest |   
 
-安装依赖（可选）：
+安装依赖（可选）：  
+**ubuntu**
 ```shell
-# ubuntu
 sudo apt-get install libjsoncpp-dev libmysqlclient-dev libgtest-dev
 # 注意，libgtest-dev这个源安装是源码，需要进入目录/usr/src/gtest(也可能是/usr/src/googletest/googletest)
 # 执行 sudo mkdir build && cd build && sudo cmake .. && sudo make && sudo make install
+```
 
-# centos
+**centos**
+```shell
 sudo yum install libjsoncpp-devel libmysqlclient-devel gtest-devel 
+```
 
-# macOS
+**macOS**
+```shell
 brew install jsoncpp mysql-connector-c
 # 注意，gtest需要从源码安装，见 https://github.com/google/googletest
 ``` 

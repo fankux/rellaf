@@ -27,18 +27,20 @@
 namespace rellaf {
 
 class HandlerMapper {
-RELLAF_SINGLETON(HandlerMapper)
+rellaf_singleton(HandlerMapper)
 
 public:
-    std::shared_ptr<Handler> create(const HttpHeader& header) {
+    std::shared_ptr<Handler> create(const HttpHeader& header, bool& exist) {
         const std::string& api = header.uri().path();
         auto ah_entry = _api_hdrs.find(api);
         if (ah_entry == _api_hdrs.end()) {
             RELLAF_DEBUG("api not exist : %s", api.c_str());
+            exist = false;
             return nullptr;
         }
         const std::string& name = ah_entry->second;
 
+        exist = true;
         return _creators[name](header);
     }
 

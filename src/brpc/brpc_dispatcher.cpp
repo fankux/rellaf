@@ -35,7 +35,7 @@ int BrpcDispatcher::reg_http_serivces(brpc::Server& server) {
             return -1;
         }
 
-        if (service->get_api_sign_mapper().size() == 0) {
+        if (service->get_api_sign_mapper().empty()) {
             RELLAF_DEBUG("service %s no handler", entry.first.c_str());
             return -1;
         }

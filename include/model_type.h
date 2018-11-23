@@ -22,18 +22,18 @@
 namespace rellaf {
 
 class ModelTypeEnum : public IEnum {
-RELLAF_ENUM_DCL(ModelTypeEnum);
+rellaf_enum_dcl(ModelTypeEnum);
 
-RELLAF_ENUM_ITEM_DEF(0, no);
-RELLAF_ENUM_ITEM_DEF(1, INT);
-RELLAF_ENUM_ITEM_DEF(2, INT64);
-RELLAF_ENUM_ITEM_DEF(3, UINT16);
-RELLAF_ENUM_ITEM_DEF(4, UINT32);
-RELLAF_ENUM_ITEM_DEF(5, UINT64);
-RELLAF_ENUM_ITEM_DEF(6, BOOL);
-RELLAF_ENUM_ITEM_DEF(7, FLOAT);
-RELLAF_ENUM_ITEM_DEF(8, DOUBLE);
-RELLAF_ENUM_ITEM_DEF(9, STR);
+rellaf_enum_item_def(0, no);
+rellaf_enum_item_def(1, INT);
+rellaf_enum_item_def(2, INT64);
+rellaf_enum_item_def(3, UINT16);
+rellaf_enum_item_def(4, UINT32);
+rellaf_enum_item_def(5, UINT64);
+rellaf_enum_item_def(6, BOOL);
+rellaf_enum_item_def(7, FLOAT);
+rellaf_enum_item_def(8, DOUBLE);
+rellaf_enum_item_def(9, STR);
 
 };
 

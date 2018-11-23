@@ -62,31 +62,39 @@ private:
 protected:
     std::unordered_set<std::string> _sign_entrys;
     std::unordered_map<std::string, std::string> _api_sign_mapper;
-
 };
 
-#define RELLAF_DEF_BRPC_HTTP_API(_api_, _sign_, _handler_) do {                                 \
-    bind_api_sign(_api_, #_sign_);                                                              \
-    static HandlerMapper::Reg<_handler_> hdr_##_handler_(#_handler_, _api_, (HttpMethod)0);     \
-} while (0)
-
-// definition brpc request entry method signature fowarding call BrpcService::entry
-#define RELLAG_DEF_BRPC_HTTP_SIGN(_pb_api_, _pb_reg_t_, _pb_resp_t_)                            \
+#define rellaf_dcl_brpc_http_service(_clazz_, _pb_req_t_, _pb_resp_t_)                          \
 public:                                                                                         \
-void _pb_api_(RpcController* controller, const _pb_reg_t_* request,                             \
-        _pb_resp_t_* response, Closure* done) override {                                        \
-    BrpcService::entry(controller, (Message*)request, (Message*)response, done);                \
-}
-
-#define RELLAF_DCL_BRPC_HTTP_SERVICE(_name_)                                                    \
-public:                                                                                         \
+using pb_req_t = _pb_req_t_;                                                                    \
+using pb_resp_t = _pb_resp_t_;                                                                  \
 void bind_pb_serivce(::google::protobuf::Service* base_service) override {                      \
-    for (int i = 0; i < _name_::descriptor()->method_count(); ++i) {                            \
-        const ::google::protobuf::MethodDescriptor* method = _name_::descriptor()->method(i);   \
+    for (int i = 0; i < _clazz_::descriptor()->method_count(); ++i) {                           \
+        const ::google::protobuf::MethodDescriptor* method = _clazz_::descriptor()->method(i);  \
         RELLAF_DEBUG("protobuf service :%s, methd: %s",                                         \
-                _name_::descriptor()->name().c_str(), method->name().c_str());                  \
+                _clazz_::descriptor()->name().c_str(), method->name().c_str());                 \
         _sign_entrys.insert(method->name());                                                    \
     }                                                                                           \
+}                                                                                               \
+private:                                                                                        \
+template<class Handler>                                                                         \
+class Reg {                                                                                     \
+public:                                                                                         \
+    Reg(_clazz_* inst, const std::string& sign, const std::string& api,                         \
+            const std::string& handler) {                                                       \
+        HandlerMapper::Reg<Handler> _handler(handler, api, (HttpMethod)0);                      \
+        inst->bind_api_sign(api, sign);                                                         \
+    }                                                                                           \
 }
+
+// definition brpc request entry method signature fowarding call BrpcService::entry
+#define rellaf_def_brpc_http_api(_sign_, _api_, _handler_)                                      \
+public:                                                                                         \
+void _sign_(RpcController* controller, const pb_req_t* request,                                 \
+        pb_resp_t* response, Closure* done) override {                                          \
+    BrpcService::entry(controller, (Message*)request, (Message*)response, done);                \
+}                                                                                               \
+private:                                                                                        \
+    Reg<_handler_> _reg_##_sign_##_##_handler_{this, #_sign_, _api_, #_handler_}
 
 }

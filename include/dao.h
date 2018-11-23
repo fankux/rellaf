@@ -105,10 +105,10 @@ class Dao {
 
 public:
     class Charset : public IEnum {
-    RELLAF_ENUM_DCL(Charset);
+    rellaf_enum_dcl(Charset);
 
-    RELLAF_ENUM_ITEM_DEF(1, UTF8);
-    RELLAF_ENUM_ITEM_DEF(2, GBK);
+    rellaf_enum_item_def(1, UTF8);
+    rellaf_enum_item_def(2, GBK);
     };
 
     typedef EnumItem CharsetType;
@@ -292,7 +292,7 @@ private:
 
 };
 
-#define RELLAF_DAO_SELECT(_method_, _pattern_, _Ret_)                               \
+#define rellaf_dao_select(_method_, _pattern_, _Ret_)                               \
 public:                                                                             \
 template<class ...Args> int _method_(_Ret_& ret, const Args& ...args) {             \
     return select_impl(#_method_, ret, args...);                                    \
@@ -300,7 +300,7 @@ template<class ...Args> int _method_(_Ret_& ret, const Args& ...args) {         
 private:                                                                            \
 Reg _reg_##_method_{this, #_method_, _pattern_}
 
-#define RELLAF_DAO_SELECT_list(_method_, _pattern_, _Ret_)                          \
+#define rellaf_dao_select_list(_method_, _pattern_, _Ret_)                          \
 public:                                                                             \
 template<class ...Args> int _method_(std::deque<_Ret_>& ret, const Args& ...args) { \
     return select_list_impl(#_method_, ret, args...);                               \

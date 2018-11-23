@@ -230,7 +230,7 @@ RELLAF_MODEL_TYPE_REG_REF(_clazz_, std::string, str)                            
 
 /////////////////////// type declaration //////////////////////
 
-#define RELLAF_MODEL_DCL(_clazz_)                                                       \
+#define rellaf_model_dcl(_clazz_)                                                       \
 RELLAF_MODEL_DCL_PRIMITIVE(_clazz_)                                                     \
 public:                                                                                 \
 Model* create() override { return new(std::nothrow)_clazz_; }                           \
@@ -278,7 +278,7 @@ RELLAF_MODEL_DEF_TYPE(_clazz_, std::string, str);                               
 static volatile _clazz_ _s_c_##_clazz_; // force init static context
 
 /////////////////////// type definition ////////////////////
-#define RELLAF_MODEL_DEF(_clazz_)                                                       \
+#define rellaf_model_def(_clazz_)                                                       \
 std::set<std::string> _clazz_::_s_list_names;                                           \
 std::set<std::string> _clazz_::_s_object_names;                                         \
 RELLAF_MODEL_DEF_PRIMITIVE(_clazz_)
@@ -407,7 +407,7 @@ RELLAF_MODEL_DCL_TYPE(double, double);
 RELLAF_MODEL_DCL_TYPE_REF(std::string, str);
 };
 
-#define RELLAF_PLAIN_DCL(_clazz_, _type_, _dft_)                        \
+#define rellaf_plain_dcl(_clazz_, _type_, _dft_)                        \
 RELLAF_DEFMOVE(_clazz_)                                                 \
 public:                                                                 \
 std::string name() const override { return #_clazz_; }                  \
@@ -480,17 +480,17 @@ public:                                                                         
 private:                                                                                \
     Reg _reg_##_name_{#_name_, this, (_type_)_dft_}
 
-#define RELLAF_MODEL_DEF_int(_name_, _dft_) RELLAF_MODEL_DEF_type(int, int, _name_, _dft_)
-#define RELLAF_MODEL_DEF_int64(_name_, _dft_) RELLAF_MODEL_DEF_type(int64_t, int64, _name_, _dft_)
-#define RELLAF_MODEL_DEF_uint16(_name_, _dft_) RELLAF_MODEL_DEF_type(uint16_t, uint16, _name_, _dft_)
-#define RELLAF_MODEL_DEF_uint32(_name_, _dft_) RELLAF_MODEL_DEF_type(uint32_t, uint32, _name_, _dft_)
-#define RELLAF_MODEL_DEF_uint64(_name_, _dft_) RELLAF_MODEL_DEF_type(uint64_t, uint64, _name_, _dft_)
-#define RELLAF_MODEL_DEF_bool(_name_, _dft_) RELLAF_MODEL_DEF_type(bool, bool, _name_, _dft_)
-#define RELLAF_MODEL_DEF_float(_name_, _dft_) RELLAF_MODEL_DEF_type(float, float, _name_, _dft_)
-#define RELLAF_MODEL_DEF_double(_name_, _dft_) RELLAF_MODEL_DEF_type(double, double, _name_, _dft_)
-#define RELLAF_MODEL_DEF_str(_name_, _dft_) RELLAF_MODEL_DEF_type(std::string, str, _name_, _dft_)
+#define rellaf_model_def_int(_name_, _dft_) RELLAF_MODEL_DEF_type(int, int, _name_, _dft_)
+#define rellaf_model_def_int64(_name_, _dft_) RELLAF_MODEL_DEF_type(int64_t, int64, _name_, _dft_)
+#define rellaf_model_def_uint16(_name_, _dft_) RELLAF_MODEL_DEF_type(uint16_t, uint16, _name_, _dft_)
+#define rellaf_model_def_uint32(_name_, _dft_) RELLAF_MODEL_DEF_type(uint32_t, uint32, _name_, _dft_)
+#define rellaf_model_def_uint64(_name_, _dft_) RELLAF_MODEL_DEF_type(uint64_t, uint64, _name_, _dft_)
+#define rellaf_model_def_bool(_name_, _dft_) RELLAF_MODEL_DEF_type(bool, bool, _name_, _dft_)
+#define rellaf_model_def_float(_name_, _dft_) RELLAF_MODEL_DEF_type(float, float, _name_, _dft_)
+#define rellaf_model_def_double(_name_, _dft_) RELLAF_MODEL_DEF_type(double, double, _name_, _dft_)
+#define rellaf_model_def_str(_name_, _dft_) RELLAF_MODEL_DEF_type(std::string, str, _name_, _dft_)
 
-#define RELLAF_MODEL_DEF_object(_name_, _type_)             \
+#define rellaf_model_def_object(_name_, _type_)             \
 public:                                                     \
     _type_* _name_() {                                      \
         return (_type_*)get_object(#_name_);                \
@@ -518,7 +518,7 @@ private:                                                    \
     RegObject _reg_##_name_##_object{#_name_}
 
 
-#define RELLAF_MODEL_DEF_list(_name_, _type_)               \
+#define rellaf_model_def_list(_name_, _type_)               \
 public:                                                     \
     ModelList& _name_() {                                   \
         return get_list(#_name_);                           \

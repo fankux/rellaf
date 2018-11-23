@@ -19,7 +19,7 @@
 #include "test_common.h"
 #include "brpc_dispatcher.h"
 #include "test_service.pb.h"
-#include "http_client.hpp"
+#include "http_client.h"
 
 namespace rellaf {
 namespace test {
@@ -29,7 +29,7 @@ static brpc::Server server;
 int run_brpc() {
     brpc::ServerOptions options;
     options.idle_timeout_sec = 30;
-    options.has_builtin_services = true;
+    options.has_builtin_services = false;
 
     // it run background
     return server.Start(8123, &options);
@@ -45,15 +45,18 @@ class TestBrpcService : public testing::Test {
 protected:
     TestBrpcService() = default;
 
-    ~TestBrpcService() override = default;
+    ~TestBrpcService() override {
+        stop_brpc(10);
+    };
 
     void SetUp() override {
-        stop_brpc(-1);
-
-        BrpcDispatcher::instance().reset(server);
         BrpcDispatcher::instance().reg_http_serivces(server);
-
         run_brpc();
+    }
+
+    void TearDown() override {
+        stop_brpc(-1);
+        BrpcDispatcher::instance().reset(server);
     }
 };
 
@@ -61,31 +64,52 @@ class EchoHandler : public Handler {
 public:
     explicit EchoHandler(const HttpHeader& header) : Handler(header) {}
 
-    int process(const butil::IOBuf& body, std::string& ret_body) override {
-        RELLAF_DEBUG("echo income");
-        return 404;
+    int process(const butil::IOBuf& body, HttpHeader& ret_header, std::string& ret_body) override {
+        ret_body = "EchoHandler";
+        return 200;
+    }
+};
+
+class HelloHandler : public Handler {
+public:
+    explicit HelloHandler(const HttpHeader& header) : Handler(header) {}
+
+    int process(const butil::IOBuf& body, HttpHeader& ret_header, std::string& ret_body) override {
+        ret_body = "HelloHandler";
+        return 200;
     }
 };
 
 class TestSerivceImpl : public BrpcService, public TestService {
-public:
-    TestSerivceImpl() {
-        RELLAF_DEF_BRPC_HTTP_API("/aaa", echo, EchoHandler);
-    };
 
-RELLAF_DCL_BRPC_HTTP_SERVICE(TestSerivceImpl);
+rellaf_dcl_brpc_http_service(TestSerivceImpl, TestRequest, TestResponse);
 
-RELLAG_DEF_BRPC_HTTP_SIGN(echo, TestRequest, TestResponse);
+rellaf_def_brpc_http_api(echo, "/", EchoHandler);
+rellaf_def_brpc_http_api(hello, "/hello", HelloHandler);
+
 };
 
-RELLAF_DEF_BRPC_HTTP_SERVICE(TestSerivceImpl);
+rellaf_def_brpc_http_service(TestSerivceImpl);
+
+#define http_test_st_body_item(api, expect_status, expect_body, ig_body) do {       \
+HttpResponse response;                                                              \
+http_post("127.0.0.1:8123/" api, {}, {}, response);                                 \
+ASSERT_EQ(response.status, expect_status);                                          \
+if (!ig_body) {                                                                     \
+    const char* str = response.body.to_string().c_str();                            \
+    ASSERT_STREQ(str, expect_body);                                                 \
+}} while(0)
 
 TEST_F(TestBrpcService, echo_service) {
+    http_test_st_body_item("/", 404, "", true);
+    http_test_st_body_item("", 200, "EchoHandler", false);
 
-    HttpResponse response;
-    http_post("127.0.0.1:8123/aaa", {}, {}, response);
+    http_test_st_body_item("bbba", 404, "", true);
+    http_test_st_body_item("bbb/", 404, "", true);
+    http_test_st_body_item("hello/", 404, "", false);
+    http_test_st_body_item("/hello", 404, "", false);
+    http_test_st_body_item("hello", 200, "HelloHandler", false);
 
-    sleep(10);
 }
 
 }

@@ -24,15 +24,11 @@
 namespace rellaf {
 
 class BrpcDispatcher {
-RELLAF_SINGLETON(BrpcDispatcher);
+rellaf_singleton(BrpcDispatcher);
 RELLAF_AVOID_COPY(BrpcDispatcher);
 
 public:
-    virtual ~BrpcDispatcher() {
-        for (auto& entry : _services) {
-            delete entry.second;
-        }
-    }
+    virtual ~BrpcDispatcher() = default;
 
     void reset(brpc::Server& server);
 
@@ -58,10 +54,11 @@ public:
 
 private:
     // <service_name, service_ptr>
+    // we don't delete these pointers as there are static
     std::unordered_map<std::string, BrpcService*> _services;
 };
 
-#define RELLAF_DEF_BRPC_HTTP_SERVICE(_class_)    \
+#define rellaf_def_brpc_http_service(_class_)    \
 static BrpcDispatcher::Reg<_class_> obj_##_class_(#_class_)
 
 }

@@ -15,26 +15,17 @@
 // Author: Fankux (fankux@gmail.com)
 //
 
-#pragma once
-
-#include <string>
-#include <map>
-#include "brpc/controller.h"
 #include "brpc/channel.h"
 #include "common.h"
+#include "http_client.h"
 
 namespace rellaf {
-
-struct HttpResponse {
-    butil::IOBuf message;
-    int status;
-};
 
 int http_request(const std::string& api, brpc::HttpMethod method,
         const std::map<std::string, std::string>& params,
         const std::map<std::string, std::string>& headers,
-        const std::string& request_body, HttpResponse& response,
-        const std::string& content_type, int timeout = -1) {
+        const std::string& content_type, const std::string& request_body,
+        HttpResponse& response, int timeout) {
     brpc::Controller controller;
     brpc::ChannelOptions options;
     brpc::Channel channel;
@@ -79,7 +70,10 @@ int http_request(const std::string& api, brpc::HttpMethod method,
 
     channel.CallMethod(nullptr, &controller, nullptr, nullptr, nullptr);
     response.status = controller.http_response().status_code();
-    response.message.swap(controller.response_attachment());
+    response.body.swap(controller.response_attachment());
+    response.content_type = controller.http_response().content_type();
+    response.reason_phrase = controller.http_response().reason_phrase();
+    response.compress_type = controller.response_compress_type();
 
     if (controller.Failed() || controller.IsCanceled()) {
         RELLAF_DEBUG("invoke %s failed, api : http://%s%s%s, message : %s",
@@ -92,14 +86,14 @@ int http_request(const std::string& api, brpc::HttpMethod method,
 }
 
 int http_get(const std::string& api, const std::map<std::string, std::string>& params,
-        HttpResponse& response, int timeout = -1) {
-    return http_request(api, brpc::HTTP_METHOD_GET, params, {}, "", response, "", timeout);
+        HttpResponse& response, int timeout) {
+    return http_request(api, brpc::HTTP_METHOD_GET, params, {}, "", "", response, timeout);
 }
 
 int http_post(const std::string& api, const std::map<std::string, std::string>& params,
-        const std::string& request_body, HttpResponse& response, int timeout = -1) {
+        const std::string& request_body, HttpResponse& response, int timeout) {
     return http_request(api, brpc::HTTP_METHOD_POST, params, {},
-            request_body, response, "", timeout);
+            request_body, "", response, timeout);
 }
 
 }

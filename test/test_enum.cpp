@@ -34,26 +34,26 @@ protected:
 };
 
 class TestType : public IEnum {
-RELLAF_ENUM_DCL(TestType);
+rellaf_enum_dcl(TestType);
 
-RELLAF_ENUM_ITEM_DEF(0, INT);
-RELLAF_ENUM_ITEM_DEF(1, UINT);
-RELLAF_ENUM_ITEM_DEF(2, FLOAT);
+rellaf_enum_item_def(0, INT);
+rellaf_enum_item_def(1, UINT);
+rellaf_enum_item_def(2, FLOAT);
 };
 
-RELLAF_ENUM_DEF(TestType);
+rellaf_enum_def(TestType);
 
 TEST_F(TestEnum, test_enum) {
-    ASSERT_TRUE(map_keys_equal_set(RELLAF_ENUM(TestType).names(), {"INT", "UINT", "FLOAT"}));
-    ASSERT_TRUE(map_keys_equal_set(RELLAF_ENUM(TestType).codes(), {0, 1, 2}));
+    ASSERT_TRUE(map_keys_equal_set(rellaf_enum(TestType).names(), {"INT", "UINT", "FLOAT"}));
+    ASSERT_TRUE(map_keys_equal_set(rellaf_enum(TestType).codes(), {0, 1, 2}));
 
-    ASSERT_EQ(RELLAF_ENUM(TestType).INT.code, 0);
-    ASSERT_EQ(RELLAF_ENUM(TestType).UINT.code, 1);
-    ASSERT_EQ(RELLAF_ENUM(TestType).FLOAT.code, 2);
+    ASSERT_EQ(rellaf_enum(TestType).INT.code, 0);
+    ASSERT_EQ(rellaf_enum(TestType).UINT.code, 1);
+    ASSERT_EQ(rellaf_enum(TestType).FLOAT.code, 2);
 
-    ASSERT_STREQ(RELLAF_ENUM(TestType).INT.name.c_str(), "INT");
-    ASSERT_STREQ(RELLAF_ENUM(TestType).UINT.name.c_str(), "UINT");
-    ASSERT_STREQ(RELLAF_ENUM(TestType).FLOAT.name.c_str(), "FLOAT");
+    ASSERT_STREQ(rellaf_enum(TestType).INT.name.c_str(), "INT");
+    ASSERT_STREQ(rellaf_enum(TestType).UINT.name.c_str(), "UINT");
+    ASSERT_STREQ(rellaf_enum(TestType).FLOAT.name.c_str(), "FLOAT");
 
     ASSERT_TRUE(TestType::e().exist(0));
     ASSERT_TRUE(TestType::e().exist(1));

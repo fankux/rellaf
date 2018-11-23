@@ -35,27 +35,27 @@ protected:
 };
 
 class SubModel : public Model {
-RELLAF_MODEL_DCL(SubModel)
+rellaf_model_dcl(SubModel)
 
-RELLAF_MODEL_DEF_int(sub_model_id, 111);
+rellaf_model_def_int(sub_model_id, 111);
 
 };
 
-RELLAF_MODEL_DEF(SubModel);
+rellaf_model_def(SubModel);
 
 class ListItem : public Model {
-RELLAF_MODEL_DCL(ListItem)
+rellaf_model_dcl(ListItem)
 
-RELLAF_MODEL_DEF_int(list_id, 111);
+rellaf_model_def_int(list_id, 111);
 
 };
 
-RELLAF_MODEL_DEF(ListItem);
+rellaf_model_def(ListItem);
 
 //std::function<std::string(Model*)> _str_func =
 
 class ListInt : public PlainWrap {
-RELLAF_PLAIN_DCL(ListInt, uint32_t, 0);
+rellaf_plain_dcl(ListInt, uint32_t, 0);
 
 public:
     std::string str() const override {
@@ -64,27 +64,27 @@ public:
 };
 
 class Object : public Model {
-RELLAF_MODEL_DCL(Object)
+rellaf_model_dcl(Object)
 
-RELLAF_MODEL_DEF_int(val_int, -111);
-RELLAF_MODEL_DEF_int64(val_int64, -111);
-RELLAF_MODEL_DEF_uint16(val_uint16, 111);
-RELLAF_MODEL_DEF_uint32(val_uint32, 111);
-RELLAF_MODEL_DEF_uint64(val_uint64, 111);
-RELLAF_MODEL_DEF_bool(val_bool, false);
-RELLAF_MODEL_DEF_float(val_float, 1.0001);
-RELLAF_MODEL_DEF_double(val_double, 1.0001);
-RELLAF_MODEL_DEF_str(val_str, "aaa");
+rellaf_model_def_int(val_int, -111);
+rellaf_model_def_int64(val_int64, -111);
+rellaf_model_def_uint16(val_uint16, 111);
+rellaf_model_def_uint32(val_uint32, 111);
+rellaf_model_def_uint64(val_uint64, 111);
+rellaf_model_def_bool(val_bool, false);
+rellaf_model_def_float(val_float, 1.0001);
+rellaf_model_def_double(val_double, 1.0001);
+rellaf_model_def_str(val_str, "aaa");
 
-RELLAF_MODEL_DEF_object(val_object, SubModel);
+rellaf_model_def_object(val_object, SubModel);
 
-RELLAF_MODEL_DEF_list(val_list, ListItem);
+rellaf_model_def_list(val_list, ListItem);
 
-RELLAF_MODEL_DEF_list(plain_list, ListInt);
+rellaf_model_def_list(plain_list, ListInt);
 
 };
 
-RELLAF_MODEL_DEF(Object);
+rellaf_model_def(Object);
 
 TEST_F(TestModel, test_primitive) {
 
