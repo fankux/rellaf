@@ -62,19 +62,21 @@ protected:
 
 class EchoHandler : public Handler {
 public:
-    explicit EchoHandler(const HttpHeader& header) : Handler(header) {}
-
-    int process(const butil::IOBuf& body, HttpHeader& ret_header, std::string& ret_body) override {
+    int process(const HttpHeader& header, const butil::IOBuf& body, HttpHeader& ret_header,
+            std::string& ret_body) override {
         ret_body = "EchoHandler";
         return 200;
     }
 };
 
+class HelloRet : public Model {
+
+};
+
 class HelloHandler : public Handler {
 public:
-    explicit HelloHandler(const HttpHeader& header) : Handler(header) {}
-
-    int process(const butil::IOBuf& body, HttpHeader& ret_header, std::string& ret_body) override {
+    int process(const HttpHeader& header, const butil::IOBuf& body, HttpHeader& ret_header,
+            std::string& ret_body) override {
         ret_body = "HelloHandler";
         return 200;
     }
@@ -82,14 +84,14 @@ public:
 
 class TestSerivceImpl : public BrpcService, public TestService {
 
-rellaf_dcl_brpc_http_service(TestSerivceImpl, TestRequest, TestResponse);
+rellaf_brpc_http_dcl(TestSerivceImpl, TestRequest, TestResponse);
 
-rellaf_def_brpc_http_api(echo, "/", EchoHandler);
-rellaf_def_brpc_http_api(hello, "/hello", HelloHandler);
+rellaf_brpc_http_def_api(echo, "/", EchoHandler, false);
+rellaf_brpc_http_def_api(hello, "/hello", HelloHandler, true);
 
 };
 
-rellaf_def_brpc_http_service(TestSerivceImpl);
+rellaf_brpc_http_def(TestSerivceImpl);
 
 #define http_test_st_body_item(api, expect_status, expect_body, ig_body) do {       \
 HttpResponse response;                                                              \
@@ -102,7 +104,6 @@ if (!ig_body) {                                                                 
 
 TEST_F(TestBrpcService, echo_service) {
     http_test_st_body_item("/", 404, "", true);
-    http_test_st_body_item("", 200, "EchoHandler", false);
 
     http_test_st_body_item("bbba", 404, "", true);
     http_test_st_body_item("bbb/", 404, "", true);
@@ -110,6 +111,7 @@ TEST_F(TestBrpcService, echo_service) {
     http_test_st_body_item("/hello", 404, "", false);
     http_test_st_body_item("hello", 200, "HelloHandler", false);
 
+    http_test_st_body_item("", 200, "EchoHandler", false);
 }
 
 }

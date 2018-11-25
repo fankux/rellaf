@@ -22,6 +22,8 @@
 
 namespace rellaf {
 
+#define RELLAF_UNUSED(x) (void)(x)
+
 #define RELLAF_ATOMIC_CAS(_it_, _old_, _new_) __sync_bool_compare_and_swap(&_it_, _old_, _new_)
 
 #define RELLAF_ATOMIC_INC(_it_) __sync_add_and_fetch(&_it_, 1)

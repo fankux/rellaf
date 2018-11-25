@@ -58,7 +58,7 @@ private:
     std::unordered_map<std::string, BrpcService*> _services;
 };
 
-#define rellaf_def_brpc_http_service(_class_)    \
+#define rellaf_brpc_http_def(_class_)    \
 static BrpcDispatcher::Reg<_class_> obj_##_class_(#_class_)
 
 }

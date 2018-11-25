@@ -24,24 +24,30 @@ namespace rellaf {
 using HttpHeader = brpc::HttpHeader;
 using HttpMethod = brpc::HttpMethod;
 
+// handler_mapper new an object as a std::shared_ptr at each request
 class Handler {
 public:
+    friend class HandlerMapper;
 
-    explicit Handler(const HttpHeader& header) : _header(header) {}
+    template<class T> friend class SingletonFactory;
 
     virtual ~Handler() = default;
 
     /**
      * @brief   processing in one step
      * @param   body
-     * @param   ret_header response header
+     * @param   ret_head response header
      * @param   ret_body response paylaod
      * @return  http status code
      */
-    virtual int process(const butil::IOBuf& body, HttpHeader& ret_header, std::string& ret_body) = 0;
+    virtual int process(const HttpHeader& head, const butil::IOBuf& body, HttpHeader& ret_head,
+            std::string& ret_body) = 0;
 
 protected:
-    const HttpHeader& _header;
+    explicit Handler() = default;
+
+protected:
+    std::string _name;
 };
 
 }

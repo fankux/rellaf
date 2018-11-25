@@ -373,14 +373,6 @@ class PlainWrap : public Model {
 RELLAF_DEFMOVE(PlainWrap)
 
 public:
-//    virtual std::string name() const = 0;
-
-//    virtual Model* create() = 0;
-
-//    virtual Model* clone() = 0;
-
-//    virtual std::string debug_str() { return ""; };
-
     bool is_plain() const override {
         return true;
     }

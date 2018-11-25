@@ -26,11 +26,20 @@
 
 namespace rellaf {
 
+template<class T>
+class HandlerFactory {
+public:
+    static T* instance() {
+        static T inst;
+        return &inst;
+    }
+};
+
 class HandlerMapper {
 rellaf_singleton(HandlerMapper)
 
 public:
-    std::shared_ptr<Handler> create(const HttpHeader& header, bool& exist) {
+    Handler* create(const HttpHeader& header, bool& exist) {
         const std::string& api = header.uri().path();
         auto ah_entry = _api_hdrs.find(api);
         if (ah_entry == _api_hdrs.end()) {
@@ -41,27 +50,49 @@ public:
         const std::string& name = ah_entry->second;
 
         exist = true;
-        return _creators[name](header);
+        Handler* inst = _creators[name]();
+        if (inst != nullptr) {
+            inst->_name = name;
+        }
+        return inst;
+    }
+
+    void free(Handler* handler) {
+        if (handler == nullptr) {
+            return;
+        }
+        _deletors[handler->_name](handler);
     }
 
     template<class T>
     class Reg {
     public:
-        Reg(const std::string& name, const std::string& api, HttpMethod method) {
+        Reg(const std::string& name, const std::string& api, HttpMethod method, bool singleton) {
             std::string api_filter = api;
             trim(api_filter);
             HandlerMapper::instance()._api_hdrs.insert(std::make_pair(api_filter, name));
-            HandlerMapper::instance()._creators[name] = [](const HttpHeader& header) {
-                return std::make_shared<T>(header);
+            HandlerMapper::instance()._creators[name] = [singleton]() {
+                return singleton ? HandlerFactory<T>::instance() : new T();
+            };
+            HandlerMapper::instance()._deletors[name] = [singleton](Handler* handler) {
+                if (!singleton) {
+                    delete handler;
+                }
             };
             RELLAF_DEBUG("default handler %s registered", name.c_str());
         }
     };
 
 private:
-    std::unordered_map<std::string,
-            std::function<std::shared_ptr<Handler>(const HttpHeader&)>> _creators;
-    std::unordered_map<std::string, std::string> _api_hdrs;    // api ==> handler_name
+    // handler creator functional
+    std::unordered_map<std::string, std::function<Handler*()>> _creators;
+    std::unordered_map<std::string, std::function<void(Handler*)>> _deletors;
+
+    // api ==> handler_name
+    std::unordered_map<std::string, std::string> _api_hdrs;
+
+    // handler_name ==> ( method ==> Model prototypes )
+    std::unordered_map<std::string, std::unordered_map<std::string, Model*>> _model_prototypes;
 };
 
 }

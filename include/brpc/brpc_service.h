@@ -22,6 +22,7 @@
 #include "google/protobuf/service.h"
 #include "brpc/server.h"
 #include "common.h"
+#include "model.h"
 #include "handler_mapper.hpp"
 
 namespace rellaf {
@@ -38,7 +39,6 @@ public:
     BrpcService() = default;
 
     virtual ~BrpcService() = default;
-
 
     /**
      * http request entry,
@@ -64,7 +64,7 @@ protected:
     std::unordered_map<std::string, std::string> _api_sign_mapper;
 };
 
-#define rellaf_dcl_brpc_http_service(_clazz_, _pb_req_t_, _pb_resp_t_)                          \
+#define rellaf_brpc_http_dcl(_clazz_, _pb_req_t_, _pb_resp_t_)                                  \
 public:                                                                                         \
 using pb_req_t = _pb_req_t_;                                                                    \
 using pb_resp_t = _pb_resp_t_;                                                                  \
@@ -81,20 +81,23 @@ template<class Handler>                                                         
 class Reg {                                                                                     \
 public:                                                                                         \
     Reg(_clazz_* inst, const std::string& sign, const std::string& api,                         \
-            const std::string& handler) {                                                       \
-        HandlerMapper::Reg<Handler> _handler(handler, api, (HttpMethod)0);                      \
+            const std::string& handler, bool singleton) {                                       \
+        HandlerMapper::Reg<Handler> _handler(handler, api, (HttpMethod)0, singleton);           \
         inst->bind_api_sign(api, sign);                                                         \
     }                                                                                           \
 }
 
 // definition brpc request entry method signature fowarding call BrpcService::entry
-#define rellaf_def_brpc_http_api(_sign_, _api_, _handler_)                                      \
+#define RELLAF_BRPC_HTTP_DEF_SIGN(_sign_)                                                       \
 public:                                                                                         \
 void _sign_(RpcController* controller, const pb_req_t* request,                                 \
         pb_resp_t* response, Closure* done) override {                                          \
     BrpcService::entry(controller, (Message*)request, (Message*)response, done);                \
-}                                                                                               \
+}
+
+#define rellaf_brpc_http_def_api(_sign_, _api_, _handler_, _singleton_)                         \
+RELLAF_BRPC_HTTP_DEF_SIGN(_sign_)                                                               \
 private:                                                                                        \
-    Reg<_handler_> _reg_##_sign_##_##_handler_{this, #_sign_, _api_, #_handler_}
+    Reg<_handler_> _reg_##_sign_##_##_handler_{this, #_sign_, _api_, #_handler_, _singleton_}
 
 }

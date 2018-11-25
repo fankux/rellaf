@@ -24,12 +24,15 @@ namespace rellaf {
 
 void BrpcService::entry(RpcController* controller, Message* req, Message* resp,
         Closure* done) {
+    RELLAF_UNUSED(req);
+    RELLAF_UNUSED(resp);
+
     brpc::ClosureGuard done_guard(done);
     brpc::Controller* cntl = dynamic_cast<brpc::Controller*>(controller);
 
     // check if current api need to forward to master
     bool exist;
-    std::shared_ptr<Handler> hdr = HandlerMapper::instance().create(cntl->http_request(), exist);
+    Handler* hdr = HandlerMapper::instance().create(cntl->http_request(), exist);
     if (hdr == nullptr) {
         RELLAF_DEBUG("create handler failed");
         cntl->http_response().set_status_code(
@@ -39,9 +42,12 @@ void BrpcService::entry(RpcController* controller, Message* req, Message* resp,
     }
 
     std::string ret_body;
-    int status = hdr->process(cntl->request_attachment(), cntl->http_response(), ret_body);
+    int status = hdr->process(cntl->http_request(), cntl->request_attachment(),
+            cntl->http_response(), ret_body);
     cntl->http_response().set_status_code(status);
     return_response(cntl, ret_body);
+
+    HandlerMapper::instance().free(hdr);
 }
 
 void BrpcService::bind_api_sign(const std::string& api, const std::string& sign) {
