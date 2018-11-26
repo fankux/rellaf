@@ -176,7 +176,7 @@ list.clear();
 C/C++枚举（`enum`）能力很有限，只是一个数字，没有从字符串获得枚举的能力，也不能判断一个枚举是否存在。  
 `Rellaf`实现了灵活的枚举类，使用同样非常简单。
 1. 包含头文件`"enum.h"`，申明枚举类
-```shell
+```c++
 class DemoEnum : public IEnum {
 rellaf_enum_dcl(DemoEnum);
 
@@ -187,11 +187,11 @@ rellaf_enum_item_def(2, C);
 };
 ```
 2. 源文件定义枚举类
-```shell
+```c++
 rellaf_enum_def(DemoEnum);
 ```
 3. 可以使用了, 枚举类的成员类型都是`rellaf::EnumItem`
-```shell
+```c++
 // 枚举都是单例类，通过单例方法或者 rellaf_enum宏 访问
 std::string name = DemoEnum::e().A.name;                    // 返回 "A"
 int code = rellaf_enum(DemoEnum).B.code;                    // 返回 1
