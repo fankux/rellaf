@@ -35,6 +35,9 @@ rellaf_enum_item_def(7, FLOAT);
 rellaf_enum_item_def(8, DOUBLE);
 rellaf_enum_item_def(9, STR);
 
+rellaf_enum_item_def(100, OBJECT);
+rellaf_enum_item_def(101, LIST);
+
 };
 
 typedef EnumItem ModelType;

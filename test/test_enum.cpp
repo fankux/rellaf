@@ -47,6 +47,12 @@ TEST_F(TestEnum, test_enum) {
     ASSERT_TRUE(map_keys_equal_set(rellaf_enum(TestType).names(), {"INT", "UINT", "FLOAT"}));
     ASSERT_TRUE(map_keys_equal_set(rellaf_enum(TestType).codes(), {0, 1, 2}));
 
+#if __cplusplus >= 201703L
+    ASSERT_EQ(TestType::INT_code, 0);
+    ASSERT_EQ(TestType::UINT_code, 1);
+    ASSERT_EQ(TestType::FLOAT_code, 2);
+#endif
+
     ASSERT_EQ(rellaf_enum(TestType).INT.code, 0);
     ASSERT_EQ(rellaf_enum(TestType).UINT.code, 1);
     ASSERT_EQ(rellaf_enum(TestType).FLOAT.code, 2);
@@ -70,25 +76,25 @@ TEST_F(TestEnum, test_enum) {
     ASSERT_TRUE(TestType::e().exist("FLOAT"));
     ASSERT_FALSE(TestType::e().exist("vvv"));
 
-    ASSERT_EQ(TestType::e().get_by_name("INT"), &TestType::e().INT);
-    ASSERT_EQ(TestType::e().get_by_name("UINT"), &TestType::e().UINT);
-    ASSERT_EQ(TestType::e().get_by_name("FLOAT"), &TestType::e().FLOAT);
-    ASSERT_EQ(TestType::e().get_by_name("vvv"), nullptr);
+    ASSERT_EQ(TestType::e().get_by_name("INT"), TestType::e().INT);
+    ASSERT_EQ(TestType::e().get_by_name("UINT"), TestType::e().UINT);
+    ASSERT_EQ(TestType::e().get_by_name("FLOAT"), TestType::e().FLOAT);
+    ASSERT_FALSE(TestType::e().get_by_name("vvv").available());
 
-    ASSERT_EQ(TestType::e().get_by_code(0), &TestType::e().INT);
-    ASSERT_EQ(TestType::e().get_by_code(1), &TestType::e().UINT);
-    ASSERT_EQ(TestType::e().get_by_code(2), &TestType::e().FLOAT);
-    ASSERT_EQ(TestType::e().get_by_code(4), nullptr);
+    ASSERT_EQ(TestType::e().get_by_code(0), TestType::e().INT);
+    ASSERT_EQ(TestType::e().get_by_code(1), TestType::e().UINT);
+    ASSERT_EQ(TestType::e().get_by_code(2), TestType::e().FLOAT);
+    ASSERT_FALSE(TestType::e().get_by_code(4).available());
 
-    ASSERT_EQ(TestType::e().get("INT"), &TestType::e().INT);
-    ASSERT_EQ(TestType::e().get("UINT"), &TestType::e().UINT);
-    ASSERT_EQ(TestType::e().get("FLOAT"), &TestType::e().FLOAT);
-    ASSERT_EQ(TestType::e().get("vvv"), nullptr);
+    ASSERT_EQ(TestType::e().get("INT"), TestType::e().INT);
+    ASSERT_EQ(TestType::e().get("UINT"), TestType::e().UINT);
+    ASSERT_EQ(TestType::e().get("FLOAT"), TestType::e().FLOAT);
+    ASSERT_FALSE(TestType::e().get("vvv").available());
 
-    ASSERT_EQ(TestType::e().get(0), &TestType::e().INT);
-    ASSERT_EQ(TestType::e().get(1), &TestType::e().UINT);
-    ASSERT_EQ(TestType::e().get(2), &TestType::e().FLOAT);
-    ASSERT_EQ(TestType::e().get(4), nullptr);
+    ASSERT_EQ(TestType::e().get(0), TestType::e().INT);
+    ASSERT_EQ(TestType::e().get(1), TestType::e().UINT);
+    ASSERT_EQ(TestType::e().get(2), TestType::e().FLOAT);
+    ASSERT_FALSE(TestType::e().get(4).available());
 
 }
 

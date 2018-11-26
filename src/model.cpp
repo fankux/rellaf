@@ -20,16 +20,6 @@
 
 namespace rellaf {
 
-RELLAF_MODEL_DEF_TYPE(PlainWrap, int, int);
-RELLAF_MODEL_DEF_TYPE(PlainWrap, int64_t, int64);
-RELLAF_MODEL_DEF_TYPE(PlainWrap, uint16_t, uint16);
-RELLAF_MODEL_DEF_TYPE(PlainWrap, uint32_t, uint32);
-RELLAF_MODEL_DEF_TYPE(PlainWrap, uint64_t, uint64);
-RELLAF_MODEL_DEF_TYPE(PlainWrap, bool, bool);
-RELLAF_MODEL_DEF_TYPE(PlainWrap, float, float);
-RELLAF_MODEL_DEF_TYPE(PlainWrap, double, double);
-RELLAF_MODEL_DEF_TYPE(PlainWrap, std::string, str);
-
 Model::~Model() {
     for (auto& entry : _objects) {
         delete entry.second;
@@ -160,7 +150,14 @@ void ModelList::set(size_t idx, Model* model) {
         return;
     }
     delete _items[idx];
-    _items[idx] = model;
+    _items[idx] = model->clone();
+}
+
+Model* ModelList::get(size_t idx) {
+    if (idx >= _items.size()) {
+        return nullptr;
+    }
+    return _items[idx];
 }
 
 const Model* ModelList::get(size_t idx) const {

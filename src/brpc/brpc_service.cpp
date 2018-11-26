@@ -17,7 +17,7 @@
 
 #include "common.h"
 #include "brpc_service.h"
-#include "handler_mapper.hpp"
+#include "function_mapper.hpp"
 #include "brpc/http_status_code.h"
 
 namespace rellaf {
@@ -31,26 +31,22 @@ void BrpcService::entry(RpcController* controller, Message* req, Message* resp,
     brpc::Controller* cntl = dynamic_cast<brpc::Controller*>(controller);
 
     // check if current api need to forward to master
-    bool exist;
-    Handler* hdr = HandlerMapper::instance().create(cntl->http_request(), exist);
-    if (hdr == nullptr) {
-        RELLAF_DEBUG("create handler failed");
-        cntl->http_response().set_status_code(
-                exist ? brpc::HTTP_STATUS_INTERNAL_SERVER_ERROR : brpc::HTTP_STATUS_NOT_FOUND);
+    std::string name = FunctionMapper::instance().fetch_name(cntl->http_request());
+    if (name.empty()) {
+        cntl->http_response().set_status_code(brpc::HTTP_STATUS_NOT_FOUND);
         return_response(cntl, "");
         return;
     }
 
     std::string ret_body;
-    int status = hdr->process(cntl->http_request(), cntl->request_attachment(),
-            cntl->http_response(), ret_body);
-    cntl->http_response().set_status_code(status);
+    int status = FunctionMapper::instance().invoke(name, cntl, ret_body);
+    if (status == -1) {
+        cntl->http_request().set_status_code(brpc::HTTP_STATUS_INTERNAL_SERVER_ERROR);
+    }
     return_response(cntl, ret_body);
-
-    HandlerMapper::instance().free(hdr);
 }
 
-void BrpcService::bind_api_sign(const std::string& api, const std::string& sign) {
+void BrpcService::bind_api_sign(const std::string& sign, const std::string& api) {
     if (api.empty()) {
         RELLAF_DEBUG("ignore empty api of %s", sign.c_str());
         return;

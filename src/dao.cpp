@@ -231,7 +231,7 @@ bool Dao::get_list_val(const Model* model, const std::deque<std::string>& sectio
             if (!m->is_plain()) {
                 continue;
             }
-            vals.emplace_back(((const PlainWrap*)m)->str());
+            vals.emplace_back(m->str());
         }
         return true;
     }

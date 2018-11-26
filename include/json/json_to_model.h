@@ -17,17 +17,23 @@
 
 #pragma once
 
-#include "json/json.h"
 #include "model.h"
 
 namespace rellaf {
 
-bool model_to_json(Model* model, Json::Value& json);
+/**
+ * @brief convert model object to json string
+ * @param model
+ * @param json_str output
+ * @param is_format
+ */
+bool model_to_json(const Model* model, std::string& json_str, bool is_format = false);
 
-std::string model_to_json_str(Model* model, bool is_compact = true);
-
-bool json_to_model(const Json::Value& json, Model* model);
-
-bool json_str_to_model(const std::string& json_str, Model* model);
+/**
+ * @brief convert json string to model object
+ * @param json_str
+ * @param model
+ */
+bool json_to_model(const std::string& json_str, Model* model);
 
 }

@@ -29,7 +29,7 @@ if (WITH_JSON)
     find_library(JSONCPP_LIB jsoncpp)
     find_path(JSONCPP_INC json/json.h)
 
-    include_directories(${JSONCPP_INC} src/json)
+    include_directories(${JSONCPP_INC} include/json)
     file(GLOB JSON_SRC
             src/json/*.h
             src/json/*.hpp
@@ -93,8 +93,30 @@ endif ()
 
 message("THIRD_DEPS : ${THIRD_DEPS}")
 
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    set(DYNAMIC_LIB ${DYNAMIC_LIB} rt)
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+    include(CheckFunctionExists)
+    CHECK_FUNCTION_EXISTS(clock_gettime HAVE_CLOCK_GETTIME)
+    if (NOT HAVE_CLOCK_GETTIME)
+        set(DEFINE_CLOCK_GETTIME "-DNO_CLOCK_GETTIME_IN_MAC")
+    endif ()
+    set(DYNAMIC_LIB ${DYNAMIC_LIB}
+            "-framework CoreFoundation"
+            "-framework CoreGraphics"
+            "-framework CoreData"
+            "-framework CoreText"
+            "-framework Security"
+            "-framework Foundation"
+            "-Wl,-U,_MallocExtension_ReleaseFreeMemory"
+            "-Wl,-U,_ProfilerStart"
+            "-Wl,-U,_ProfilerStop"
+            )
+endif ()
+
 link_libraries(
         ${THIRD_DEPS}
+        ${DYNAMIC_LIB}
         pthread
         dl
         ssl
@@ -102,6 +124,7 @@ link_libraries(
 )
 
 set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CPP_FLAGS "${DEFINE_CLOCK_GETTIME} -DBRPC_WITH_GLOG=1")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g -pipe -Wall -W -fPIC -Wno-unused-parameter")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -g -pipe -Wall -W -fPIC -Wno-unused-parameter")
 
@@ -111,10 +134,16 @@ if (WITH_TEST)
     link_libraries(rellaf)
     add_executable(test_model test/test_model.cpp)
     add_executable(test_enum test/test_enum.cpp)
-    add_executable(test_mapper test/test_mapper.cpp)
+    add_executable(test_mapper test/test_dao.cpp)
 
-    file(GLOB PROTOS
-            test/proto/*.pb.*
-            )
-    add_executable(test_brpc_serive test/test_brpc_service.cpp ${PROTOS})
+    if (WITH_BRPC_EXT)
+        file(GLOB PROTOS
+                test/proto/*.pb.*
+                )
+        add_executable(test_brpc_serive test/test_brpc_service.cpp ${PROTOS})
+    endif ()
+
+    if (WITH_JSON)
+        add_executable(test_json test/test_json.cpp)
+    endif ()
 endif ()

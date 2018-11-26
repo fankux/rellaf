@@ -14,8 +14,8 @@
 //
 // Author: Fankux (fankux@gmail.com)
 //
-// TODO.. valgrind mem check
-
+// TODO... valgrind mem check
+// TODO... split file, static init check
 
 #include "gtest/gtest.h"
 #include "test_common.h"
@@ -54,15 +54,6 @@ rellaf_model_def(ListItem);
 
 //std::function<std::string(Model*)> _str_func =
 
-class ListInt : public PlainWrap {
-rellaf_plain_dcl(ListInt, uint32_t, 0);
-
-public:
-    std::string str() const override {
-        return std::to_string(_val);
-    }
-};
-
 class Object : public Model {
 rellaf_model_dcl(Object)
 
@@ -80,7 +71,7 @@ rellaf_model_def_object(val_object, SubModel);
 
 rellaf_model_def_list(val_list, ListItem);
 
-rellaf_model_def_list(plain_list, ListInt);
+rellaf_model_def_list(plain_list, PlainWrap<uint32_t>);
 
 };
 
@@ -362,18 +353,18 @@ TEST_F(TestModel, test_list) {
     ASSERT_EQ(object.val_list()[1]->get_int("list_id"), 333);
 
     for (Model* item : object.val_list()) {
-        ASSERT_STREQ(item->name().c_str(), "ListItem");
+        ASSERT_STREQ(item->rellaf_name().c_str(), "ListItem");
         ASSERT_NE(item, nullptr);
     }
 
     for (const Model* item : object.val_list()) {
-        ASSERT_STREQ(item->name().c_str(), "ListItem");
+        ASSERT_STREQ(item->rellaf_name().c_str(), "ListItem");
         ASSERT_NE(item, nullptr);
     }
 
     auto iter = object.val_list().begin();
     for (; iter != object.val_list().end(); ++iter) {
-        ASSERT_STREQ((*iter)->name().c_str(), "ListItem");
+        ASSERT_STREQ((*iter)->rellaf_name().c_str(), "ListItem");
         ASSERT_NE((*iter), nullptr);
     }
 
@@ -386,22 +377,21 @@ TEST_F(TestModel, test_list) {
 }
 
 TEST_F(TestModel, test_plain) {
-    ListInt list_int;
+    PlainWrap<uint32_t> list_int(0);
     ASSERT_EQ(list_int.value(), 0);
     list_int.set_value(2);
     ASSERT_EQ(list_int.value(), 2);
-    ASSERT_STREQ(list_int.name().c_str(), "ListInt");
 
     Object object;
     object.plain_list().push_back(&list_int);
     list_int.set_value(3);
     object.plain_list().push_back(&list_int);
 
-    ASSERT_EQ(((ListInt*)object.plain_list().front())->value(), 2);
-    ASSERT_EQ(((ListInt*)object.plain_list().back())->value(), 3);
+    ASSERT_EQ(((PlainWrap<uint32_t>*)object.plain_list().front())->value(), 2);
+    ASSERT_EQ(((PlainWrap<uint32_t>*)object.plain_list().back())->value(), 3);
 
     for (Model* item : object.val_list()) {
-        ASSERT_STREQ(item->name().c_str(), "ListInt");
+        ASSERT_STREQ(item->rellaf_name().c_str(), "ListInt");
         ASSERT_NE(item, nullptr);
     }
 }

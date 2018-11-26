@@ -60,38 +60,45 @@ protected:
     }
 };
 
-class EchoHandler : public Handler {
-public:
-    int process(const HttpHeader& header, const butil::IOBuf& body, HttpHeader& ret_header,
-            std::string& ret_body) override {
-        ret_body = "EchoHandler";
-        return 200;
-    }
-};
-
 class HelloRet : public Model {
+rellaf_model_dcl(HelloRet);
 
+rellaf_model_def_int(status, 200);
 };
 
-class HelloHandler : public Handler {
-public:
-    int process(const HttpHeader& header, const butil::IOBuf& body, HttpHeader& ret_header,
-            std::string& ret_body) override {
-        ret_body = "HelloHandler";
-        return 200;
-    }
+rellaf_model_def(HelloRet);
+
+class HelloRequest : public Model {
+rellaf_model_dcl(HelloRequest)
+
+rellaf_model_def_int(id, 0);
+rellaf_model_def_str(name, "");
+rellaf_model_def_object(ret, HelloRet);
 };
+
+rellaf_model_def(HelloRequest);
 
 class TestSerivceImpl : public BrpcService, public TestService {
 
 rellaf_brpc_http_dcl(TestSerivceImpl, TestRequest, TestResponse);
 
-rellaf_brpc_http_def_api(echo, "/", EchoHandler, false);
-rellaf_brpc_http_def_api(hello, "/hello", HelloHandler, true);
+rellaf_brpc_http_def_api(echo, "/", GET, echo, PlainWrap<int>, PlainWrap<int>);
+
+rellaf_brpc_http_def_api_ctx(hello, "/hello", POST, hello, HelloRet, HelloRequest);
 
 };
 
 rellaf_brpc_http_def(TestSerivceImpl);
+
+PlainWrap<int> TestSerivceImpl::echo(const PlainWrap<int>& request) {
+
+};
+
+HelloRet TestSerivceImpl::hello(const HelloRequest& request, HttpContext& context) {
+    HelloRet ret;
+    ret.set_status(233);
+    return ret;
+}
 
 #define http_test_st_body_item(api, expect_status, expect_body, ig_body) do {       \
 HttpResponse response;                                                              \

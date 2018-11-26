@@ -19,35 +19,35 @@
 
 namespace rellaf {
 
-const EnumItem* IEnum::get_by_name(const std::string& name) {
+EnumItem IEnum::get_by_name(const std::string& name) const {
     auto it = names().find(name);
     if (it == names().end()) {
-        return nullptr;
+        return EnumItem();
     }
-    return it->second;
+    return EnumItem(it->second, it->first);
 }
 
-const EnumItem* IEnum::get_by_code(int code) {
+EnumItem IEnum::get_by_code(int code) const {
     auto it = codes().find(code);
     if (it == codes().end()) {
-        return nullptr;
+        return EnumItem();
     }
-    return it->second;
+    return EnumItem(it->first, it->second);
 }
 
-const EnumItem* IEnum::get(const std::string& name) {
-    return get_by_name(name);
+EnumItem IEnum::get(const std::string& name) const {
+    return std::forward<EnumItem>(get_by_name(name));
 }
 
-const EnumItem* IEnum::get(int code) {
-    return get_by_code(code);
+EnumItem IEnum::get(int code) const {
+    return std::forward<EnumItem>(get_by_code(code));
 }
 
-bool IEnum::exist(const std::string& name) {
+bool IEnum::exist(const std::string& name) const {
     return names().find(name) != names().end();
 }
 
-bool IEnum::exist(int code) {
+bool IEnum::exist(int code) const {
     return codes().find(code) != codes().end();
 }
 

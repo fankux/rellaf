@@ -21,9 +21,10 @@
 #include <unordered_set>
 #include "google/protobuf/service.h"
 #include "brpc/server.h"
+#include "brpc/http_method.h"
 #include "common.h"
 #include "model.h"
-#include "handler_mapper.hpp"
+#include "function_mapper.hpp"
 
 namespace rellaf {
 
@@ -31,6 +32,9 @@ using ::google::protobuf::RpcController;
 using ::google::protobuf::Service;
 using ::google::protobuf::Message;
 using ::google::protobuf::Closure;
+
+using brpc::HttpHeader;
+using brpc::HttpMethod;
 
 class BrpcService {
 RELLAF_AVOID_COPY(BrpcService);
@@ -52,7 +56,7 @@ public:
     }
 
 protected:
-    virtual void bind_api_sign(const std::string& api, const std::string& sign);
+    virtual void bind_api_sign(const std::string& sign, const std::string& api);
 
     virtual void bind_pb_serivce(Service* service) = 0;
 
@@ -77,13 +81,19 @@ void bind_pb_serivce(::google::protobuf::Service* base_service) override {      
     }                                                                                           \
 }                                                                                               \
 private:                                                                                        \
-template<class Handler>                                                                         \
 class Reg {                                                                                     \
 public:                                                                                         \
     Reg(_clazz_* inst, const std::string& sign, const std::string& api,                         \
-            const std::string& handler, bool singleton) {                                       \
-        HandlerMapper::Reg<Handler> _handler(handler, api, (HttpMethod)0, singleton);           \
-        inst->bind_api_sign(api, sign);                                                         \
+            const std::string& name, HttpMethod method,                                         \
+            std::function<int(const std::string&, std::string&)> func) {                        \
+        inst->bind_api_sign(sign, api);                                                         \
+        FunctionMapper::instance().reg(api, name, method, func);                                \
+    }                                                                                           \
+    Reg(_clazz_* inst, const std::string& sign, const std::string& api,                         \
+            const std::string& name, HttpMethod method,                                         \
+            std::function<int(const std::string&, std::string&, HttpContext&)> func) {          \
+        inst->bind_api_sign(sign, api);                                                         \
+        FunctionMapper::instance().reg(api, name, method, func);                                \
     }                                                                                           \
 }
 
@@ -95,9 +105,43 @@ void _sign_(RpcController* controller, const pb_req_t* request,                 
     BrpcService::entry(controller, (Message*)request, (Message*)response, done);                \
 }
 
-#define rellaf_brpc_http_def_api(_sign_, _api_, _handler_, _singleton_)                         \
+#define rellaf_brpc_http_def_api(_sign_, _api_, _method_, _func_, _Ret_, _Req_)                 \
 RELLAF_BRPC_HTTP_DEF_SIGN(_sign_)                                                               \
 private:                                                                                        \
-    Reg<_handler_> _reg_##_sign_##_##_handler_{this, #_sign_, _api_, #_handler_, _singleton_}
+    Reg _reg_##_sign_##_method_##_func_{this, #_sign_, _api_,                                   \
+        #_sign_"-"#_method_"-"#_func_"-"#_Req_, HttpMethod::HTTP_METHOD_##_method_,             \
+        [this] (const std::string& body, std::string& ret_body) {                               \
+            _Req_ request;                                                                      \
+            if (!json_str_to_model(body, &request)) {                                           \
+                return -1;                                                                      \
+            }                                                                                   \
+            _Ret_ ret = _func_(request);                                                        \
+            if (!model_to_json_str(&ret, ret_body)) {                                           \
+                return -1;                                                                      \
+            }                                                                                   \
+            return 0;                                                                           \
+        }                                                                                       \
+    };                                                                                          \
+public:                                                                                         \
+    _Ret_ _func_(const _Req_& request)
 
-}
+#define rellaf_brpc_http_def_api_ctx(_sign_, _api_, _method_, _func_, _Ret_, _Req_)             \
+RELLAF_BRPC_HTTP_DEF_SIGN(_sign_)                                                               \
+private:                                                                                        \
+    Reg _reg_##_sign_##_method_##_func_{this, #_sign_, _api_,                                   \
+        #_sign_"-"#_method_"-"#_func_"-"#_Req_, HttpMethod::HTTP_METHOD_##_method_,             \
+        [this] (const std::string& body, std::string& ret_body, HttpContext& ctx) {             \
+            _Req_ request;                                                                      \
+            if (!json_str_to_model(body, &request)) {                                           \
+                return -1;                                                                      \
+            }                                                                                   \
+            _Ret_ ret = _func_(request, ctx);                                                   \
+            ret_body = model_to_json_str(&ret);                                                 \
+            return 0;                                                                           \
+        }                                                                                       \
+    };                                                                                          \
+public:                                                                                         \
+    _Ret_ _func_(const _Req_& request, HttpContext& context)
+
+
+} // namespace

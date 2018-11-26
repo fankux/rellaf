@@ -196,6 +196,11 @@ rellaf_enum_def(DemoEnum);
 std::string name = DemoEnum::e().A.name;                    // 返回 "A"
 int code = rellaf_enum(DemoEnum).B.code;                    // 返回 1
 
+// 静态数字，可用于switch case (仅C++17以上)
+code = DemoEnum::A_code;                                    // 返回 1
+code = DemoEnum::B_code;                                    // 返回 2
+code = DemoEnum::C_code;                                    // 返回 3
+
 // 比较
 if (DemoEnum::e().B != DemoEnum::e().C) {
     // B not equal C
@@ -206,18 +211,18 @@ DemoEnum::e().exist(2);                                     // 返回 true
 DemoEnum::e().exist("D");                                   // 返回 false
 
 // 取值
-const EnumItem* name_ptr = DemoEnum::e().get("B");
-if (name_ptr != nullptr) {
+EnumItem name = DemoEnum::e().get("B");
+if (name.available()) {
     // exist, do something
 }
-const EnumItem* code_ptr = DemoEnum::e().get(1);
-if (code_ptr != nullptr) {
+EnumItem code  = DemoEnum::e().get(1);
+if (code.available()) {
     // exist, do something
 }
 
 // 获得取值范围
-const std::map<std::string, const EnumItem*>& names = DemoEnum::e().names();
-const std::map<int, const EnumItem*>& codes = DemoEnum::e().codes();
+const std::map<std::string, int>& names = DemoEnum::e().names();
+const std::map<int, std::string>& codes = DemoEnum::e().codes();
 
 ```
 
@@ -280,7 +285,6 @@ TODO 实现细节
 relief（得到解脱），reflection（反射），relax（放松），3个单词组合一下，得到'**Rellaf**'。
 
 ## TODO
-* Json递归转换
 * C++ SQL Dao
 * brpc接口映射
 

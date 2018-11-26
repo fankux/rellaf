@@ -159,20 +159,11 @@ TEST_F(TestSqlPattern, test_pattern) {
     test_explode_pattern_item("a#[c1]b#{c2}d", SqlPattern::OK);
 }
 
-class Id : public PlainWrap {
-rellaf_plain_dcl(Id, int, 1);
-
-public:
-    std::string str() const override {
-        return std::to_string(_val);
-    }
-};
-
 class Arg : public Model {
 rellaf_model_dcl(Arg);
 
 rellaf_model_def_str(cond, "str' cond");
-rellaf_model_def_list(ids, Id);
+rellaf_model_def_list(ids, PlainWrap<int>);
 
 };
 
@@ -255,7 +246,7 @@ TEST_F(TestSqlPattern, test_split_section) {
 TEST_F(TestSqlPattern, test_sql_mapper) {
     Ret ret;
     Arg arg;
-    Id id(1);
+    PlainWrap<int> id(1);
     arg.ids().push_back(&id);
     id.set_value(2);
     arg.ids().push_back(&id);

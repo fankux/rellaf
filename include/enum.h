@@ -28,48 +28,62 @@ namespace rellaf {
 
 #define rellaf_enum_dcl(_clazz_)                                                \
 public:                                                                         \
-    static _clazz_& e() {                                                       \
-        static _clazz_ _enum_(#_clazz_);                                        \
-        return _enum_;                                                          \
+static _clazz_& e();                                                            \
+const std::map<std::string, int>& names() const override {                      \
+    return _name_refs;                                                          \
 }                                                                               \
-const std::map<std::string, const EnumItem*>& names() const override {          \
-    return _clazz_::_s_name_refs;                                               \
-}                                                                               \
-const std::map<int, const EnumItem*>& codes() const override {                  \
-    return _clazz_::_s_code_refs;                                               \
+const std::map<int, std::string>& codes() const override {                      \
+    return _code_refs;                                                          \
 }                                                                               \
 private:                                                                        \
     explicit _clazz_(const std::string& name): IEnum(name) {}                   \
-    static std::map<std::string, const EnumItem*> _s_name_refs;                 \
-    static std::map<int, const EnumItem*> _s_code_refs;                         \
-class Reg {                                                                     \
-public:                                                                         \
-    Reg(int c, const std::string& n, const EnumItem* ptr) {                     \
-        _clazz_::_s_name_refs.emplace(n, ptr);                                  \
-        _clazz_::_s_code_refs.emplace(c, ptr);                                  \
-    }                                                                           \
-}
+    class Reg {                                                                 \
+    public:                                                                     \
+        Reg(_clazz_* inst, int c, const std::string& n);                        \
+    };                                                                          \
+private:                                                                        \
+    std::map<std::string, int> _name_refs;                                      \
+    std::map<int, std::string> _code_refs
 
 #define rellaf_enum_def(_clazz_)                                                \
-std::map<std::string, const EnumItem*> _clazz_::_s_name_refs;                   \
-std::map<int, const EnumItem*> _clazz_::_s_code_refs;                           \
-
-
+_clazz_::Reg::Reg(_clazz_* inst, int c, const std::string& n) {                 \
+    inst->_name_refs.emplace(n, c);                                             \
+    inst->_code_refs.emplace(c, n);                                             \
+}                                                                               \
+_clazz_& _clazz_::e() {                                                         \
+    static _clazz_ _enum_(#_clazz_);                                            \
+    return _enum_;                                                              \
+}
+#if __cplusplus >= 201703L
+#define rellaf_enum_item_def(_code_, _name_)                                    \
+public:                                                                         \
+    constexpr static int _name_##_code{_code_};                                 \
+    const EnumItem _name_{_code_, #_name_};                                     \
+private:                                                                        \
+    const Reg _reg_##_name_{this, _code_, #_name_}
+#else
 #define rellaf_enum_item_def(_code_, _name_)                                    \
 public:                                                                         \
     const EnumItem _name_{_code_, #_name_};                                     \
 private:                                                                        \
-    const Reg _reg_##_name_{_code_, #_name_, &_name_}
+    const Reg _reg_##_name_{this, _code_, #_name_}
+#endif
 
 class IEnum {
 public:
+    virtual ~IEnum() = default;
+
     class EnumItem {
     RELLAF_DEFMOVE_NO_CTOR(EnumItem)
 
     public:
         EnumItem() = default;
 
-        EnumItem(int c, std::string n) : code(c), name(std::move(n)) {}
+        EnumItem(int c, const std::string& n) : code(c), name(n) {}
+
+        bool available() const {
+            return !name.empty();
+        }
 
         std::string str() const {
             return name + "[" + std::to_string(code) + "]";
@@ -91,24 +105,24 @@ public:
         std::string name;
     };
 
-    virtual const std::map<std::string, const EnumItem*>& names() const = 0;
+    virtual const std::map<std::string, int>& names() const = 0;
 
-    virtual const std::map<int, const EnumItem*>& codes() const = 0;
+    virtual const std::map<int, std::string>& codes() const = 0;
 
-    const EnumItem* get_by_name(const std::string& name);
+    EnumItem get_by_name(const std::string& name) const;
 
-    const EnumItem* get_by_code(int code);
+    EnumItem get_by_code(int code) const;
 
-    const EnumItem* get(const std::string& name);
+    EnumItem get(const std::string& name) const;
 
-    const EnumItem* get(int code);
+    EnumItem get(int code) const;
 
-    bool exist(const std::string& name);
+    bool exist(const std::string& name) const;
 
-    bool exist(int code);
+    bool exist(int code) const;
 
 protected:
-    explicit IEnum(std::string name) : _name(std::move(name)) {}
+    explicit IEnum(const std::string& name) : _name(name) {}
 
 protected:
     std::string _name;

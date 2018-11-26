@@ -26,6 +26,7 @@
 #include <functional>
 #include "cast.hpp"
 #include "common.h"
+#include "model_type.h"
 
 namespace rellaf {
 
@@ -80,7 +81,7 @@ const std::map<std::string, _type_>& get_##_sign_##_names() const override {    
 bool is_##_sign_##_member(const std::string& key) const override {                      \
     return _sign_##_concern(key);                                                       \
 }                                                                                       \
-const std::map<std::string, _type_>& _sign_##s() override {                             \
+const std::map<std::string, _type_>& _sign_##s() const override {                       \
     return _##_sign_##s;                                                                \
 }                                                                                       \
 private:                                                                                \
@@ -107,7 +108,7 @@ const std::map<std::string, _type_>& get_##_sign_##_names() const override {    
 bool is_##_sign_##_member(const std::string& key) const override {                      \
     return _sign_##_concern(key);                                                       \
 }                                                                                       \
-const std::map<std::string, _type_>& _sign_##s() override {                             \
+const std::map<std::string, _type_>& _sign_##s() const override {                       \
     return _##_sign_##s;                                                                \
 }                                                                                       \
 private:                                                                                \
@@ -129,7 +130,7 @@ Reg(const std::string& name, _clazz_* inst, const _type_& dft) {                
 #define RELLAF_MODEL_DCL_PRIMITIVE(_clazz_)                                             \
 RELLAF_DEFMOVE(_clazz_)                                                                 \
 public:                                                                                 \
-std::string name() const override { return #_clazz_; }                                  \
+std::string rellaf_name() const override { return #_clazz_; }                           \
 RELLAF_MODEL_DCL_TYPE(int, int);                                                        \
 RELLAF_MODEL_DCL_TYPE(int64_t, int64);                                                  \
 RELLAF_MODEL_DCL_TYPE(uint16_t, uint16);                                                \
@@ -187,7 +188,7 @@ static bool is_default(const std::string& key, const std::string& val) {        
     }                                                                                   \
     return false;                                                                       \
 }                                                                                       \
-bool set(const std::string& key, const std::string& val) {                              \
+bool set(const std::string& key, const std::string& val) override {                     \
     try {                                                                               \
         if (int_concern(key)) {                                                         \
             set_int(key, cast<int>(val));                                               \
@@ -233,8 +234,8 @@ RELLAF_MODEL_TYPE_REG_REF(_clazz_, std::string, str)                            
 #define rellaf_model_dcl(_clazz_)                                                       \
 RELLAF_MODEL_DCL_PRIMITIVE(_clazz_)                                                     \
 public:                                                                                 \
-Model* create() override { return new(std::nothrow)_clazz_; }                           \
-Model* clone() override {                                                               \
+Model* create() const override { return new(std::nothrow)_clazz_; }                     \
+Model* clone() const override {                                                         \
     Model* new_model = new(std::nothrow)_clazz_;                                        \
     *((_clazz_*)new_model) = *((_clazz_*)this);                                         \
     return new_model;                                                                   \
@@ -242,6 +243,7 @@ Model* clone() override {                                                       
 bool is_plain_member(const std::string& key) const override {                           \
     return _clazz_::plain_concern(key);                                                 \
 }                                                                                       \
+std::string str() const override { return ""; }                                         \
 private:                                                                                \
 class RegList {                                                                         \
 public:                                                                                 \
@@ -290,7 +292,7 @@ virtual void set_##_sign_(const std::string& key, _type_ val) = 0;              
 virtual _type_ get_##_sign_(const std::string& key) const = 0;                          \
 virtual const std::map<std::string, _type_>& get_##_sign_##_names() const = 0;          \
 virtual bool is_##_sign_##_member(const std::string& key) const = 0;                    \
-virtual const std::map<std::string, _type_>& _sign_##s() = 0;                           \
+virtual const std::map<std::string, _type_>& _sign_##s() const = 0;                     \
 protected:                                                                              \
 std::map<std::string, _type_> _##_sign_##s;
 
@@ -300,15 +302,31 @@ virtual void set_##_sign_(const std::string& key, const _type_& val) = 0;       
 virtual const _type_& get_##_sign_(const std::string& key) const = 0;                   \
 virtual const std::map<std::string, _type_>& get_##_sign_##_names() const = 0;          \
 virtual bool is_##_sign_##_member(const std::string& key) const = 0;                    \
-virtual const std::map<std::string, _type_>& _sign_##s() = 0;                           \
+virtual const std::map<std::string, _type_>& _sign_##s() const = 0;                     \
 protected:                                                                              \
 std::map<std::string, _type_> _##_sign_##s;
+
+/////////////////////// default interface override method sign (for inheritance) ////////////////////
+
+#define RELLAF_MODEL_DCL_ENTRY_SIGN_DFT_OVERRIDE(_type_, _sign_)                        \
+virtual void set_##_sign_(const std::string& key, _type_ val) override {};              \
+virtual _type_ get_##_sign_(const std::string& key) const override {};                  \
+virtual const std::map<std::string, _type_>& get_##_sign_##_names() const override {};  \
+virtual bool is_##_sign_##_member(const std::string& key) const override {};           \
+virtual const std::map<std::string, _type_>& _sign_##s() const override {}
+
+#define RELLAF_MODEL_DCL_ENTRY_SIGN_DFT_OVERRIDE_REF(_type_, _sign_)                    \
+virtual void set_##_sign_(const std::string& key, const _type_& val) override {};       \
+virtual const _type_& get_##_sign_(const std::string& key) const override {};           \
+virtual const std::map<std::string, _type_>& get_##_sign_##_names() const override {};  \
+virtual bool is_##_sign_##_member(const std::string& key) const override {};            \
+virtual const std::map<std::string, _type_>& _sign_##s() const override {}
 
 /////////////////////// base model class ////////////////////
 class ModelList;
 
 class Model {
-RELLAF_DEFMOVE(Model)
+RELLAF_DEFMOVE_NO_CTOR(Model)
 
 RELLAF_MODEL_DCL_ENTRY_SIGN(int, int);
 RELLAF_MODEL_DCL_ENTRY_SIGN(int64_t, int64);
@@ -321,13 +339,25 @@ RELLAF_MODEL_DCL_ENTRY_SIGN(double, double);
 RELLAF_MODEL_DCL_ENTRY_SIGN_REF(std::string, str);
 
 public:
+    Model() {
+        _type = ModelTypeEnum::e().OBJECT;
+    }
+
     virtual ~Model();
 
-    virtual std::string name() const = 0;
+    virtual std::string rellaf_name() const = 0;
 
-    virtual Model* create() = 0;
+    virtual Model* create() const = 0;
 
-    virtual Model* clone() = 0;
+    virtual bool set(const std::string& key, const std::string& val) = 0;
+
+    virtual Model* clone() const = 0;
+
+    virtual const ModelType& rellaf_type() const {
+        return _type;
+    }
+
+    virtual std::string str() const = 0;
 
     virtual std::string debug_str() const;
 
@@ -337,84 +367,43 @@ public:
 
     virtual bool is_plain_member(const std::string& key) const = 0;
 
-    const std::map<std::string, Model*>& get_objects() const {
+    virtual const std::map<std::string, Model*>& get_objects() const {
         return _objects;
     }
 
-    bool is_object_member(const std::string& name) const {
+    virtual bool is_object_member(const std::string& name) const {
         return _objects.count(name) != 0;
     }
 
-    Model* get_object(const std::string& name);
+    virtual Model* get_object(const std::string& name);
 
-    const Model* get_object(const std::string& name) const;
+    virtual const Model* get_object(const std::string& name) const;
 
-    const std::map<std::string, ModelList>& get_lists() const {
+    virtual std::map<std::string, ModelList>& get_lists() {
         return _lists;
     }
 
-    bool is_list_member(const std::string& name) const {
+    virtual const std::map<std::string, ModelList>& get_lists() const {
+        return _lists;
+    }
+
+    virtual bool is_list_member(const std::string& name) const {
         return _lists.count(name) != 0;
     }
 
-    ModelList& get_list(const std::string& name);
+    virtual ModelList& get_list(const std::string& name);
 
-    const ModelList& get_list(const std::string& name) const;
+    virtual const ModelList& get_list(const std::string& name) const;
 
 protected:
+    // if _type is 'LIST', we reuse _lists, it has 0 or 1 item at most,
+    // the only exist list item represents current model is a ModelList instead of Model object.
+    ModelType _type;
     std::map<std::string, ModelList> _lists;
     std::map<std::string, Model*> _objects;
 };
 
 /////////////////////// model list ////////////////////
-// TODO..to template
-class PlainWrap : public Model {
-    // TODO make primitive types private
-RELLAF_DEFMOVE(PlainWrap)
-
-public:
-    bool is_plain() const override {
-        return true;
-    }
-
-    std::string debug_str() const override {
-        return str();
-    }
-
-    virtual std::string str() const = 0;
-
-private:
-    bool is_plain_member(const std::string& key) const override {
-        return false;
-    }
-
-RELLAF_MODEL_DCL_TYPE(int, int);
-RELLAF_MODEL_DCL_TYPE(int64_t, int64);
-RELLAF_MODEL_DCL_TYPE(uint16_t, uint16);
-RELLAF_MODEL_DCL_TYPE(uint32_t, uint32);
-RELLAF_MODEL_DCL_TYPE(uint64_t, uint64);
-RELLAF_MODEL_DCL_TYPE(bool, bool);
-RELLAF_MODEL_DCL_TYPE(float, float);
-RELLAF_MODEL_DCL_TYPE(double, double);
-RELLAF_MODEL_DCL_TYPE_REF(std::string, str);
-};
-
-#define rellaf_plain_dcl(_clazz_, _type_, _dft_)                        \
-RELLAF_DEFMOVE(_clazz_)                                                 \
-public:                                                                 \
-std::string name() const override { return #_clazz_; }                  \
-Model* create() override { return new(std::nothrow)_clazz_; }           \
-Model* clone() override {                                               \
-    Model* new_model = new(std::nothrow)_clazz_;                        \
-    *((_clazz_*)new_model) = *((_clazz_*)this);                         \
-    return new_model;                                                   \
-}                                                                       \
-_clazz_(const _type_& val) : _val(val) {}                               \
-_type_ value() const { return _val; }                                   \
-void set_value(const _type_& val) { _val = val; }                       \
-private:                                                                \
-_type_ _val = _dft_;
-
 class ModelList {
 RELLAF_DEFMOVE(ModelList)
 
@@ -445,6 +434,8 @@ public:
 
     void set(size_t idx, Model* model);
 
+    Model* get(size_t idx);
+
     const Model* get(size_t idx) const;
 
     const Model* operator[](size_t idx) const;
@@ -455,6 +446,231 @@ public:
 
 private:
     std::deque<Model*> _items;
+};
+
+/////////////////////// plain wrap ////////////////////
+template<class T>
+class PlainWrap : public Model {
+RELLAF_DEFMOVE_NO_CTOR(PlainWrap);
+
+private:
+    class TypeDetect {
+    public:
+        TypeDetect(PlainWrap* inst, int16_t val) {
+            inst->_type = ModelTypeEnum::e().INT;
+            inst->_str_func = [](int val) {
+                return std::to_string(val);
+            };
+        }
+
+        TypeDetect(PlainWrap* inst, int val) {
+            inst->_type = ModelTypeEnum::e().INT;
+            inst->_str_func = [](int val) {
+                return std::to_string(val);
+            };
+        }
+
+        TypeDetect(PlainWrap* inst, int64_t val) {
+            inst->_type = ModelTypeEnum::e().INT64;
+            inst->_str_func = [](int64_t val) {
+                return std::to_string(val);
+            };
+        }
+
+        TypeDetect(PlainWrap* inst, uint16_t val) {
+            inst->_type = ModelTypeEnum::e().UINT16;
+            inst->_str_func = [](uint16_t val) {
+                return std::to_string(val);
+            };
+        }
+
+        TypeDetect(PlainWrap* inst, uint32_t val) {
+            inst->_type = ModelTypeEnum::e().UINT32;
+            inst->_str_func = [](uint32_t val) {
+                return std::to_string(val);
+            };
+        }
+
+        TypeDetect(PlainWrap* inst, uint64_t val) {
+            inst->_type = ModelTypeEnum::e().UINT64;
+            inst->_str_func = [](uint64_t val) {
+                return std::to_string(val);
+            };
+        }
+
+        TypeDetect(PlainWrap* inst, float val) {
+            inst->_type = ModelTypeEnum::e().FLOAT;
+            inst->_str_func = [](float val) {
+                return std::to_string(val);
+            };
+        }
+
+        TypeDetect(PlainWrap* inst, double val) {
+            inst->_type = ModelTypeEnum::e().DOUBLE;
+            inst->_str_func = [](double val) {
+                return std::to_string(val);
+            };
+        }
+
+        TypeDetect(PlainWrap* inst, const std::string& val) {
+            inst->_type = ModelTypeEnum::e().STR;
+            inst->_str_func_ref = [](const std::string& val) {
+                return val;
+            };
+        }
+    };
+
+public:
+    explicit PlainWrap() {
+        TypeDetect td(this, T());
+    }
+
+    explicit PlainWrap(const T& val) : _val(val) {
+        TypeDetect td(this, T());
+    }
+
+    explicit PlainWrap(std::function<T(const std::string&)> parse_func,
+            std::function<std::string(T)> str_func) :
+            _parse_func(parse_func),
+            _str_func(str_func) {
+        _type = ModelTypeEnum::e().no;
+    }
+
+    explicit PlainWrap(std::function<T(const std::string&)> parse_func,
+            std::function<std::string(const T&)> str_func_ref) :
+            _parse_func(parse_func),
+            _str_func_ref(str_func_ref) {
+        _type = ModelTypeEnum::e().no;
+    }
+
+    Model* create() const override { return new(std::nothrow) PlainWrap<T>(); }
+
+    Model* clone() const override {
+        Model* inst = create();
+        if (inst != nullptr) {
+            *((PlainWrap <T>*)inst) = *this;
+        }
+        return inst;
+    }
+
+    bool is_plain() const override {
+        return true;
+    }
+
+    void set_parse_func(const std::function<T(const std::string&)>& parse_func) {
+        _parse_func = parse_func;
+    }
+
+    void set_str_func(const std::function<std::string(T)>& str_func) {
+        _str_func = str_func;
+    }
+
+    void set_str_func_ref(const std::function<std::string(const T&)>& str_func_ref) {
+        _str_func_ref = str_func_ref;
+    }
+
+    T value() const {
+        return _val;
+    }
+
+    void set_value(const T& val) {
+        _val = val;
+    }
+
+    bool set(const std::string& key, const std::string& val) override {
+        if (_parse_func) {
+            _val = _parse_func(val);
+        } else {
+            try {
+                _val = cast<T>(val);
+            } catch (...) {
+                // do nothing
+            }
+        }
+        return true;
+    }
+
+    std::string str() const override {
+        if (_str_func_ref) {
+            return _str_func_ref(_val);
+        }
+        if (_str_func) {
+            return _str_func(_val);
+        }
+        return "";
+    }
+
+    // delete model public method
+private:
+    std::string rellaf_name() const override {
+        return "";
+    };
+
+    bool is_plain_member(const std::string& key) const override {
+        return false;
+    }
+
+    const std::map<std::string, Model*>& get_objects() const override {
+        return _objects;
+    }
+
+    bool is_object_member(const std::string& name) const override {
+        return _objects.count(name) != 0;
+    }
+
+    Model* get_object(const std::string& name) override { return nullptr; }
+
+    const Model* get_object(const std::string& name) const override { return nullptr; }
+
+    std::map<std::string, ModelList>& get_lists() override {
+        return _lists;
+    }
+
+    const std::map<std::string, ModelList>& get_lists() const override {
+        return _lists;
+    }
+
+    bool is_list_member(const std::string& name) const override {
+        return _lists.count(name) != 0;
+    }
+
+    ModelList& get_list(const std::string& name) override {
+        return _dummy;
+    }
+
+    const ModelList& get_list(const std::string& name) const override {
+        return _dummy;
+    }
+
+private:
+    T _val;
+    // parse val from string
+    std::function<T(const std::string&)> _parse_func;
+
+    // value to string
+    std::function<std::string(T)> _str_func;
+    std::function<std::string(const T&)> _str_func_ref;
+
+    // for get_list method suppress compile warning
+    ModelList _dummy;
+
+    RELLAF_MODEL_DCL_ENTRY_SIGN_DFT_OVERRIDE(int, int);
+
+    RELLAF_MODEL_DCL_ENTRY_SIGN_DFT_OVERRIDE(int64_t, int64);
+
+    RELLAF_MODEL_DCL_ENTRY_SIGN_DFT_OVERRIDE(uint16_t, uint16);
+
+    RELLAF_MODEL_DCL_ENTRY_SIGN_DFT_OVERRIDE(uint32_t, uint32);
+
+    RELLAF_MODEL_DCL_ENTRY_SIGN_DFT_OVERRIDE(uint64_t, uint64);
+
+    RELLAF_MODEL_DCL_ENTRY_SIGN_DFT_OVERRIDE(bool, bool);
+
+    RELLAF_MODEL_DCL_ENTRY_SIGN_DFT_OVERRIDE(float, float);
+
+    RELLAF_MODEL_DCL_ENTRY_SIGN_DFT_OVERRIDE(double, double);
+
+    RELLAF_MODEL_DCL_ENTRY_SIGN_DFT_OVERRIDE_REF(std::string, str);
 };
 
 /////////////////////// definition method ////////////////////

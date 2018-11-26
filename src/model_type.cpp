@@ -19,7 +19,7 @@
 
 namespace rellaf {
 
-rellaf_enum_def(ModelTypeEnum)
+rellaf_enum_def(ModelTypeEnum);
 
 }
 
