@@ -60,7 +60,7 @@ protected:
     }
 };
 
-class HelloRet : public Model {
+class HelloRet : public Object {
 rellaf_model_dcl(HelloRet);
 
 rellaf_model_def_int(status, 200);
@@ -68,7 +68,7 @@ rellaf_model_def_int(status, 200);
 
 rellaf_model_def(HelloRet);
 
-class HelloRequest : public Model {
+class HelloRequest : public Object {
 rellaf_model_dcl(HelloRequest)
 
 rellaf_model_def_int(id, 0);
@@ -90,7 +90,7 @@ rellaf_brpc_http_def_api_ctx(hello, "/hello", POST, hello, HelloRet, HelloReques
 
 rellaf_brpc_http_def(TestSerivceImpl);
 
-PlainWrap<int> TestSerivceImpl::echo(const PlainWrap<int>& request) {
+Model<int> TestSerivceImpl::echo(const Model<int>& request) {
 
 };
 

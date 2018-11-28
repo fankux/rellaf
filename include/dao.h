@@ -34,21 +34,21 @@ namespace rellaf {
 
 class DaoModel {
 public:
-    explicit DaoModel(const Model& model) : _model(&model) {}
+    explicit DaoModel(const Object& model) : _model(&model) {}
 
-    DaoModel(const std::string& name, const Model& model) : _name(name), _model(&model) {}
+    DaoModel(const std::string& name, const Object& model) : _name(name), _model(&model) {}
 
     const std::string& name() const {
         return _name;
     }
 
-    const Model* model() const {
+    const Object* model() const {
         return _model;
     }
 
 private:
     std::string _name;
-    const Model* _model;
+    const Object* _model;
 };
 
 class DaoResultRow {
@@ -169,7 +169,7 @@ protected:
                 return false;
             }
 
-            std::deque<const Model*> model_box;
+            std::deque<const Object*> model_box;
             if (!is_multi_arg) {
                 model_box.push_front(dao_models.begin()->second->model());
             } else {
@@ -271,13 +271,13 @@ protected:
 protected:
     void split_section(const std::string& section_str, std::deque<std::string>& sections);
 
-    bool get_plain_val_str(const Model* model, const std::string& key, std::string& val,
+    bool get_plain_val_str(const Object* model, const std::string& key, std::string& val,
             bool& need_quote, bool& need_escape);
 
-    bool get_plain_val(const Model* model, const std::deque<std::string>& sections,
+    bool get_plain_val(const Object* model, const std::deque<std::string>& sections,
             std::string& val, bool& need_quote, bool& need_escape);
 
-    bool get_list_val(const Model* model, const std::deque<std::string>& sections,
+    bool get_list_val(const Object* model, const std::deque<std::string>& sections,
             std::deque<std::string>& vals);
 
     bool append_sql(std::string& sql, const std::string& val, bool need_quote, bool need_escape);

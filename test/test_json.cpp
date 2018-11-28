@@ -34,7 +34,7 @@ protected:
     void SetUp() override {}
 };
 
-class Empty : public Model {
+class Empty : public Object {
 rellaf_model_dcl(Empty);
 
 };
@@ -48,7 +48,7 @@ TEST_F(TestJson, test_empty) {
     ASSERT_STREQ(json.c_str(), "{}");
 }
 
-class Plain : public Model {
+class Plain : public Object {
 rellaf_model_dcl(Plain);
 
 rellaf_model_def_int(id, 0);
@@ -77,7 +77,7 @@ TEST_F(TestJson, test_plain) {
     ASSERT_STREQ(json_str.c_str(), json2str(json).c_str());
 }
 
-class WithObjectOnly : public Model {
+class WithObjectOnly : public Object {
 rellaf_model_dcl(WithObjectOnly);
 
 rellaf_model_def_object(empty, Empty);
@@ -101,11 +101,11 @@ TEST_F(TestJson, test_object_only) {
     ASSERT_STREQ(json_str.c_str(), json2str(json).c_str());
 }
 
-class WithObjectOnly2 : public Model {
+class WithObjectOnly2 : public Object {
 rellaf_model_dcl(WithObjectOnly2);
 
 rellaf_model_def_object(empty, Empty);
-rellaf_model_def_object(plain, Plain);
+rellaf_model_def_object(plain, Model);
 };
 
 rellaf_model_def(WithObjectOnly2)
@@ -148,12 +148,12 @@ TEST_F(TestJson, test_object_only2) {
     ASSERT_STREQ(json_str.c_str(), json2str(json).c_str());
 }
 
-class WithObjecPlain : public Model {
+class WithObjecPlain : public Object {
 rellaf_model_dcl(WithObjecPlain);
 
 rellaf_model_def_int(id, 0);
 rellaf_model_def_uint64(inc, 0);
-rellaf_model_def_object(object, Plain);
+rellaf_model_def_object(object, Model);
 };
 
 rellaf_model_def(WithObjecPlain);
@@ -177,14 +177,31 @@ TEST_F(TestJson, test_object_plain) {
     ASSERT_STREQ(json_str.c_str(), json2str(json).c_str());
 }
 
-class WithListOnly : public Model {
+class WithListOnly : public Object {
 rellaf_model_dcl(WithListOnly);
-
+rellaf_model_def_list(list, PlainWrap<int>);
 };
+
 rellaf_model_def(WithListOnly);
 
+TEST_F(TestJson, test_list_only) {
+    WithListOnly list_only(ModelTypeEnum::e().LIST);
+    std::string json_str;
+    ASSERT_TRUE(model_to_json(&list_only, json_str));
+    Json::Value json(Json::arrayValue);
+    ASSERT_STREQ(json_str.c_str(), json2str(json).c_str());
+
+    list_only.get_lists()
+
+    Plain<int> item;
+    item.set_value(111);
+    list_only.list().push_back(&item);
+    ASSERT_TRUE(model_to_json(&list_only, json_str));
+
 }
-}
+
+} // namespace
+} // namespace
 
 int main(int argc, char* argv[]) {
     ::testing::InitGoogleTest(&argc, argv);

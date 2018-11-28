@@ -20,44 +20,20 @@
 
 namespace rellaf {
 
-Model::~Model() {
+Object::~Object() {
     for (auto& entry : _objects) {
         delete entry.second;
     }
 }
 
-std::string Model::debug_str() const {
+std::string Object::debug_str() const {
     std::stringstream ss;
-    for (auto& key : get_int_names()) {
-        ss << key.first << ":" << get_int(key.first) << ",";
-    }
-    for (auto& key : get_int64_names()) {
-        ss << key.first << ":" << get_int64(key.first) << ",";
-    }
-    for (auto& key : get_uint16_names()) {
-        ss << key.first << ":" << get_uint16(key.first) << ",";
-    }
-    for (auto& key : get_uint32_names()) {
-        ss << key.first << ":" << get_uint32(key.first) << ",";
-    }
-    for (auto& key : get_uint64_names()) {
-        ss << key.first << ":" << get_uint64(key.first) << ",";
-    }
-    for (auto& key : get_bool_names()) {
-        ss << key.first << ":" << get_bool(key.first) << ",";
-    }
-    for (auto& key : get_float_names()) {
-        ss << key.first << ":" << get_float(key.first) << ",";
-    }
-    for (auto& key : get_double_names()) {
-        ss << key.first << ":" << get_double(key.first) << ",";
-    }
-    for (auto& key : get_str_names()) {
-        ss << key.first << ":" << get_str(key.first) << ",";
+    for (auto& key : get_plains()) {
+        ss << key.first << ":" << key.second->str() << ",";
     }
     for (auto& entry : get_lists()) {
         ss << entry.first << ":[";
-        const ModelList& list = get_list(entry.first);
+        const List& list = get_list(entry.first);
         for (auto& item : list) {
             ss << "{" << item->debug_str() << "}";
         }
@@ -70,82 +46,96 @@ std::string Model::debug_str() const {
     return str.empty() ? "" : (str.pop_back(), str);
 }
 
-Model* Model::get_object(const std::string& name) {
+Model* Object::get_plain(const std::string& key) {
+    if (!is_plain_member(key)) {
+        return nullptr;
+    }
+    return _plains[key];
+}
+
+const Model* Object::get_plain(const std::string& key) const {
+    if (!is_plain_member(key)) {
+        return nullptr;
+    }
+    return _plains[key];
+}
+
+Object* Object::get_object(const std::string& name) {
     auto entry = _objects.find(name);
     return entry == _objects.end() ? nullptr : entry->second;
 }
 
-const Model* Model::get_object(const std::string& name) const {
+const Object* Object::get_object(const std::string& name) const {
     auto entry = _objects.find(name);
     return entry == _objects.end() ? nullptr : entry->second;
 }
 
-ModelList& Model::get_list(const std::string& name) {
+List& Object::get_list(const std::string& name) {
     return _lists.find(name)->second;
 }
 
-const ModelList& Model::get_list(const std::string& name) const {
+const List& Object::get_list(const std::string& name) const {
     return _lists.find(name)->second;
 }
 
-ModelList::~ModelList() {
+List::~List() {
     clear();
 }
 
-size_t ModelList::size() const {
+size_t List::size() const {
     return _items.size();
 }
 
-bool ModelList::empty() const {
+bool List::empty() const {
     return _items.empty();
 }
 
-void ModelList::clear() {
+void List::clear() {
     for (auto& item : _items) {
         delete item;
     }
     _items.clear();
 }
 
-void ModelList::push_front(Model* model) {
+void List::push_front(Model* model) {
     _items.push_front(model == nullptr ? nullptr : model->clone());
 }
 
-void ModelList::push_back(Model* model) {
+void List::push_back(Model* model) {
     _items.push_back(model == nullptr ? nullptr : model->clone());
 }
 
-void ModelList::pop_front() {
+void List::pop_front() {
     if (!_items.empty()) {
         delete _items.front();
     }
     _items.pop_front();
 }
 
-void ModelList::pop_back() {
+void List::pop_back() {
     if (!_items.empty()) {
         delete _items.back();
     }
     _items.pop_back();
 }
 
-Model* ModelList::front() {
+Model* List::front() {
     return _items.front();
 }
 
-const Model* ModelList::front() const {
+const Model* List::front() const {
     return _items.front();
 }
 
-Model* ModelList::back() {
+Model* List::back() {
     return _items.back();
 }
 
-const Model* ModelList::back() const {
+const Model* List::back() const {
     return _items.back();
 }
 
-void ModelList::set(size_t idx, Model* model) {
+void List::set(size_t idx, Model* model) {
     if (idx >= _items.size()) {
         return;
     }
@@ -153,29 +143,29 @@ void ModelList::set(size_t idx, Model* model) {
     _items[idx] = model->clone();
 }
 
-Model* ModelList::get(size_t idx) {
+Model* List::get(size_t idx) {
     if (idx >= _items.size()) {
         return nullptr;
     }
     return _items[idx];
 }
 
-const Model* ModelList::get(size_t idx) const {
+const Model* List::get(size_t idx) const {
     if (idx >= _items.size()) {
         return nullptr;
     }
     return _items[idx];
 }
 
-const Model* ModelList::operator[](size_t idx) const {
+const Model* List::operator[](size_t idx) const {
     return get(idx);
 }
 
-std::deque<Model*>::const_iterator ModelList::begin() const {
+std::deque<Model*>::const_iterator List::begin() const {
     return _items.begin();
 }
 
-std::deque<Model*>::const_iterator ModelList::end() const {
+std::deque<Model*>::const_iterator List::end() const {
     return _items.end();
 }
 

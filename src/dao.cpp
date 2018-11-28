@@ -95,7 +95,7 @@ void Dao::split_section(const std::string& section_str, std::deque<std::string>&
     } while (*begin != '\0');
 }
 
-bool Dao::get_plain_val_str(const Model* model, const std::string& key, std::string& val,
+bool Dao::get_plain_val_str(const Object* model, const std::string& key, std::string& val,
         bool& need_quote, bool& need_escape) {
     need_quote = false;
     need_escape = false;
@@ -140,15 +140,15 @@ bool Dao::get_plain_val_str(const Model* model, const std::string& key, std::str
     return false;
 }
 
-bool Dao::get_plain_val(const Model* model, const std::deque<std::string>& sections,
+bool Dao::get_plain_val(const Object* model, const std::deque<std::string>& sections,
         std::string& val, bool& need_quote, bool& need_escape) {
     val.clear();
     if (sections.empty() || model == nullptr) {
         return false;
     }
 
-    Model* travel = const_cast<Model*>(model);
-    ModelList* list = nullptr;
+    Object* travel = const_cast<Object*>(model);
+    List* list = nullptr;
     for (auto& section : sections) {
         if (section.front() == '[' && section.back() == ']') {
             if (list == nullptr) { // current not list
@@ -156,7 +156,7 @@ bool Dao::get_plain_val(const Model* model, const std::deque<std::string>& secti
             }
 
             size_t idx = strtoul(section.c_str() + 1, nullptr, 10);
-            travel = const_cast<Model*>(list->get(idx)); // never modify mem here,just force convert
+            travel = const_cast<Object*>(list->get(idx)); // never modify mem here,just force convert
 
             continue;
         }
@@ -165,7 +165,7 @@ bool Dao::get_plain_val(const Model* model, const std::deque<std::string>& secti
             return get_plain_val_str(travel, section, val, need_quote, need_escape);
 
         } else if (travel->is_object_member(section)) {
-            Model* temp = travel->get_object(section);
+            Object* temp = travel->get_object(section);
             if (temp == nullptr) {
                 RELLAF_DEBUG("key %s is not object", section.c_str());
                 return false;
@@ -185,15 +185,15 @@ bool Dao::get_plain_val(const Model* model, const std::deque<std::string>& secti
     return false;
 }
 
-bool Dao::get_list_val(const Model* model, const std::deque<std::string>& sections,
+bool Dao::get_list_val(const Object* model, const std::deque<std::string>& sections,
         std::deque<std::string>& vals) {
     vals.clear();
     if (sections.empty() || model == nullptr) {
         return false;
     }
 
-    Model* travel = const_cast<Model*>(model);
-    ModelList* list = nullptr;
+    Object* travel = const_cast<Object*>(model);
+    List* list = nullptr;
     for (auto& section : sections) {
         if (section.front() == '<' && section.back() == '>') {
             if (list == nullptr) { // current not list
@@ -201,7 +201,7 @@ bool Dao::get_list_val(const Model* model, const std::deque<std::string>& sectio
             }
 
             size_t idx = strtoul(section.c_str() + 1, nullptr, 10);
-            travel = const_cast<Model*>(list->get(idx)); // never modify mem here,just force convert
+            travel = const_cast<Object*>(list->get(idx)); // never modify mem here,just force convert
             continue;
         }
 
@@ -211,7 +211,7 @@ bool Dao::get_list_val(const Model* model, const std::deque<std::string>& sectio
         }
 
         if (travel->is_object_member(section)) {
-            Model* temp = travel->get_object(section);
+            Object* temp = travel->get_object(section);
             if (temp == nullptr) {
                 RELLAF_DEBUG("key %s is not object", section.c_str());
                 return false;
@@ -227,7 +227,7 @@ bool Dao::get_list_val(const Model* model, const std::deque<std::string>& sectio
     }
 
     if (list != nullptr) { // convert to array list
-        for (const Model* m : *list) {
+        for (const Object* m : *list) {
             if (!m->is_plain()) {
                 continue;
             }

@@ -34,8 +34,8 @@ protected:
     void SetUp() override {}
 };
 
-class SubModel : public Model {
-rellaf_model_dcl(SubModel)
+class SubModel : public Object {
+rellaf_model_dcl(SubModel);
 
 rellaf_model_def_int(sub_model_id, 111);
 
@@ -43,8 +43,8 @@ rellaf_model_def_int(sub_model_id, 111);
 
 rellaf_model_def(SubModel);
 
-class ListItem : public Model {
-rellaf_model_dcl(ListItem)
+class ListItem : public Object {
+rellaf_model_dcl(ListItem);
 
 rellaf_model_def_int(list_id, 111);
 
@@ -52,10 +52,10 @@ rellaf_model_def_int(list_id, 111);
 
 rellaf_model_def(ListItem);
 
-//std::function<std::string(Model*)> _str_func =
+//std::function<std::string(Object*)> _str_func =
 
-class Object : public Model {
-rellaf_model_dcl(Object)
+class Obj : public Object {
+rellaf_model_dcl(Obj);
 
 rellaf_model_def_int(val_int, -111);
 rellaf_model_def_int64(val_int64, -111);
@@ -71,27 +71,27 @@ rellaf_model_def_object(val_object, SubModel);
 
 rellaf_model_def_list(val_list, ListItem);
 
-rellaf_model_def_list(plain_list, PlainWrap<uint32_t>);
+rellaf_model_def_list(plain_list, PlainWrap < uint32_t >);
 
 };
 
-rellaf_model_def(Object);
+rellaf_model_def(Obj);
 
 TEST_F(TestModel, test_primitive) {
 
-    Object object;
+    Obj object;
 
     // member
-    ASSERT_TRUE(Object::plain_concern("val_int"));
-    ASSERT_TRUE(Object::plain_concern("val_int64"));
-    ASSERT_TRUE(Object::plain_concern("val_uint16"));
-    ASSERT_TRUE(Object::plain_concern("val_uint32"));
-    ASSERT_TRUE(Object::plain_concern("val_uint64"));
-    ASSERT_TRUE(Object::plain_concern("val_bool"));
-    ASSERT_TRUE(Object::plain_concern("val_float"));
-    ASSERT_TRUE(Object::plain_concern("val_double"));
-    ASSERT_TRUE(Object::plain_concern("val_str"));
-    ASSERT_FALSE(Object::plain_concern("not_exist"));
+    ASSERT_TRUE(Obj::plain_concern("val_int"));
+    ASSERT_TRUE(Obj::plain_concern("val_int64"));
+    ASSERT_TRUE(Obj::plain_concern("val_uint16"));
+    ASSERT_TRUE(Obj::plain_concern("val_uint32"));
+    ASSERT_TRUE(Obj::plain_concern("val_uint64"));
+    ASSERT_TRUE(Obj::plain_concern("val_bool"));
+    ASSERT_TRUE(Obj::plain_concern("val_float"));
+    ASSERT_TRUE(Obj::plain_concern("val_double"));
+    ASSERT_TRUE(Obj::plain_concern("val_str"));
+    ASSERT_FALSE(Obj::plain_concern("not_exist"));
 
     ASSERT_TRUE(object.is_plain_member("val_int"));
     ASSERT_TRUE(object.is_plain_member("val_int64"));
@@ -104,48 +104,51 @@ TEST_F(TestModel, test_primitive) {
     ASSERT_TRUE(object.is_plain_member("val_str"));
     ASSERT_FALSE(object.is_plain_member("not_exist"));
 
-    ASSERT_TRUE(object.is_int_member("val_int"));
-    ASSERT_TRUE(object.is_int64_member("val_int64"));
-    ASSERT_TRUE(object.is_uint16_member("val_uint16"));
-    ASSERT_TRUE(object.is_uint32_member("val_uint32"));
-    ASSERT_TRUE(object.is_uint64_member("val_uint64"));
-    ASSERT_TRUE(object.is_bool_member("val_bool"));
-    ASSERT_TRUE(object.is_float_member("val_float"));
-    ASSERT_TRUE(object.is_double_member("val_double"));
-    ASSERT_TRUE(object.is_str_member("val_str"));
-    ASSERT_FALSE(object.is_str_member("not_exist"));
+    ASSERT_TRUE(object.is_plain_member("val_int"));
+    ASSERT_TRUE(object.is_plain_member("val_int64"));
+    ASSERT_TRUE(object.is_plain_member("val_uint16"));
+    ASSERT_TRUE(object.is_plain_member("val_uint32"));
+    ASSERT_TRUE(object.is_plain_member("val_uint64"));
+    ASSERT_TRUE(object.is_plain_member("val_bool"));
+    ASSERT_TRUE(object.is_plain_member("val_float"));
+    ASSERT_TRUE(object.is_plain_member("val_double"));
+    ASSERT_TRUE(object.is_plain_member("val_str"));
+    ASSERT_FALSE(object.is_plain_member("not_exist"));
 
-    ASSERT_TRUE(Object::int_concern("val_int"));
-    ASSERT_TRUE(Object::int64_concern("val_int64"));
-    ASSERT_TRUE(Object::uint16_concern("val_uint16"));
-    ASSERT_TRUE(Object::uint32_concern("val_uint32"));
-    ASSERT_TRUE(Object::uint64_concern("val_uint64"));
-    ASSERT_TRUE(Object::bool_concern("val_bool"));
-    ASSERT_TRUE(Object::float_concern("val_float"));
-    ASSERT_TRUE(Object::double_concern("val_double"));
-    ASSERT_TRUE(Object::str_concern("val_str"));
-    ASSERT_FALSE(Object::str_concern("not_exist"));
+    ASSERT_TRUE(Obj::plain_concern("val_int"));
+    ASSERT_TRUE(Obj::plain_concern("val_int64"));
+    ASSERT_TRUE(Obj::plain_concern("val_uint16"));
+    ASSERT_TRUE(Obj::plain_concern("val_uint32"));
+    ASSERT_TRUE(Obj::plain_concern("val_uint64"));
+    ASSERT_TRUE(Obj::plain_concern("val_bool"));
+    ASSERT_TRUE(Obj::plain_concern("val_float"));
+    ASSERT_TRUE(Obj::plain_concern("val_double"));
+    ASSERT_TRUE(Obj::plain_concern("val_str"));
+    ASSERT_FALSE(Obj::plain_concern("not_exist"));
 
-    ASSERT_TRUE(map_keys_equal_set(Object::int_names(), {"val_int"}));
-    ASSERT_TRUE(map_keys_equal_set(Object::int64_names(), {"val_int64"}));
-    ASSERT_TRUE(map_keys_equal_set(Object::uint16_names(), {"val_uint16"}));
-    ASSERT_TRUE(map_keys_equal_set(Object::uint32_names(), {"val_uint32"}));
-    ASSERT_TRUE(map_keys_equal_set(Object::uint64_names(), {"val_uint64"}));
-    ASSERT_TRUE(map_keys_equal_set(Object::bool_names(), {"val_bool"}));
-    ASSERT_TRUE(map_keys_equal_set(Object::float_names(), {"val_float"}));
-    ASSERT_TRUE(map_keys_equal_set(Object::double_names(), {"val_double"}));
-    ASSERT_TRUE(map_keys_equal_set(Object::str_names(), {"val_str"}));
+    ASSERT_TRUE(map_keys_equal_set(Obj::plain_names(), {
+            "val_int",
+            "val_int64",
+            "val_uint16",
+            "val_uint32",
+            "val_uint64",
+            "val_bool",
+            "val_float",
+            "val_double",
+            "val_str"
+    }));
 
-    ASSERT_TRUE(map_keys_equal_set(object.ints(), {"val_int"}));
-    ASSERT_TRUE(map_keys_equal_set(object.int64s(), {"val_int64"}));
-    ASSERT_TRUE(map_keys_equal_set(object.uint16s(), {"val_uint16"}));
-    ASSERT_TRUE(map_keys_equal_set(object.uint32s(), {"val_uint32"}));
-    ASSERT_TRUE(map_keys_equal_set(object.uint64s(), {"val_uint64"}));
-    ASSERT_TRUE(map_keys_equal_set(object.bools(), {"val_bool"}));
-    ASSERT_TRUE(map_keys_equal_set(object.floats(), {"val_float"}));
-    ASSERT_TRUE(map_keys_equal_set(object.doubles(), {"val_double"}));
-    ASSERT_TRUE(map_keys_equal_set(object.strs(), {"val_str"}));
-
+    ASSERT_TRUE(map_keys_equal_set(object.get_plains(), {
+            "val_int",
+            "val_int64",
+            "val_uint16",
+            "val_uint32",
+            "val_uint64",
+            "val_bool",
+            "val_float",
+            "val_double",
+            "val_str"
+    }));
 
     //default
     ASSERT_EQ(object.val_int(), -111);
@@ -352,19 +355,19 @@ TEST_F(TestModel, test_list) {
     ASSERT_EQ(object.val_list()[0]->get_int("list_id"), 222);
     ASSERT_EQ(object.val_list()[1]->get_int("list_id"), 333);
 
-    for (Model* item : object.val_list()) {
+    for (Object* item : object.val_list()) {
         ASSERT_STREQ(item->rellaf_name().c_str(), "ListItem");
         ASSERT_NE(item, nullptr);
     }
 
     for (const Model* item : object.val_list()) {
-        ASSERT_STREQ(item->rellaf_name().c_str(), "ListItem");
+        ASSERT_STREQ(((Object*)item)->rellaf_name().c_str(), "ListItem");
         ASSERT_NE(item, nullptr);
     }
 
     auto iter = object.val_list().begin();
     for (; iter != object.val_list().end(); ++iter) {
-        ASSERT_STREQ((*iter)->rellaf_name().c_str(), "ListItem");
+        ASSERT_STREQ(((Object*)(*iter))->rellaf_name().c_str(), "ListItem");
         ASSERT_NE((*iter), nullptr);
     }
 
@@ -377,21 +380,21 @@ TEST_F(TestModel, test_list) {
 }
 
 TEST_F(TestModel, test_plain) {
-    PlainWrap<uint32_t> list_int(0);
+    Plain<uint32_t> list_int(0);
     ASSERT_EQ(list_int.value(), 0);
-    list_int.set_value(2);
+    list_int.set(2);
     ASSERT_EQ(list_int.value(), 2);
 
     Object object;
     object.plain_list().push_back(&list_int);
-    list_int.set_value(3);
+    list_int.set(3);
     object.plain_list().push_back(&list_int);
 
-    ASSERT_EQ(((PlainWrap<uint32_t>*)object.plain_list().front())->value(), 2);
-    ASSERT_EQ(((PlainWrap<uint32_t>*)object.plain_list().back())->value(), 3);
+    ASSERT_EQ(((Plain<uint32_t>*)object.plain_list().front())->value(), 2);
+    ASSERT_EQ(((Plain<uint32_t>*)object.plain_list().back())->value(), 3);
 
     for (Model* item : object.val_list()) {
-        ASSERT_STREQ(item->rellaf_name().c_str(), "ListInt");
+        ASSERT_STREQ(((Object*)item)->rellaf_name().c_str(), "ListInt");
         ASSERT_NE(item, nullptr);
     }
 }

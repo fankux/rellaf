@@ -159,7 +159,7 @@ TEST_F(TestSqlPattern, test_pattern) {
     test_explode_pattern_item("a#[c1]b#{c2}d", SqlPattern::OK);
 }
 
-class Arg : public Model {
+class Arg : public Object {
 rellaf_model_dcl(Arg);
 
 rellaf_model_def_str(cond, "str' cond");
@@ -169,7 +169,7 @@ rellaf_model_def_list(ids, PlainWrap<int>);
 
 rellaf_model_def(Arg);
 
-class Ret : public Model {
+class Ret : public Object {
 rellaf_model_dcl(Ret);
 
 rellaf_model_def_str(a, "");
@@ -246,7 +246,7 @@ TEST_F(TestSqlPattern, test_split_section) {
 TEST_F(TestSqlPattern, test_sql_mapper) {
     Ret ret;
     Arg arg;
-    PlainWrap<int> id(1);
+    Model<int> id(1);
     arg.ids().push_back(&id);
     id.set_value(2);
     arg.ids().push_back(&id);

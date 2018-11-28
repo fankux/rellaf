@@ -52,12 +52,28 @@ public:                                                 \
     __clazz__& operator=(const __clazz__& o) = default; \
     __clazz__& operator=(__clazz__&& o) = default;      \
 
+#define RELLAF_DEFMOVE_NOEXCEPT(__clazz__)              \
+public:                                                 \
+    __clazz__() = default;                              \
+    __clazz__(const __clazz__& o) = default;            \
+    __clazz__(__clazz__&& o) noexcept = default;        \
+    __clazz__& operator=(const __clazz__& o) = default; \
+    __clazz__& operator=(__clazz__&& o) noexcept = default; \
+
+
 #define RELLAF_DEFMOVE_NO_CTOR(__clazz__)               \
 public:                                                 \
     __clazz__(const __clazz__& o) = default;            \
     __clazz__(__clazz__&& o) = default;                 \
     __clazz__& operator=(const __clazz__& o) = default; \
     __clazz__& operator=(__clazz__&& o) = default;      \
+
+#define RELLAF_DEFMOVE_NO_CTOR_NOEXCEPT(__clazz__)      \
+public:                                                 \
+    __clazz__(const __clazz__& o) = default;            \
+    __clazz__(__clazz__&& o) noexcept = default;        \
+    __clazz__& operator=(const __clazz__& o) = default; \
+    __clazz__& operator=(__clazz__&& o) noexcept = default; \
 
 #ifdef NDEBUG
 #define RELLAF_DEBUG(fmt, arg...)
