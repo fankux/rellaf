@@ -35,16 +35,61 @@ namespace rellaf {
 
 /////////////////////// type declaration without complex model //////////////////////
 #define RELLAF_MODEL_DCL_PLAIN(_clazz_)                                                 \
-RELLAF_DEFMOVE_NO_CTOR(_clazz_)                                                         \
 public:                                                                                 \
 _clazz_() : Object() {}                                                                 \
 virtual ~_clazz_() = default;                                                           \
+_clazz_(const _clazz_& o) : Object() {                                                  \
+    assign(&o);                                                                         \
+}                                                                                       \
+_clazz_(_clazz_&& o) noexcept : Object() {                                              \
+    assign(&o);                                                                         \
+    o.clear();                                                                          \
+}                                                                                       \
+_clazz_& operator=(const _clazz_& o) {                                                  \
+    _type = o._type;                                                                    \
+    assign(&o);                                                                         \
+    return *this;                                                                       \
+}                                                                                       \
+_clazz_& operator=(_clazz_&& o) noexcept {                                              \
+    _type = o._type;                                                                    \
+    assign(&o);                                                                         \
+    clear();                                                                            \
+    return *this;                                                                       \
+}                                                                                       \
 inline std::string rellaf_name() const override { return #_clazz_; }                    \
 inline Model* create() const override { return (Model*)new(std::nothrow)_clazz_; }      \
 inline Model* clone() const override {                                                  \
-    Model* new_model = new(std::nothrow) _clazz_;                                        \
+    Model* new_model = new(std::nothrow) _clazz_;                                       \
     *((_clazz_*)new_model) = *this;                                                     \
     return (Model*)new_model;                                                           \
+}                                                                                       \
+inline void assign(const Model* val) override {                                         \
+    if (rellaf_type() != val->rellaf_type()) {                                          \
+        return;                                                                         \
+    }                                                                                   \
+    _clazz_* ptr = (_clazz_*)val;                                                       \
+    for (auto& entry : _plains) {                                                       \
+        entry.second->assign(ptr->_plains[entry.first]);                                \
+    }                                                                                   \
+    for (auto& entry : _objects) {                                                      \
+        entry.second->assign(ptr->_objects[entry.first]);                               \
+    }                                                                                   \
+    for (auto& entry : _lists) {                                                        \
+        entry.second.assign(&(ptr->_lists[entry.first]));                               \
+    }                                                                                   \
+}                                                                                       \
+inline void clear() override {                                                          \
+    for (auto& entry : _plains) {                                                       \
+        entry.second->clear();                                                          \
+    }                                                                                   \
+    for (auto& entry : _objects) {                                                      \
+        entry.second->clear();                                                          \
+    }                                                                                   \
+    _objects.clear();                                                                   \
+    for (auto& entry : _lists) {                                                        \
+        entry.second.clear();                                                           \
+    }                                                                                   \
+    _lists.clear();                                                                     \
 }                                                                                       \
 static const std::map<std::string, Model*>& plain_names() {                             \
     return _s_plain_names;                                                              \
@@ -55,7 +100,7 @@ static bool plain_concern(const std::string& key) {                             
 static bool is_plain_default(const std::string& key, const std::string& val) {          \
     auto entry = _s_plain_names.find(key);                                              \
     if (entry != _s_plain_names.end()) {                                                \
-        return entry->second->equal_parse(val) ?  : false;                              \
+        return entry->second->equal_parse(val);                                         \
     }                                                                                   \
     return false;                                                                       \
 }                                                                                       \
@@ -100,8 +145,9 @@ public:                                                                         
 };                                                                                      \
 class RegObject {                                                                       \
 public:                                                                                 \
-    explicit RegObject(const std::string& name) {                                       \
+    explicit RegObject(const std::string& name, _clazz_* inst) {                        \
         _clazz_::_s_object_names.emplace(name);                                         \
+        inst->_objects.emplace(name, nullptr);                                          \
     }                                                                                   \
 };                                                                                      \
 static std::set<std::string> _s_list_names;                                             \
@@ -122,6 +168,8 @@ RELLAF_MODEL_DEF_PLAIN(_clazz_)
 // plain default
 class Model {
 public:
+    Model() = default;
+
     virtual ~Model() = default;
 
     virtual inline const ModelType& rellaf_type() const {
@@ -135,6 +183,10 @@ public:
     virtual Model* create() const = 0;
 
     virtual Model* clone() const = 0;
+
+    virtual void assign(const Model* val) = 0;
+
+    virtual void clear() = 0;
 
     virtual void set_parse(const std::string& val_str) = 0;
 
@@ -153,7 +205,122 @@ protected:
 
 template<class T>
 class Plain : public Model {
-RELLAF_DEFMOVE_NO_CTOR(Plain);
+public:
+    explicit Plain() {
+        TypeDetect td(this, T());
+    }
+
+    explicit Plain(const T& val) : _val(val) {
+        TypeDetect td(this, T());
+    }
+
+    Plain(const Plain& o) {
+        TypeDetect td(this, T());
+        assign(&o);
+    }
+
+    Plain(Plain&& o) noexcept {
+        TypeDetect td(this, T());
+        assign(&o);
+        o.clear();
+    }
+
+    Plain& operator=(const Plain& o) {
+        TypeDetect td(this, T());
+        assign(&o);
+        return *this;
+    }
+
+    Plain& operator=(Plain&& o) noexcept {
+        TypeDetect td(this, T());
+        assign(&o);
+        o.clear();
+        return *this;
+    }
+
+    Plain(std::function<T(const std::string&)> parse_func,
+            std::function<std::string(const T&)> str_func) :
+            _parse_func(parse_func),
+            _str_func(str_func) {
+        _type = ModelTypeEnum::e().no;
+    }
+
+    inline Model* create() const override {
+        return new(std::nothrow) Plain<T>();
+    }
+
+    inline Model* clone() const override {
+        Model* inst = create();
+        if (inst != nullptr) {
+            *((Plain <T>*)inst) = *((Plain < T > *)
+            this);
+        }
+        return inst;
+    }
+
+    inline void assign(const Model* val) override {
+        if (rellaf_type() != val->rellaf_type()) {
+            return;
+        }
+        Plain* ptr = (Plain*)val;
+        _val = ptr->_val;
+        _parse_func = ptr->_parse_func;
+        _str_func = ptr->_str_func;
+    }
+
+    inline void clear() override {}
+
+    inline void set_parse_func(const std::function<T(const std::string&)>& parse_func) {
+        _parse_func = parse_func;
+    }
+
+    inline void set_str_func(const std::function<std::string(const T&)>& str_func) {
+        _str_func = str_func;
+    }
+
+    inline T value() const {
+        return _val;
+    }
+
+    inline void set(const T& val) {
+        _val = val;
+    }
+
+    inline void set_parse(const std::string& val_str) override {
+        if (_parse_func) {
+            _val = _parse_func(val_str);
+        } else {
+            try {
+                _val = cast<T>(val_str);
+            } catch (...) {
+                // do nothing
+            }
+        }
+    }
+
+    inline bool equal_parse(const std::string& val_str) override {
+        if (_parse_func) {
+            return _val == _parse_func(val_str);
+        } else {
+            try {
+                return _val == cast<T>(val_str);
+            } catch (...) {
+                // do nothing
+            }
+        }
+        return false;
+    }
+
+    inline std::string str() const override {
+        if (_str_func) {
+            return _str_func(_val);
+        }
+        return "";
+    }
+
+    inline std::string debug_str() const override {
+        return std::forward<std::string>(str());
+    }
 
 private:
     class TypeDetect {
@@ -238,87 +405,6 @@ private:
         }
     };
 
-public:
-    explicit Plain() {
-        TypeDetect td(this, T());
-    }
-
-    explicit Plain(const T& val) : _val(val) {
-        TypeDetect td(this, T());
-    }
-
-    Plain(std::function<T(const std::string&)> parse_func,
-            std::function<std::string(const T&)> str_func) :
-            _parse_func(parse_func),
-            _str_func(str_func) {
-        _type = ModelTypeEnum::e().no;
-    }
-
-    inline Model* create() const override {
-        return new(std::nothrow) Plain<T>();
-    }
-
-    inline Model* clone() const override {
-        Model* inst = create();
-        if (inst != nullptr) {
-            *((Plain <T>*)inst) = *((Plain < T > *)
-            this);
-        }
-        return inst;
-    }
-
-    inline void set_parse_func(const std::function<T(const std::string&)>& parse_func) {
-        _parse_func = parse_func;
-    }
-
-    inline void set_str_func(const std::function<std::string(const T&)>& str_func) {
-        _str_func = str_func;
-    }
-
-    inline T value() const {
-        return _val;
-    }
-
-    inline void set(const T& val) {
-        _val = val;
-    }
-
-    inline void set_parse(const std::string& val_str) override {
-        if (_parse_func) {
-            _val = _parse_func(val_str);
-        } else {
-            try {
-                _val = cast<T>(val_str);
-            } catch (...) {
-                // do nothing
-            }
-        }
-    }
-
-    inline bool equal_parse(const std::string& val_str) override {
-        if (_parse_func) {
-            return _val == _parse_func(val_str);
-        } else {
-            try {
-                return _val == cast<T>(val_str);
-            } catch (...) {
-                // do nothing
-            }
-        }
-        return false;
-    }
-
-    inline std::string str() const override {
-        if (_str_func) {
-            return _str_func(_val);
-        }
-        return "";
-    }
-
-    inline std::string debug_str() const override {
-        return std::forward<std::string>(str());
-    }
-
 protected:
     T _val;
     // parse val from string
@@ -330,23 +416,40 @@ protected:
 
 /////////////////////// model list ////////////////////
 class ModelList : public Model {
-RELLAF_DEFMOVE_NO_CTOR(ModelList)
-
 public:
-    ModelList() {
-        _type = ModelTypeEnum::e().LIST;
-    }
-
     ~ModelList() override;
 
-    Model* create() const override {
+    ModelList();
+
+    ModelList(const ModelList& o);
+
+    ModelList(ModelList&& o) noexcept;
+
+    ModelList& operator=(const ModelList& o);
+
+    ModelList& operator=(ModelList&& o) noexcept;
+
+    inline Model* create() const override {
         return new(std::nothrow) ModelList();
     }
 
-    Model* clone() const override {
+    inline Model* clone() const override {
         ModelList* inst = (ModelList*)create();
         *inst = *this;
         return inst;
+    }
+
+    inline void assign(const Model* val) override {
+        if (rellaf_type() != val->rellaf_type()) {
+            return;
+        }
+
+        ModelList* ptr = (ModelList*)val;
+        clear();
+        for (auto& entry : ptr->_items) {
+            Model* m = entry->clone();
+            _items.push_back(m);
+        }
     }
 
     std::string debug_str() const override;
@@ -355,7 +458,7 @@ public:
 
     bool empty() const;
 
-    void clear();
+    void clear() override;
 
     void push_front(Model* model);
 
@@ -436,20 +539,22 @@ private:
 
 /////////////////////// base model class ////////////////////
 class Object : public Model {
-RELLAF_DEFMOVE_NO_CTOR(Object)
-
 public:
+    virtual ~Object();
+
     Object() {
         _type = ModelTypeEnum::e().OBJECT;
     }
-
-    virtual ~Object();
 
     virtual std::string rellaf_name() const override = 0;
 
     virtual Model* create() const override = 0;
 
     virtual Model* clone() const override = 0;
+
+    virtual void assign(const Model* val) override = 0;
+
+    virtual void clear() override = 0;
 
     virtual std::string debug_str() const override;
 
@@ -564,13 +669,13 @@ private:                                                                        
 
 #define rellaf_model_def_object(_name_, _type_)             \
 public:                                                     \
-    _type_* _name_() {                                      \
+    inline _type_* _name_() {                               \
         return (_type_*)get_object(#_name_);                \
     }                                                       \
-    _type_* _name_() const {                                \
+    inline _type_* _name_() const {                         \
         return (_type_*)get_object(#_name_);                \
     }                                                       \
-    void set_##_name_(_type_* val) {                        \
+    inline void set_##_name_(_type_* val) {                 \
         auto entry = _objects.find(#_name_);                \
         if (entry != _objects.end()) {                      \
             delete entry->second;                           \
@@ -587,15 +692,18 @@ public:                                                     \
         }                                                   \
     }                                                       \
 private:                                                    \
-    RegObject _reg_##_name_##_object{#_name_}
+    RegObject _reg_##_name_##_object{#_name_, this}
 
 
 #define rellaf_model_def_list(_name_, _type_)               \
 public:                                                     \
-    ModelList& _name_() {                                   \
+    inline ModelList& _name_() {                            \
         return get_list(#_name_);                           \
     }                                                       \
+    inline const ModelType& _name_##_list_type() const {    \
+        return _name_##_type.rellaf_type();                 \
+    }                                                       \
 private:                                                    \
-    RegList _reg_##_name_##_list{#_name_, this}
-
+    RegList _reg_##_name_##_list{#_name_, this};            \
+    _type_ _name_##_type
 }

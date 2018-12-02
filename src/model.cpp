@@ -23,6 +23,34 @@ ModelList::~ModelList() {
     clear();
 }
 
+ModelList::ModelList() : Model() {
+    _type = ModelTypeEnum::e().LIST;
+}
+
+ModelList::ModelList(const ModelList& o) : Model() {
+    _type = ModelTypeEnum::e().LIST;
+    assign(&o);
+}
+
+ModelList::ModelList(ModelList&& o) noexcept  : Model() {
+    _type = ModelTypeEnum::e().LIST;
+    assign(&o);
+    o.clear();
+}
+
+ModelList& ModelList::operator=(const ModelList& o) {
+    _type = ModelTypeEnum::e().LIST;
+    assign(&o);
+    return *this;
+}
+
+ModelList& ModelList::operator=(ModelList&& o) noexcept {
+    _type = ModelTypeEnum::e().LIST;
+    assign(&o);
+    o.clear();
+    return *this;
+}
+
 std::string ModelList::debug_str() const {
     std::string buf = "[";
     for (auto _item : _items) {
@@ -88,7 +116,7 @@ void ModelList::set(size_t idx, Model* model) {
         return;
     }
     delete _items[idx];
-    _items[idx] = model->clone();
+    _items[idx] = model == nullptr ? nullptr : model->clone();
 }
 
 const Model* ModelList::operator[](size_t idx) const {

@@ -48,14 +48,14 @@ TEST_F(TestJson, test_empty) {
     ASSERT_STREQ(json.c_str(), "{}");
 }
 
-class Plain : public Object {
-rellaf_model_dcl(Plain);
+class Obj : public Object {
+rellaf_model_dcl(Obj);
 
 rellaf_model_def_int(id, 0);
 rellaf_model_def_str(name, "");
 };
 
-rellaf_model_def(Plain);
+rellaf_model_def(Obj);
 
 static inline std::string json2str(const Json::Value& json, bool is_format = false) {
     Json::StreamWriterBuilder builder;
@@ -66,13 +66,12 @@ static inline std::string json2str(const Json::Value& json, bool is_format = fal
 }
 
 TEST_F(TestJson, test_plain) {
-    Plain plain;
+    Obj obj;
     std::string json_str;
-    ASSERT_TRUE(model_to_json(&plain, json_str));
+    ASSERT_TRUE(model_to_json(&obj, json_str));
 
     Json::Value json(Json::objectValue);
     json["id"] = (Json::Int)0;
-    json["type"] = 0.0;
     json["name"] = "";
     ASSERT_STREQ(json_str.c_str(), json2str(json).c_str());
 }
@@ -83,20 +82,22 @@ rellaf_model_dcl(WithObjectOnly);
 rellaf_model_def_object(empty, Empty);
 };
 
-rellaf_model_def(WithObjectOnly)
+rellaf_model_def(WithObjectOnly);
 
 TEST_F(TestJson, test_object_only) {
     WithObjectOnly object_only;
     std::string json_str;
 
     ASSERT_TRUE(model_to_json(&object_only, json_str));
-    ASSERT_STREQ(json_str.c_str(), "{}");
+    Json::Value json(Json::objectValue);
+    json["empty"] = Json::Value(Json::nullValue);
+    ASSERT_STREQ(json_str.c_str(), json2str(json).c_str());
 
     Empty empty;
     object_only.set_empty(&empty);
     ASSERT_TRUE(model_to_json(&object_only, json_str));
 
-    Json::Value json(Json::objectValue);
+    json.clear();
     json["empty"] = Json::Value(Json::objectValue);
     ASSERT_STREQ(json_str.c_str(), json2str(json).c_str());
 }
@@ -108,25 +109,29 @@ rellaf_model_def_object(empty, Empty);
 rellaf_model_def_object(plain, Model);
 };
 
-rellaf_model_def(WithObjectOnly2)
+rellaf_model_def(WithObjectOnly2);
 
 TEST_F(TestJson, test_object_only2) {
     WithObjectOnly2 object_only;
     std::string json_str;
     ASSERT_TRUE(model_to_json(&object_only, json_str));
-    ASSERT_STREQ(json_str.c_str(), "{}");
+    Json::Value json(Json::objectValue);
+    json["empty"] = Json::Value(Json::nullValue);
+    json["plain"] = Json::Value(Json::nullValue);
+    ASSERT_STREQ(json_str.c_str(), json2str(json).c_str());
 
     Empty empty;
     object_only.set_empty(&empty);
     ASSERT_TRUE(model_to_json(&object_only, json_str));
-    Json::Value json(Json::objectValue);
+    json.clear();
     json["empty"] = Json::Value(Json::objectValue);
+    json["plain"] = Json::Value(Json::nullValue);
     ASSERT_STREQ(json_str.c_str(), json2str(json).c_str());
 
     object_only.set_empty(nullptr);
 
-    Plain plain;
-    object_only.set_plain(&plain);
+    Obj obj;
+    object_only.set_plain(&obj);
     ASSERT_TRUE(model_to_json(&object_only, json_str));
     json.clear();
     json["plain"] = Json::Value(Json::objectValue);
@@ -136,9 +141,9 @@ TEST_F(TestJson, test_object_only2) {
     ASSERT_STREQ(json_str.c_str(), json2str(json).c_str());
 
     object_only.set_empty(&empty);
-    plain.set_id(1111);
-    plain.set_name("1111");
-    object_only.set_plain(&plain);
+    obj.set_id(1111);
+    obj.set_name("1111");
+    object_only.set_plain(&obj);
     ASSERT_TRUE(model_to_json(&object_only, json_str));
     json.clear();
     json["plain"] = Json::Value(Json::objectValue);
@@ -168,8 +173,8 @@ TEST_F(TestJson, test_object_plain) {
     json["object"] = Json::Value(Json::nullValue);
     ASSERT_STREQ(json_str.c_str(), json2str(json).c_str());
 
-    Plain plain;
-    object_plain.set_object(&plain);
+    Obj obj;
+    object_plain.set_object(&obj);
     ASSERT_TRUE(model_to_json(&object_plain, json_str));
     json["object"] = Json::Value(Json::nullValue);
     json["object"]["id"] = (Json::Int)0;
@@ -179,25 +184,67 @@ TEST_F(TestJson, test_object_plain) {
 
 class WithListOnly : public Object {
 rellaf_model_dcl(WithListOnly);
-rellaf_model_def_list(list, PlainWrap<int>);
+rellaf_model_def_list(list, Plain<int>);
 };
 
 rellaf_model_def(WithListOnly);
 
 TEST_F(TestJson, test_list_only) {
-    WithListOnly list_only(ModelTypeEnum::e().LIST);
+    WithListOnly list_only;
     std::string json_str;
     ASSERT_TRUE(model_to_json(&list_only, json_str));
-    Json::Value json(Json::arrayValue);
+    Json::Value json;
+    json["list"] = Json::Value(Json::arrayValue);
     ASSERT_STREQ(json_str.c_str(), json2str(json).c_str());
 
-    list_only.get_lists()
-
-    Plain<int> item;
-    item.set_value(111);
-    list_only.list().push_back(&item);
+    Plain<int> int_item(111);
+    list_only.list().push_back(&int_item);
     ASSERT_TRUE(model_to_json(&list_only, json_str));
+    json.clear();
+    json["list"].append(111);
+    ASSERT_STREQ(json_str.c_str(), json2str(json).c_str());
 
+    int_item.set(222);
+    list_only.list().push_back(&int_item);
+    ASSERT_TRUE(model_to_json(&list_only, json_str));
+    json["list"].append(222);
+    ASSERT_STREQ(json_str.c_str(), json2str(json).c_str());
+
+    Json::Value removed;
+    list_only.list().pop_front();
+    ASSERT_TRUE(model_to_json(&list_only, json_str));
+    json["list"].removeIndex(0, &removed);
+    ASSERT_STREQ(json_str.c_str(), json2str(json).c_str());
+
+    list_only.list().pop_front();
+    ASSERT_TRUE(model_to_json(&list_only, json_str));
+    json["list"].removeIndex(0, &removed);
+    ASSERT_STREQ(json_str.c_str(), json2str(json).c_str());
+
+    json.clear();
+    json["list"] = Json::Value(Json::arrayValue);
+    ASSERT_STREQ(json_str.c_str(), json2str(json).c_str());
+}
+
+class Complex : public Object {
+rellaf_model_dcl(Complex);
+
+rellaf_model_def_int(id, 0);
+rellaf_model_def_object(plain, Model);
+rellaf_model_def_list(list, Plain<int>);
+};
+
+rellaf_model_def(Complex);
+
+TEST_F(TestJson, test_compex) {
+    Complex complex;
+    std::string json_str;
+    ASSERT_TRUE(model_to_json(&complex, json_str));
+    Json::Value json;
+    json["id"] = 0;
+    json["plain"] = Json::Value(Json::nullValue);
+    json["list"] = Json::Value(Json::arrayValue);
+    ASSERT_STREQ(json_str.c_str(), json2str(json).c_str());
 }
 
 } // namespace

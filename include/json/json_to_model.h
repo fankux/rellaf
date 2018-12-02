@@ -27,13 +27,13 @@ namespace rellaf {
  * @param json_str output
  * @param is_format
  */
-bool model_to_json(const Object* model, std::string& json_str, bool is_format = false);
+bool model_to_json(const Model* model, std::string& json_str, bool is_format = false);
 
 /**
  * @brief convert json string to model object
  * @param json_str
  * @param model
  */
-bool json_to_model(const std::string& json_str, Object* model);
+bool json_to_model(const std::string& json_str, Model* model);
 
 }

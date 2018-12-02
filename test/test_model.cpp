@@ -332,26 +332,29 @@ TEST_F(TestModel, test_list) {
     ASSERT_EQ(obj.val_list().front<SubObj>()->get_plain<int>("list_id")->value(), 111);
     ASSERT_EQ(subobj.list_id(), 111);
     ASSERT_EQ(obj.val_list().size(), 1);
-    RELLAF_DEBUG("val List : %s", obj.val_list().debug_str().c_str());
+    RELLAF_DEBUG("val List : %s", obj.val_list().front()->debug_str().c_str());
     ASSERT_EQ(obj.val_list().at<SubObj>(1), nullptr);
-    obj.val_list().at<SubObj>(0)->set_list_id(222);
-    RELLAF_DEBUG("val List : %s", obj.val_list().debug_str().c_str());
+    obj.val_list().front<SubObj>()->set_list_id(222);
+    RELLAF_DEBUG("val List : %s", obj.val_list().front()->debug_str().c_str());
     ASSERT_EQ(obj.val_list().front<SubObj>()->get_plain<int>("list_id")->value(), 222);
     ASSERT_NE(obj.val_list().front<SubObj>()->get_plain<int>("list_id")->value(), subobj.list_id());
 
+    subobj_ptr->set_list_id(111);
+    ASSERT_EQ(obj.val_list().front<SubObj>()->list_id(), 111);
+
     // push another to list
-    subobj_ptr->set_list_id(222);
-    ASSERT_EQ(subobj_ptr->list_id(), 222);
+    subobj.set_list_id(222);
     obj.val_list().push_back(&subobj);
     ASSERT_EQ(obj.val_list().size(), 2);
     ASSERT_NE(obj.val_list().front(), obj.val_list().back());
 
     // idx 0 still
     subobj_ptr = (SubObj*)obj.val_list().front();
-    ASSERT_EQ(subobj_ptr->list_id(), 222);
+    ASSERT_EQ(subobj_ptr->list_id(), 111);
     ASSERT_EQ(obj.val_list().front<Object>()->get_plain<int>("list_id")->value(), 111);
 
     // idx 1 added
+
     subobj_ptr = (SubObj*)obj.val_list().back();
     ASSERT_NE(subobj_ptr, nullptr);
     ASSERT_EQ(subobj_ptr->list_id(), 222);
@@ -361,28 +364,28 @@ TEST_F(TestModel, test_list) {
     subobj_ptr->set_list_id(333);
     ASSERT_EQ(subobj_ptr->list_id(), 333);
     ASSERT_EQ(obj.val_list().back<Object>()->get_plain<int>("list_id")->value(), 333);
-    ASSERT_EQ(subobj.list_id(), 111);
+    ASSERT_EQ(subobj.list_id(), 222);
     ASSERT_NE(obj.val_list().back<Object>()->get_plain<int>("list_id")->value(), subobj.list_id());
-    ASSERT_EQ(obj.val_list().front<Object>()->get_plain<int>("list_id")->value(), 222);
+    ASSERT_EQ(obj.val_list().front<Object>()->get_plain<int>("list_id")->value(), 111);
     ASSERT_NE(obj.val_list().back<Object>()->get_plain<int>("list_id")->value(),
             obj.val_list().front<Object>()->get_plain<int>("list_id")->value());
 
-    ASSERT_EQ(((Object*)obj.val_list()[0])->get_plain<int>("list_id")->value(), 222);
+    ASSERT_EQ(((Object*)obj.val_list()[0])->get_plain<int>("list_id")->value(), 111);
     ASSERT_EQ(((Object*)obj.val_list()[1])->get_plain<int>("list_id")->value(), 333);
 
     for (Model* item : obj.val_list()) {
-        ASSERT_STREQ(item->rellaf_name().c_str(), "ListItem");
+        ASSERT_STREQ(item->rellaf_name().c_str(), "SubObj");
         ASSERT_NE(item, nullptr);
     }
 
     for (const Model* item : obj.val_list()) {
-        ASSERT_STREQ(((Object*)item)->rellaf_name().c_str(), "ListItem");
+        ASSERT_STREQ(((Object*)item)->rellaf_name().c_str(), "SubObj");
         ASSERT_NE(item, nullptr);
     }
 
     auto iter = obj.val_list().begin();
     for (; iter != obj.val_list().end(); ++iter) {
-        ASSERT_STREQ((*iter)->rellaf_name().c_str(), "ListItem");
+        ASSERT_STREQ((*iter)->rellaf_name().c_str(), "SubObj");
         ASSERT_NE((*iter), nullptr);
     }
 

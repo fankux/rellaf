@@ -21,88 +21,84 @@
 
 namespace rellaf {
 
-static void model_to_json(const Object* model, Json::Value& json) {
+static void model_to_json_inner(const Model* model, Json::Value& json) {
     if (model == nullptr) {
         json = Json::Value(Json::nullValue);
         return;
     }
 
-//    if (model->is_plain()) {
-//        if (model->rellaf_type() == ModelTypeEnum::e().INT) {
-//            json = ((Model<int>*)model)->value();
-//        } else if (model->rellaf_type() == ModelTypeEnum::e().INT64) {
-//            json = (Json::Int64)((Model<int64_t>*)model)->value();
-//        } else if (model->rellaf_type() == ModelTypeEnum::e().UINT16) {
-//            json = (Json::UInt)((Model<uint16_t>*)model)->value();
-//        } else if (model->rellaf_type() == ModelTypeEnum::e().UINT32) {
-//            json = (Json::UInt)((Model<uint32_t>*)model)->value();
-//        } else if (model->rellaf_type() == ModelTypeEnum::e().UINT64) {
-//            json = (Json::UInt64)((Model<uint64_t>*)model)->value();
-//        } else if (model->rellaf_type() == ModelTypeEnum::e().FLOAT) {
-//            json = ((Model<float>*)model)->value();
-//        } else if (model->rellaf_type() == ModelTypeEnum::e().DOUBLE) {
-//            json = ((Model<double>*)model)->value();
-//        } else if (model->rellaf_type() == ModelTypeEnum::e().STR) {
-//            json = ((Model<std::string>*)model)->value();
-//        }
-//        return;
-//    }
-//
-//    if (model->rellaf_type() == ModelTypeEnum::e().LIST) {
-//        json = Json::Value(Json::arrayValue);
-//        if (!model->get_lists().empty()) {
-//            const List& list = model->get_lists().begin()->second;
-//            for (auto& entry : list) {
-//                Json::Value item;
-//                model_to_json(entry, item);
-//                json.append(item);
-//            }
-//        }
-//        return;
-//    }
-//
-//    if (model->rellaf_type() == ModelTypeEnum::e().OBJECT) {
-//        json = Json::Value(Json::objectValue);
-//        for (auto& entry : model->get_objects()) {
-//            Json::Value item;
-//            model_to_json(entry.second, item);
-//            json[entry.first] = item;
-//        }
-//
-//        for (auto& entry : model->get_int_names()) {
-//            json[entry.first] = (Json::Int)model->get_int(entry.first);
-//        }
-//        for (auto& entry : model->get_int64_names()) {
-//            json[entry.first] = (Json::Int)model->get_int64(entry.first);
-//        }
-//        for (auto& entry : model->get_uint16_names()) {
-//            json[entry.first] = (Json::UInt)model->get_uint16(entry.first);
-//        }
-//        for (auto& entry : model->get_uint32_names()) {
-//            json[entry.first] = (Json::UInt)model->get_uint32(entry.first);
-//        }
-//        for (auto& entry : model->get_uint64_names()) {
-//            json[entry.first] = (Json::UInt64)model->get_uint64(entry.first);
-//        }
-//        for (auto& entry : model->get_bool_names()) {
-//            json[entry.first] = model->get_bool(entry.first);
-//        }
-//        for (auto& entry : model->get_float_names()) {
-//            json[entry.first] = model->get_float(entry.first);
-//        }
-//        for (auto& entry : model->get_double_names()) {
-//            json[entry.first] = model->get_double(entry.first);
-//        }
-//        for (auto& entry : model->get_str_names()) {
-//            json[entry.first] = model->get_str(entry.first);
-//        }
-//    }
+    switch (model->rellaf_type().code) {
+        case ModelTypeEnum::CHAR_code:
+            json = (Json::Int)((Plain<char>*)model)->value();
+            return;
+        case ModelTypeEnum::INT16_code:
+            json = (Json::Int)((Plain<int16_t>*)model)->value();
+            return;
+        case ModelTypeEnum::INT_code:
+            json = ((Plain<int>*)model)->value();
+            return;
+        case ModelTypeEnum::INT64_code:
+            json = (Json::Int64)((Plain<int64_t>*)model)->value();
+            return;
+        case ModelTypeEnum::UINT16_code:
+            json = (Json::UInt)((Plain<uint16_t>*)model)->value();
+            return;
+        case ModelTypeEnum::UINT32_code:
+            json = (Json::UInt)((Plain<int32_t>*)model)->value();
+            return;
+        case ModelTypeEnum::UINT64_code:
+            json = (Json::UInt64)((Plain<uint64_t>*)model)->value();
+            return;
+        case ModelTypeEnum::BOOL_code:
+            json = ((Plain<bool>*)model)->value();
+            return;
+        case ModelTypeEnum::FLOAT_code:
+            json = ((Plain<float>*)model)->value();
+            return;
+        case ModelTypeEnum::DOUBLE_code:
+            json = ((Plain<double>*)model)->value();
+            return;
+        case ModelTypeEnum::STR_code:
+            json = ((Plain<std::string>*)model)->value();
+            return;
+        default:
+            break;
+    }
+
+    if (model->rellaf_type() == ModelTypeEnum::e().LIST) {
+        json = Json::Value(Json::arrayValue);
+        for (auto& item : *((ModelList*)model)) {
+            Json::Value item_node;
+            model_to_json_inner(item, item_node);
+            json.append(item_node);
+        }
+        return;
+    }
+
+    if (model->rellaf_type() == ModelTypeEnum::e().OBJECT) {
+        json = Json::Value(Json::objectValue);
+        for (auto& item : ((Object*)model)->get_plains()) {
+            Json::Value item_node;
+            model_to_json_inner(item.second, item_node);
+            json[item.first] = item_node;
+        }
+        for (auto& item : ((Object*)model)->get_lists()) {
+            Json::Value item_node(Json::arrayValue);
+            model_to_json_inner(&item.second, item_node);
+            json[item.first] = item_node;
+        }
+        for (auto& item : ((Object*)model)->get_objects()) {
+            Json::Value item_node;
+            model_to_json_inner(item.second, item_node);
+            json[item.first] = item_node;
+        }
+    }
 }
 
-bool model_to_json(const Object* model, std::string& json_str, bool is_format) {
+bool model_to_json(const Model* model, std::string& json_str, bool is_format) {
     json_str.clear();
     Json::Value node;
-    model_to_json(model, node);
+    model_to_json_inner(model, node);
     Json::StreamWriterBuilder builder;
     if (!is_format) {
         builder.settings_["indentation"] = "";
@@ -111,51 +107,99 @@ bool model_to_json(const Object* model, std::string& json_str, bool is_format) {
     return true;
 }
 
-static void json_to_model(const Json::Value& json, Object* model, const std::string& key) {
-//    if (model == nullptr || model->is_plain()) { // plain type not concern
-//        return;
-//    }
-//
-//    if (json.isObject() && model->rellaf_type() == ModelTypeEnum::e().OBJECT) {
-//        for (const std::string& json_key : json.getMemberNames()) {
-//            json_to_model(json[json_key], model, json_key);
-//        }
-//        return;
-//    }
-//
-//    if (json.isArray() && model->rellaf_type() == ModelTypeEnum::e().LIST &&
-//            !model->get_lists().empty()) {
-//
-//        List& list = model->get_lists().begin()->second;
-//        for (Json::ArrayIndex i = 0; i < json.size(); ++i) {
-//            if (i >= list.size()) {
-//                break;
-//            }
-//            json_to_model(json[i], list.get(i), "");
-//        }
-//        return;
-//    }
-//
-//    if (json.isInt()) {
-//        model->set_int(key, json.asInt());
-//    } else if (json.isUInt()) {
-//        model->set_uint16(key, (uint16_t)(json.asUInt()));
-//    } else if (json.isUInt()) {
-//        model->set_uint32(key, json.asUInt());
-//    } else if (json.isUInt64()) {
-//        model->set_uint64(key, json.asUInt64());
-//    } else if (json.isBool()) {
-//        model->set_bool(key, json.asBool());
-//    } else if (json.isDouble() && model->is_float_member(key)) {
-//        model->set_float(key, json.asFloat());
-//    } else if (json.isDouble() && model->is_double_member(key)) {
-//        model->set_double(key, json.asDouble());
-//    } else if (json.isString()) {
-//        model->set_str(key, json.asString());
-//    }
+static void json_to_model_inner(const Json::Value& json, Model* model) {
+    if (model == nullptr || json.isNull()) {
+        return;
+    }
+
+    switch (model->rellaf_type().code) {
+        case ModelTypeEnum::CHAR_code:
+            if (json.isNumeric()) {
+                ((Plain<char>*)model)->set((char)json.asInt());
+            }
+            return;
+        case ModelTypeEnum::INT16_code:
+            if (json.isNumeric()) {
+                ((Plain<int16_t>*)model)->set((int16_t)json.asInt());
+            }
+            return;
+        case ModelTypeEnum::INT_code:
+            if (json.isNumeric()) {
+                ((Plain<int>*)model)->set(json.asInt());
+            }
+            return;
+        case ModelTypeEnum::INT64_code:
+            if (json.isNumeric()) {
+                ((Plain<int64_t>*)model)->set(json.asInt64());
+            }
+            return;
+        case ModelTypeEnum::UINT16_code:
+            if (json.isNumeric()) {
+                ((Plain<uint16_t>*)model)->set((uint16_t)json.asUInt());
+            }
+            return;
+        case ModelTypeEnum::UINT32_code:
+            if (json.isNumeric()) {
+                ((Plain<uint32_t>*)model)->set(json.asUInt());
+            }
+            return;
+        case ModelTypeEnum::UINT64_code:
+            if (json.isNumeric()) {
+                ((Plain<uint64_t>*)model)->set(json.asUInt64());
+            }
+            return;
+        case ModelTypeEnum::BOOL_code:
+            if (json.isBool()) {
+                ((Plain<bool>*)model)->set(json.asBool());
+            }
+            return;
+        case ModelTypeEnum::FLOAT_code:
+            if (json.isDouble()) {
+                ((Plain<float>*)model)->set(json.asFloat());
+            }
+            return;
+        case ModelTypeEnum::DOUBLE_code:
+            if (json.isDouble()) {
+                ((Plain<float>*)model)->set(json.asFloat());
+            }
+            return;
+        case ModelTypeEnum::STR_code:
+            if (json.isString()) {
+                ((Plain<std::string>*)model)->set(json.asString());
+            }
+            return;
+        default:
+            break;
+    }
+
+    if (json.isArray() && model->rellaf_type() == ModelTypeEnum::e().LIST) {
+        ModelList& list = *((ModelList*)model);
+        for (size_t i = 0; i < list.size(); ++i) {
+            if (json[(Json::ArrayIndex)i].isNull()) {
+                list.set(i, nullptr);
+            }
+            json_to_model_inner(json[(Json::ArrayIndex)i], list.at(i));
+        }
+        return;
+    }
+
+    if (json.isObject() && model->rellaf_type() == ModelTypeEnum::e().OBJECT) {
+        Object* obj = (Object*)model;
+        for (const std::string& json_key : json.getMemberNames()) {
+            // TODO.. null value
+            if (obj->is_plain_member(json_key)) {
+                json_to_model_inner(json[json_key], obj->get_plain(json_key));
+            } else if (obj->is_list_member(json_key)) {
+                json_to_model_inner(json[json_key], &obj->get_list(json_key));
+            } else if (obj->is_object_member(json_key)) {
+                json_to_model_inner(json[json_key], obj->get_object(json_key));
+            }
+        }
+        return;
+    }
 }
 
-bool json_to_model(const std::string& json_str, Object* model) {
+bool json_to_model(const std::string& json_str, Model* model) {
     if (json_str.empty()) {
         return true;
     }
@@ -169,7 +213,7 @@ bool json_to_model(const std::string& json_str, Object* model) {
         RELLAF_DEBUG("not json, could not parse to MODEL");
         return false;
     }
-    json_to_model(json, model, "");
+    json_to_model_inner(json, model);
     return true;
 }
 
