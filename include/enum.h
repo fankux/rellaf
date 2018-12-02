@@ -54,6 +54,7 @@ _clazz_& _clazz_::e() {                                                         
     static _clazz_ _enum_(#_clazz_);                                            \
     return _enum_;                                                              \
 }
+
 #if __cplusplus >= 201703L
 #define rellaf_enum_item_def(_code_, _name_)                                    \
 public:                                                                         \
@@ -68,6 +69,14 @@ public:                                                                         
 private:                                                                        \
     const Reg _reg_##_name_{this, _code_, #_name_}
 #endif
+
+#define rellaf_enum_item_code_def(_code_, _name_)                               \
+public:                                                                         \
+    constexpr static int _name_##_code{_code_};                                 \
+    const EnumItem _name_{_code_, #_name_};                                     \
+private:                                                                        \
+    const Reg _reg_##_name_{this, _code_, #_name_}
+
 
 class IEnum {
 public:

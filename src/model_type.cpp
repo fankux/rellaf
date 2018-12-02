@@ -21,5 +21,20 @@ namespace rellaf {
 
 rellaf_enum_def(ModelTypeEnum);
 
+constexpr int ModelTypeEnum::CHAR_code;
+constexpr int ModelTypeEnum::INT16_code;
+constexpr int ModelTypeEnum::INT_code;
+constexpr int ModelTypeEnum::INT64_code;
+constexpr int ModelTypeEnum::UINT16_code;
+constexpr int ModelTypeEnum::UINT32_code;
+constexpr int ModelTypeEnum::UINT64_code;
+constexpr int ModelTypeEnum::BOOL_code;
+constexpr int ModelTypeEnum::FLOAT_code;
+constexpr int ModelTypeEnum::DOUBLE_code;
+constexpr int ModelTypeEnum::STR_code;
+constexpr int ModelTypeEnum::OBJECT_code;
+constexpr int ModelTypeEnum::LIST_code;
+
+
 }
 

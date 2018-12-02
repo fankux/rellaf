@@ -34,21 +34,21 @@ namespace rellaf {
 
 class DaoModel {
 public:
-    explicit DaoModel(const Object& model) : _model(&model) {}
+    explicit DaoModel(const Model& model) : _model(&model) {}
 
-    DaoModel(const std::string& name, const Object& model) : _name(name), _model(&model) {}
+    DaoModel(const std::string& name, const Model& model) : _name(name), _model(&model) {}
 
     const std::string& name() const {
         return _name;
     }
 
-    const Object* model() const {
+    const Model* model() const {
         return _model;
     }
 
 private:
     std::string _name;
-    const Object* _model;
+    const Model* _model;
 };
 
 class DaoResultRow {
@@ -136,8 +136,10 @@ protected:
     };
 
     template<class T>
-    void build_dao_models(std::map<std::string, const DaoModel*>& dao_models, const T& arg) {
-        dao_models.emplace(arg.name(), &arg);
+    void build_dao_models(std::map<std::string, const Model*>& dao_models, const T& arg) {
+        if (std::is_base_of<Model, T>::value) {
+            dao_models.emplace(arg.name(), &arg);
+        }
     }
 
     template<class ...Args>
@@ -152,8 +154,8 @@ protected:
         int arg_count = sizeof...(args);
         bool is_multi_arg = arg_count > 1;
 
-        std::map<std::string, const DaoModel*> dao_models;
-        bool arr[] = {(build_dao_models(dao_models, args), true)...}; // for arguments expansion
+        std::map<std::string, const Model*> models;
+        bool arr[] = {(build_dao_models(models, args), true)...}; // for arguments expansion
         (void)(arr);// suppress warning
 
         for (const SqlPattern::Stub& stub : entry->second) {
@@ -169,16 +171,16 @@ protected:
                 return false;
             }
 
-            std::deque<const Object*> model_box;
+            std::deque<const Model*> model_box;
             if (!is_multi_arg) {
-                model_box.push_front(dao_models.begin()->second->model());
+                model_box.push_front(models.begin()->second);
             } else {
-                auto model_entry = dao_models.find(sections.front());
-                if (model_entry == dao_models.end()) {
+                auto model_entry = models.find(sections.front());
+                if (model_entry == models.end()) {
                     RELLAF_DEBUG("no dao model name : %s", sections.front().c_str());
                     return false;
                 }
-                model_box.push_front(model_entry->second->model());
+                model_box.push_front(model_entry->second);
                 sections.pop_front();
             }
 
@@ -271,13 +273,13 @@ protected:
 protected:
     void split_section(const std::string& section_str, std::deque<std::string>& sections);
 
-    bool get_plain_val_str(const Object* model, const std::string& key, std::string& val,
+    bool get_plain_val_str(const Model* model, const std::string& key, std::string& val,
             bool& need_quote, bool& need_escape);
 
-    bool get_plain_val(const Object* model, const std::deque<std::string>& sections,
+    bool get_plain_val(const Model* model, const std::deque<std::string>& sections,
             std::string& val, bool& need_quote, bool& need_escape);
 
-    bool get_list_val(const Object* model, const std::deque<std::string>& sections,
+    bool get_list_val(const Model* model, const std::deque<std::string>& sections,
             std::deque<std::string>& vals);
 
     bool append_sql(std::string& sql, const std::string& val, bool need_quote, bool need_escape);

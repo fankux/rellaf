@@ -233,7 +233,7 @@ demo TODO。。
 
 ## 功能扩展
 `src/json`   
-包含了使用Jsoncpp实现的**Rellaf**对象Json相互转换。（递归解析DOING……）
+包含了使用Jsoncpp实现的**Rellaf**对象Json相互转换。
 
 `src/mysql`  
 包含一个简单的Mysql连接池实现（比较low，轻喷），这个模块为了对接SQL生成后的执行过程。

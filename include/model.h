@@ -26,6 +26,7 @@
 #include <map>
 #include <deque>
 #include <functional>
+#include <type_traits>
 #include "cast.hpp"
 #include "common.h"
 #include "model_type.h"
@@ -37,16 +38,12 @@ namespace rellaf {
 RELLAF_DEFMOVE_NO_CTOR(_clazz_)                                                         \
 public:                                                                                 \
 _clazz_() : Object() {}                                                                 \
-virtual ~_clazz_() {                                                                    \
-    for (auto& entry : _s_plain_names) {                                                \
-        delete entry.second;                                                            \
-    }                                                                                   \
-}                                                                                       \
+virtual ~_clazz_() = default;                                                           \
 inline std::string rellaf_name() const override { return #_clazz_; }                    \
 inline Model* create() const override { return (Model*)new(std::nothrow)_clazz_; }      \
 inline Model* clone() const override {                                                  \
-    Model* new_model = new(std::nothrow)_clazz_;                                        \
-    *((_clazz_*)new_model) = *((_clazz_*)this);                                         \
+    Model* new_model = new(std::nothrow) _clazz_;                                        \
+    *((_clazz_*)new_model) = *this;                                                     \
     return (Model*)new_model;                                                           \
 }                                                                                       \
 static const std::map<std::string, Model*>& plain_names() {                             \
@@ -57,7 +54,10 @@ static bool plain_concern(const std::string& key) {                             
 }                                                                                       \
 static bool is_plain_default(const std::string& key, const std::string& val) {          \
     auto entry = _s_plain_names.find(key);                                              \
-    return entry != _s_plain_names.end() ? entry->second->equal_parse(val) : false;     \
+    if (entry != _s_plain_names.end()) {                                                \
+        return entry->second->equal_parse(val) ?  : false;                              \
+    }                                                                                   \
+    return false;                                                                       \
 }                                                                                       \
 inline bool is_plain_member(const std::string& key) const override {                    \
     return plain_concern(key);                                                          \
@@ -80,9 +80,9 @@ static std::map<std::string, Model*> _s_plain_names;                            
 private:                                                                                \
 class Reg {                                                                             \
 public:                                                                                 \
-Reg(const std::string& name, _clazz_* inst, Model* dft) {                               \
-    _clazz_::_s_plain_names.emplace(name, dft->clone());                                \
-    inst->_plains.emplace(name, dft);                                                   \
+Reg(const std::string& name, _clazz_* inst, Model* val, Model* dft) {                   \
+    _clazz_::_s_plain_names.emplace(name, dft);                                         \
+    inst->_plains.emplace(name, val);                                                   \
 }                                                                                       \
 }
 
@@ -95,7 +95,7 @@ class RegList {                                                                 
 public:                                                                                 \
     RegList(const std::string& name, _clazz_* inst) {                                   \
         _clazz_::_s_list_names.emplace(name);                                           \
-        inst->_lists.emplace(name, List());                                             \
+        inst->_lists.emplace(name, ModelList());                                        \
     }                                                                                   \
 };                                                                                      \
 class RegObject {                                                                       \
@@ -119,6 +119,7 @@ std::set<std::string> _clazz_::_s_object_names;                                 
 RELLAF_MODEL_DEF_PLAIN(_clazz_)
 
 /////////////////////// plain ////////////////////
+// plain default
 class Model {
 public:
     virtual ~Model() = default;
@@ -137,13 +138,14 @@ public:
 
     virtual void set_parse(const std::string& val_str) = 0;
 
-    virtual bool equal_parse(const std::string& val_str) const = 0;
+    /**
+     * @brief if this equal to value which parsed from string `val_str`
+     */
+    virtual bool equal_parse(const std::string& val_str) = 0;
 
     virtual std::string str() const = 0;
 
-    virtual std::string debug_str() const {
-        return "";
-    }
+    virtual std::string debug_str() const = 0;
 
 protected:
     ModelType _type;
@@ -151,77 +153,86 @@ protected:
 
 template<class T>
 class Plain : public Model {
-RELLAF_DEFMOVE_NO_CTOR_NOEXCEPT(Plain);
+RELLAF_DEFMOVE_NO_CTOR(Plain);
 
 private:
     class TypeDetect {
     public:
+        TypeDetect(Plain* inst, char val) {
+            inst->_type = ModelTypeEnum::e().CHAR;
+            inst->_str_func = [](const char& val) {
+                std::string str = std::string();
+                str += val;
+                return str;
+            };
+        }
+
         TypeDetect(Plain* inst, int16_t val) {
-            inst->_type = ModelTypeEnum::e().INT;
-            inst->_str_func = [](int val) {
+            inst->_type = ModelTypeEnum::e().INT16;
+            inst->_str_func = [](const int16_t& val) {
                 return std::to_string(val);
             };
         }
 
         TypeDetect(Plain* inst, int val) {
             inst->_type = ModelTypeEnum::e().INT;
-            inst->_str_func = [](int val) {
+            inst->_str_func = [](const int& val) {
                 return std::to_string(val);
             };
         }
 
         TypeDetect(Plain* inst, int64_t val) {
             inst->_type = ModelTypeEnum::e().INT64;
-            inst->_str_func = [](int64_t val) {
+            inst->_str_func = [](const int64_t& val) {
                 return std::to_string(val);
             };
         }
 
         TypeDetect(Plain* inst, uint16_t val) {
             inst->_type = ModelTypeEnum::e().UINT16;
-            inst->_str_func = [](uint16_t val) {
+            inst->_str_func = [](const uint16_t& val) {
                 return std::to_string(val);
             };
         }
 
         TypeDetect(Plain* inst, uint32_t val) {
             inst->_type = ModelTypeEnum::e().UINT32;
-            inst->_str_func = [](uint32_t val) {
+            inst->_str_func = [](const uint32_t& val) {
                 return std::to_string(val);
             };
         }
 
         TypeDetect(Plain* inst, uint64_t val) {
             inst->_type = ModelTypeEnum::e().UINT64;
-            inst->_str_func = [](uint64_t val) {
+            inst->_str_func = [](const uint64_t& val) {
                 return std::to_string(val);
             };
         }
 
         TypeDetect(Plain* inst, bool val) {
-            inst->_type = ModelTypeEnum::e().FLOAT;
-            inst->_str_func = [](float val) {
+            inst->_type = ModelTypeEnum::e().BOOL;
+            inst->_str_func = [](const bool& val) {
                 return std::to_string(val);
             };
         }
 
         TypeDetect(Plain* inst, float val) {
             inst->_type = ModelTypeEnum::e().FLOAT;
-            inst->_str_func = [](float val) {
+            inst->_str_func = [](const float& val) {
                 return std::to_string(val);
             };
         }
 
         TypeDetect(Plain* inst, double val) {
             inst->_type = ModelTypeEnum::e().DOUBLE;
-            inst->_str_func = [](double val) {
+            inst->_str_func = [](const double& val) {
                 return std::to_string(val);
             };
         }
 
         TypeDetect(Plain* inst, const std::string& val) {
             inst->_type = ModelTypeEnum::e().STR;
-            inst->_str_func_ref = [](const std::string& val) {
+            inst->_str_func = [](const std::string& val) {
                 return val;
             };
         }
@@ -236,47 +247,39 @@ public:
         TypeDetect td(this, T());
     }
 
-    explicit Plain(std::function<T(const std::string&)> parse_func,
-            std::function<std::string(T)> str_func) :
+    Plain(std::function<T(const std::string&)> parse_func,
+            std::function<std::string(const T&)> str_func) :
             _parse_func(parse_func),
             _str_func(str_func) {
         _type = ModelTypeEnum::e().no;
     }
 
-    explicit Plain(std::function<T(const std::string&)> parse_func,
-            std::function<std::string(const T&)> str_func_ref) :
-            _parse_func(parse_func),
-            _str_func_ref(str_func_ref) {
-        _type = ModelTypeEnum::e().no;
+    inline Model* create() const override {
+        return new(std::nothrow) Plain<T>();
     }
-
-    inline Model* create() const override { return new(std::nothrow) Plain<T>(); }
 
     inline Model* clone() const override {
         Model* inst = create();
         if (inst != nullptr) {
-            *inst = *this;
+            *((Plain <T>*)inst) = *((Plain < T > *)
+            this);
         }
         return inst;
     }
 
-    inline virtual void set_parse_func(const std::function<T(const std::string&)>& parse_func) {
+    inline void set_parse_func(const std::function<T(const std::string&)>& parse_func) {
         _parse_func = parse_func;
     }
 
-    inline virtual void set_str_func(const std::function<std::string(T)>& str_func) {
+    inline void set_str_func(const std::function<std::string(const T&)>& str_func) {
         _str_func = str_func;
     }
 
-    inline virtual void set_str_func_ref(const std::function<std::string(const T&)>& str_func_ref) {
-        _str_func_ref = str_func_ref;
-    }
-
-    inline virtual T value() const {
+    inline T value() const {
         return _val;
     }
 
-    inline virtual void set(const T& val) {
+    inline void set(const T& val) {
         _val = val;
     }
 
@@ -292,12 +295,12 @@ public:
         }
     }
 
-    inline bool equal_parse(const std::string& val_str) const override {
+    inline bool equal_parse(const std::string& val_str) override {
         if (_parse_func) {
             return _val == _parse_func(val_str);
         } else {
             try {
-                return _val = cast<T>(val_str);
+                return _val == cast<T>(val_str);
             } catch (...) {
                 // do nothing
             }
@@ -306,9 +309,6 @@ public:
     }
 
     inline std::string str() const override {
-        if (_str_func_ref) {
-            return _str_func_ref(_val);
-        }
         if (_str_func) {
             return _str_func(_val);
         }
@@ -316,7 +316,7 @@ public:
     }
 
     inline std::string debug_str() const override {
-        return std::forward(str());
+        return std::forward<std::string>(str());
     }
 
 protected:
@@ -325,24 +325,31 @@ protected:
     std::function<T(const std::string&)> _parse_func;
 
     // value to string
-    std::function<std::string(T)> _str_func;
-    std::function<std::string(const T&)> _str_func_ref;
+    std::function<std::string(const T&)> _str_func;
 };
 
 /////////////////////// model list ////////////////////
-class List : public Model {
-RELLAF_DEFMOVE_NO_CTOR(List)
+class ModelList : public Model {
+RELLAF_DEFMOVE_NO_CTOR(ModelList)
 
 public:
-    List() {
+    ModelList() {
         _type = ModelTypeEnum::e().LIST;
     }
 
-    virtual ~List();
+    ~ModelList() override;
 
-    inline std::string debug_str() const override {
-        return "";
+    Model* create() const override {
+        return new(std::nothrow) ModelList();
     }
+
+    Model* clone() const override {
+        ModelList* inst = (ModelList*)create();
+        *inst = *this;
+        return inst;
+    }
+
+    std::string debug_str() const override;
 
     size_t size() const;
 
@@ -358,19 +365,49 @@ public:
 
     void pop_back();
 
-    Model* front();
+    template<class T=Model>
+    T* front() {
+        static_assert(std::is_base_of<Model, T>::value, "class not model");
+        return (T*)(_items.front());
+    }
 
-    const Model* front() const;
+    template<class T=Model>
+    const T* front() const {
+        static_assert(std::is_base_of<Model, T>::value, "class not model");
+        return (T*)(_items.front());
+    }
 
-    Model* back();
+    template<class T=Model>
+    T* back() {
+        static_assert(std::is_base_of<Model, T>::value, "class not model");
+        return (T*)_items.back();
+    }
 
-    const Model* back() const;
+    template<class T=Model>
+    const T* back() const {
+        static_assert(std::is_base_of<Model, T>::value, "class not model");
+        return (T*)_items.back();
+    }
 
     void set(size_t idx, Model* model);
 
-    Model* get(size_t idx);
+    template<class T=Model>
+    T* at(size_t idx) {
+        static_assert(std::is_base_of<Model, T>::value, "class not model");
+        if (idx >= _items.size()) {
+            return nullptr;
+        }
+        return (T*)(_items.at(idx));
+    }
 
-    const Model* get(size_t idx) const;
+    template<class T=Model>
+    const T* at(size_t idx) const {
+        static_assert(std::is_base_of<Model, T>::value, "class not model");
+        if (idx >= _items.size()) {
+            return nullptr;
+        }
+        return (T*)(_items.at(idx));
+    }
 
     const Model* operator[](size_t idx) const;
 
@@ -383,14 +420,6 @@ private:
 
 private:
     // hide method
-    Model* create() const override {
-        return nullptr;
-    }
-
-    Model* clone() const override {
-        return nullptr;
-    }
-
     std::string str() const override {
         return "";
     }
@@ -399,7 +428,7 @@ private:
         RELLAF_UNUSED(val_str);
     }
 
-    bool equal_parse(const std::string& val_str) const override {
+    bool equal_parse(const std::string& val_str) override {
         RELLAF_UNUSED(val_str);
         return false;
     }
@@ -422,11 +451,27 @@ public:
 
     virtual Model* clone() const override = 0;
 
-    virtual std::string debug_str() const;
+    virtual std::string debug_str() const override;
 
     virtual bool is_plain_member(const std::string& key) const = 0;
 
     virtual bool set_plain(const std::string& key, const std::string& val_str) = 0;
+
+    template<class T>
+    Plain<T>* get_plain(const std::string& key) {
+        if (!is_plain_member(key)) {
+            return nullptr;
+        }
+        return (Plain < T > *)(_plains.find(key)->second);
+    }
+
+    template<class T>
+    const Plain<T>* get_plain(const std::string& key) const {
+        if (!is_plain_member(key)) {
+            return nullptr;
+        }
+        return (Plain < T > *)(_plains.find(key)->second);
+    }
 
     Model* get_plain(const std::string& key);
 
@@ -452,21 +497,21 @@ public:
         return _lists.count(name) != 0;
     }
 
-    inline std::map<std::string, List>& get_lists() {
+    inline std::map<std::string, ModelList>& get_lists() {
         return _lists;
     }
 
-    inline const std::map<std::string, List>& get_lists() const {
+    inline const std::map<std::string, ModelList>& get_lists() const {
         return _lists;
     }
 
-    List& get_list(const std::string& name);
+    ModelList& get_list(const std::string& name);
 
-    const List& get_list(const std::string& name) const;
+    const ModelList& get_list(const std::string& name) const;
 
 protected:
     std::map<std::string, Model*> _plains;
-    std::map<std::string, List> _lists;
+    std::map<std::string, ModelList> _lists;
     std::map<std::string, Object*> _objects;
 
 private:
@@ -479,17 +524,14 @@ private:
         RELLAF_UNUSED(val_str);
     }
 
-    bool equal_parse(const std::string& val_str) const override {
+    bool equal_parse(const std::string& val_str) override {
         RELLAF_UNUSED(val_str);
         return false;
     }
 };
 
-#define a       \
-
-
 /////////////////////// definition method ////////////////////
-#define RELLAF_MODEL_DEF_type(_type_, _name_, _dft_)                                    \
+#define RELLAF_MODEL_DEF_type(_type_, _sign_, _name_, _dft_)                            \
 public:                                                                                 \
     _type_ _name_() const {                                                             \
         return _plain_##_name_.value();                                                 \
@@ -497,20 +539,28 @@ public:                                                                         
     void set_##_name_(const _type_& val) {                                              \
         return _plain_##_name_.set(val);                                                \
     }                                                                                   \
+    _type_ _name_##_default() const {                                                   \
+        return _sign_##_value(_s_plain_names[#_name_]);                                 \
+    }                                                                                   \
+    static _type_ _sign_##_value(Model* ptr) {                                          \
+        return ((Plain<_type_>*)ptr)->value();                                          \
+    }                                                                                   \
 private:                                                                                \
     Plain<_type_> _plain_##_name_{_dft_};                                               \
-    Reg _reg_##_name_{#_name_, this, (Model*)(&_plain_##_name_)}
+    Plain<_type_> _plain_##_name_##_dft{_dft_};                                         \
+    Reg _reg_##_name_{#_name_, this, (Model*)(&_plain_##_name_), (Model*)(&_plain_##_name_##_dft)}
 
-#define rellaf_model_def_int16(_name_, _dft_) RELLAF_MODEL_DEF_type(int16, _name_, _dft_)
-#define rellaf_model_def_int(_name_, _dft_) RELLAF_MODEL_DEF_type(int, _name_, _dft_)
-#define rellaf_model_def_int64(_name_, _dft_) RELLAF_MODEL_DEF_type(int64_t, _name_, _dft_)
-#define rellaf_model_def_uint16(_name_, _dft_) RELLAF_MODEL_DEF_type(uint16_t, _name_, _dft_)
-#define rellaf_model_def_uint32(_name_, _dft_) RELLAF_MODEL_DEF_type(uint32_t, _name_, _dft_)
-#define rellaf_model_def_uint64(_name_, _dft_) RELLAF_MODEL_DEF_type(uint64_t, _name_, _dft_)
-#define rellaf_model_def_bool(_name_, _dft_) RELLAF_MODEL_DEF_type(bool, _name_, _dft_)
-#define rellaf_model_def_float(_name_, _dft_) RELLAF_MODEL_DEF_type(float, _name_, _dft_)
-#define rellaf_model_def_double(_name_, _dft_) RELLAF_MODEL_DEF_type(double, _name_, _dft_)
-#define rellaf_model_def_str(_name_, _dft_) RELLAF_MODEL_DEF_type(std::string, _name_, _dft_)
+#define rellaf_model_def_char(_name_, _dft_) RELLAF_MODEL_DEF_type(char, char, _name_, _dft_)
+#define rellaf_model_def_int16(_name_, _dft_) RELLAF_MODEL_DEF_type(int16_t, int16, _name_, _dft_)
+#define rellaf_model_def_int(_name_, _dft_) RELLAF_MODEL_DEF_type(int, int, _name_, _dft_)
+#define rellaf_model_def_int64(_name_, _dft_) RELLAF_MODEL_DEF_type(int64_t, int64, _name_, _dft_)
+#define rellaf_model_def_uint16(_name_, _dft_) RELLAF_MODEL_DEF_type(uint16_t, uint16, _name_, _dft_)
+#define rellaf_model_def_uint32(_name_, _dft_) RELLAF_MODEL_DEF_type(uint32_t, uint32, _name_, _dft_)
+#define rellaf_model_def_uint64(_name_, _dft_) RELLAF_MODEL_DEF_type(uint64_t, uint64, _name_, _dft_)
+#define rellaf_model_def_bool(_name_, _dft_) RELLAF_MODEL_DEF_type(bool, bool, _name_, _dft_)
+#define rellaf_model_def_float(_name_, _dft_) RELLAF_MODEL_DEF_type(float, float, _name_, _dft_)
+#define rellaf_model_def_double(_name_, _dft_) RELLAF_MODEL_DEF_type(double, double, _name_, _dft_)
+#define rellaf_model_def_str(_name_, _dft_) RELLAF_MODEL_DEF_type(std::string, str, _name_, _dft_)
 
 #define rellaf_model_def_object(_name_, _type_)             \
 public:                                                     \
@@ -526,7 +576,7 @@ public:                                                     \
             delete entry->second;                           \
             entry->second = nullptr;                        \
             if (val != nullptr) {                           \
-                entry->second = (Object*)val->clone();               \
+                entry->second = (Object*)val->clone();      \
             }                                               \
         } else {                                            \
             if (val != nullptr) {                           \
@@ -542,7 +592,7 @@ private:                                                    \
 
 #define rellaf_model_def_list(_name_, _type_)               \
 public:                                                     \
-    List& _name_() {                                        \
+    ModelList& _name_() {                                   \
         return get_list(#_name_);                           \
     }                                                       \
 private:                                                    \

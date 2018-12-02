@@ -22,6 +22,14 @@
 template<class T>
 class Caster {
 public:
+    char cast(const std::string& val, const char& ret) {
+        return (char)(val.empty() ? '\0' : val[0]);
+    }
+
+    int16_t cast(const std::string& val, const int16_t& ret) {
+        return (int16_t)strtol(val.c_str(), nullptr, 10);
+    }
+
     int cast(const std::string& val, const int& ret) {
         return (int)strtol(val.c_str(), nullptr, 10);
     }
@@ -57,6 +65,10 @@ public:
 
     double cast(const std::string& val, const double& ret) {
         return strtod(val.c_str(), nullptr);
+    }
+
+    std::string cast(const std::string& val, const std::string& ret) {
+        return val;
     }
 };
 

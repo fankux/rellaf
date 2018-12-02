@@ -25,18 +25,20 @@ class ModelTypeEnum : public IEnum {
 rellaf_enum_dcl(ModelTypeEnum);
 
 rellaf_enum_item_def(0, no);
-rellaf_enum_item_def(1, INT);
-rellaf_enum_item_def(2, INT64);
-rellaf_enum_item_def(3, UINT16);
-rellaf_enum_item_def(4, UINT32);
-rellaf_enum_item_def(5, UINT64);
-rellaf_enum_item_def(6, BOOL);
-rellaf_enum_item_def(7, FLOAT);
-rellaf_enum_item_def(8, DOUBLE);
-rellaf_enum_item_def(9, STR);
+rellaf_enum_item_code_def(1, CHAR);
+rellaf_enum_item_code_def(2, INT16);
+rellaf_enum_item_code_def(3, INT);
+rellaf_enum_item_code_def(4, INT64);
+rellaf_enum_item_code_def(5, UINT16);
+rellaf_enum_item_code_def(6, UINT32);
+rellaf_enum_item_code_def(7, UINT64);
+rellaf_enum_item_code_def(8, BOOL);
+rellaf_enum_item_code_def(9, FLOAT);
+rellaf_enum_item_code_def(10, DOUBLE);
+rellaf_enum_item_code_def(11, STR);
 
-rellaf_enum_item_def(100, OBJECT);
-rellaf_enum_item_def(101, LIST);
+rellaf_enum_item_code_def(100, OBJECT);
+rellaf_enum_item_code_def(101, LIST);
 
 };
 

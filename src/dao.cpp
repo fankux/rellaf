@@ -95,60 +95,46 @@ void Dao::split_section(const std::string& section_str, std::deque<std::string>&
     } while (*begin != '\0');
 }
 
-bool Dao::get_plain_val_str(const Object* model, const std::string& key, std::string& val,
+bool Dao::get_plain_val_str(const Model* model, const std::string& key, std::string& val,
         bool& need_quote, bool& need_escape) {
-    need_quote = false;
-    need_escape = false;
-    if (model->is_int_member(key)) {
-        val = std::to_string(model->get_int(key));
-        return true;
+    switch (model->rellaf_type().code) {
+        case ModelTypeEnum::INT16_code:
+        case ModelTypeEnum::INT_code:
+        case ModelTypeEnum::INT64_code:
+        case ModelTypeEnum::UINT16_code:
+        case ModelTypeEnum::UINT32_code:
+        case ModelTypeEnum::UINT64_code:
+        case ModelTypeEnum::BOOL_code:
+        case ModelTypeEnum::FLOAT_code:
+        case ModelTypeEnum::DOUBLE_code:
+            need_quote = false;
+            need_escape = false;
+            break;
+        case ModelTypeEnum::CHAR_code:
+        case ModelTypeEnum::STR_code:
+            need_quote = true;
+            need_escape = true;
+            return true;
+        default:
+            return false;
     }
-    if (model->is_int64_member(key)) {
-        val = std::to_string(model->get_int64(key));
-        return true;
-    }
-    if (model->is_uint16_member(key)) {
-        val = std::to_string(model->get_uint16(key));
-        return true;
-    }
-    if (model->is_uint32_member(key)) {
-        val = std::to_string(model->get_uint32(key));
-        return true;
-    }
-    if (model->is_uint64_member(key)) {
-        val = std::to_string(model->get_uint64(key));
-        return true;
-    }
-    if (model->is_bool_member(key)) {
-        val = std::to_string(model->get_bool(key));
-        return true;
-    }
-    if (model->is_float_member(key)) {
-        val = std::to_string(model->get_float(key));
-        return true;
-    }
-    if (model->is_double_member(key)) {
-        val = std::to_string(model->get_double(key));
-        return true;
-    }
-    if (model->is_str_member(key)) {
-        val = model->get_str(key);
-        need_quote = true;
-        need_escape = true;
-        return true;
-    }
-    return false;
+    val = model->str();
+    return true;
 }
 
-bool Dao::get_plain_val(const Object* model, const std::deque<std::string>& sections,
+bool Dao::get_plain_val(const Model* model, const std::deque<std::string>& sections,
         std::string& val, bool& need_quote, bool& need_escape) {
     val.clear();
     if (sections.empty() || model == nullptr) {
         return false;
     }
 
-    Object* travel = const_cast<Object*>(model);
-    List* list = nullptr;
+    if (model->rellaf_type() != ModelTypeEnum::e().OBJECT) {
+        return false;
+    }
+
+    Object* travel = (Object*)const_cast<Model*>(model); // for travel only, so we need non const
+    ModelList* list = nullptr;
     for (auto& section : sections) {
         if (section.front() == '[' && section.back() == ']') {
             if (list == nullptr) { // current not list
@@ -156,7 +142,7 @@ bool Dao::get_plain_val(const Object* model, const std::deque<std::string>& sect
             }
 
             size_t idx = strtoul(section.c_str() + 1, nullptr, 10);
-            travel = const_cast<Object*>(list->get(idx)); // never modify mem here,just force convert
+            travel = list->at<Object>(idx);
 
             continue;
         }
@@ -185,15 +171,15 @@ bool Dao::get_plain_val(const Object* model, const std::deque<std::string>& sect
     return false;
 }
 
-bool Dao::get_list_val(const Object* model, const std::deque<std::string>& sections,
+bool Dao::get_list_val(const Model* model, const std::deque<std::string>& sections,
         std::deque<std::string>& vals) {
     vals.clear();
     if (sections.empty() || model == nullptr) {
         return false;
     }
 
-    Object* travel = const_cast<Object*>(model);
-    List* list = nullptr;
+    Model* travel = const_cast<Model*>(model);
+    ModelList* list = nullptr;
     for (auto& section : sections) {
         if (section.front() == '<' && section.back() == '>') {
             if (list == nullptr) { // current not list
@@ -201,25 +187,26 @@ bool Dao::get_list_val(const Object* model, const std::deque<std::string>& secti
             }
 
             size_t idx = strtoul(section.c_str() + 1, nullptr, 10);
-            travel = const_cast<Object*>(list->get(idx)); // never modify mem here,just force convert
+            travel = list->at(idx); // never modify mem here,just force convert
             continue;
         }
 
-        if (travel->is_plain_member(section)) {
+        if (travel->rellaf_type() != ModelTypeEnum::e().LIST &&
+                travel->rellaf_type() != ModelTypeEnum::e().OBJECT) {
             RELLAF_DEBUG("key %s should not be plain", section.c_str());
             return false;
         }
 
-        if (travel->is_object_member(section)) {
-            Object* temp = travel->get_object(section);
+        if (travel->rellaf_type() == ModelTypeEnum::e().OBJECT) {
+            Object* temp = ((Object*)travel)->get_object(section);
             if (temp == nullptr) {
                 RELLAF_DEBUG("key %s is not object", section.c_str());
                 return false;
             }
             list = nullptr;
             travel = temp;
-        } else if (travel->is_list_member(section)) {
-            list = &(travel->get_list(section));
+        } else if (travel->rellaf_type() == ModelTypeEnum::e().LIST) {
+            list = &(((Object*)travel)->get_list(section));
         } else {
             RELLAF_DEBUG("key %s is not list", section.c_str());
             return false;
@@ -227,8 +214,9 @@ bool Dao::get_list_val(const Object* model, const std::deque<std::string>& secti
     }
 
     if (list != nullptr) { // convert to array list
-        for (const Object* m : *list) {
-            if (!m->is_plain()) {
+        for (const Model* m : *list) {
+            if (travel->rellaf_type() != ModelTypeEnum::e().LIST &&
+                    travel->rellaf_type() != ModelTypeEnum::e().OBJECT) {
                 continue;
             }
             vals.emplace_back(m->str());
