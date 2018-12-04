@@ -32,36 +32,28 @@ std::string sql = "INSERT INTO XXX_OOO(product, stream, profile, environment, "
 首先，我们演示一个最简单的对象，设置一个`int`型字段名为`id`。  
 1. 包含头文件`rellaf.h`，在头文件申明反射类：
 ```c++
-// 1.申明对象Object 继承 rellaf::Model
-// 2. rellaf_model_dcl宏申明这个类是一个Model反射类
+// 1.申明对象Obj 继承 rellaf::Object
+// 2. rellaf_model_dcl宏申明这个类是一个Model对象反射类
 // 3. rellaf_model_def_${type}宏用来定义各个类型的数据字段名和默认值
 
-class Object : public Model {
-rellaf_model_dcl(Object)
+class Obj : public Object {
+rellaf_model_dcl(Obj)
 rellaf_model_def_int(id, -222);
 };
 ```
 2. 在源文件中定义反射类
 ```c++
 // 4. 在类定义外，用宏rellaf_model_def定义Model反射类
-rellaf_model_def(Object);
+rellaf_model_def(Obj);
 ```
 3. 好了，可以使用了：
 ```c++
-Object object;
+Obj object;
 int val = object.id();         // 初始化时返回默认值 -222
 
 object.set_id(233);            // 修改
 val = object.id();             // 字段名方法调用, 返回 233
 val = object.get_int("id");    // 通过字段名字符串索引取值, 返回 233
-
-// 通过静态方法`${type}_names`返回某一个类型`<字段，默认值>`集合
-// 包含 `<"id", -222>`
-const std::map<std::string, int>& int_names = Object::int_names();
-
-// 通过成员方法`${type}s`返回某一个类型`<字段，值>`集合
-// 包含 `<"id", 233>`
-const std::map<std::string, int>& int_names = Object::ints();
 ```
 当前支持9种基本类型: 
 
@@ -79,20 +71,20 @@ const std::map<std::string, int>& int_names = Object::ints();
 
 当然，成员可以加多个。更加重要的是，**支持嵌套！支持数组！** 我们来看相对复杂的例子，两个基本类型，一个对象成员，一个数组。
 ```c++
-class SubObject : public Model {
+class SubObject : public Object {
 rellaf_model_dcl(SubObject)
 rellaf_model_def_uint16(port, 18765);
 };
 rellaf_model_def(SubObject);
 
-class List : public Model {
+class List : public Object {
 rellaf_model_dcl(List)
 rellaf_model_def_float(ratio, 11.8);
 };
 rellaf_model_def(List);
 
-class Object : public Model {
-rellaf_model_dcl(Object)
+class Obj : public Object {
+rellaf_model_dcl(Obj)
 rellaf_model_def_int(id, -111);
 rellaf_model_def_str(name, "aaa");
 
@@ -102,11 +94,11 @@ rellaf_model_def_object(sub, SubObject);
 // 定义数组，字段名，类型名（必须是Model类）
 rellaf_model_def_list(list, List);
 };
-rellaf_model_def(Object);
+rellaf_model_def(Obj);
 ```
 定义好了，对象操作
 ```c++
-Object object;
+Obj object;
 // 常规操作
 object.set_id(123);
 object.set_name("fankux");
@@ -130,7 +122,7 @@ port = object.sub()->get_uint16("port");
 ```
 数组操作
 ```c++
-Object object;
+Obj object;
 // 数组通过ModuleList实现，模块size()==0
 ModuleList& list = object.list();
 // 与STL一致的接口
@@ -145,8 +137,8 @@ size = list.size();             // 返回 2
 is_empty = list.empty();        // 返回 false
 
 // 索引数组成员，注意返回的是 Model*, 转换成具体类型即可
-List* ptr = (List*)list.front();
-ptr = (List*)list.back();
+List* ptr = list.front<List>();
+ptr = list.back<List>();
 ptr = (List*)list[0];
 ptr = (List*)list[1];
 

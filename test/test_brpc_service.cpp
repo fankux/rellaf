@@ -16,6 +16,7 @@
 //
 
 #include "gtest/gtest.h"
+#include "json/json.h"
 #include "test_common.h"
 #include "brpc_dispatcher.h"
 #include "test_service.pb.h"
@@ -23,6 +24,14 @@
 
 namespace rellaf {
 namespace test {
+
+static inline std::string json2str(const Json::Value& json, bool is_format = false) {
+    Json::StreamWriterBuilder builder;
+    if (!is_format) {
+        builder.settings_["indentation"] = "";
+    }
+    return Json::writeString(builder, json);
+}
 
 static brpc::Server server;
 
@@ -69,7 +78,7 @@ rellaf_model_def_int(status, 200);
 rellaf_model_def(HelloRet);
 
 class HelloRequest : public Object {
-rellaf_model_dcl(HelloRequest)
+rellaf_model_dcl(HelloRequest);
 
 rellaf_model_def_int(id, 0);
 rellaf_model_def_str(name, "");
@@ -82,7 +91,7 @@ class TestSerivceImpl : public BrpcService, public TestService {
 
 rellaf_brpc_http_dcl(TestSerivceImpl, TestRequest, TestResponse);
 
-rellaf_brpc_http_def_api(echo, "/", GET, echo, PlainWrap<int>, PlainWrap<int>);
+rellaf_brpc_http_def_api(echo, "/", GET, echo, Plain<int>, Plain<int>);
 
 rellaf_brpc_http_def_api_ctx(hello, "/hello", POST, hello, HelloRet, HelloRequest);
 
@@ -90,8 +99,8 @@ rellaf_brpc_http_def_api_ctx(hello, "/hello", POST, hello, HelloRet, HelloReques
 
 rellaf_brpc_http_def(TestSerivceImpl);
 
-Model<int> TestSerivceImpl::echo(const Model<int>& request) {
-
+Plain<int> TestSerivceImpl::echo(const Plain<int>& request) {
+    return Plain<int>{111};
 };
 
 HelloRet TestSerivceImpl::hello(const HelloRequest& request, HttpContext& context) {
@@ -116,9 +125,12 @@ TEST_F(TestBrpcService, echo_service) {
     http_test_st_body_item("bbb/", 404, "", true);
     http_test_st_body_item("hello/", 404, "", false);
     http_test_st_body_item("/hello", 404, "", false);
-    http_test_st_body_item("hello", 200, "HelloHandler", false);
 
-    http_test_st_body_item("", 200, "EchoHandler", false);
+    Json::Value json;
+    json["status"] = 233;
+    http_test_st_body_item("hello", 200, json2str(json).c_str(), false);
+
+    http_test_st_body_item("", 200, "111", false);
 }
 
 }

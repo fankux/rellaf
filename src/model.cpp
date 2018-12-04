@@ -189,4 +189,10 @@ const ModelList& Object::get_list(const std::string& name) const {
     return _lists.at(name);
 }
 
+bool is_plain(const Model* model) {
+    return (model->rellaf_type() != ModelTypeEnum::e().no &&
+            model->rellaf_type() != ModelTypeEnum::e().OBJECT &&
+            model->rellaf_type() != ModelTypeEnum::e().LIST);
+}
+
 }

@@ -110,7 +110,7 @@ private:
     // return value as model convert json string as well
     std::unordered_map<std::string, std::function<int(const std::string&, std::string&)>> _funcs;
 
-    // function with http contenxt
+    // function with http context
     std::unordered_map<std::string,
             std::function<int(const std::string&, std::string&, HttpContext&)>> _ctx_funcs;
 };

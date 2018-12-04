@@ -188,7 +188,7 @@ public:
 
     virtual void clear() = 0;
 
-    virtual void set_parse(const std::string& val_str) = 0;
+    virtual bool set_parse(const std::string& val_str) = 0;
 
     /**
      * @brief if this equal to value which parsed from string `val_str`
@@ -286,16 +286,19 @@ public:
         _val = val;
     }
 
-    inline void set_parse(const std::string& val_str) override {
+    inline bool set_parse(const std::string& val_str) override {
         if (_parse_func) {
             _val = _parse_func(val_str);
+            return true;
         } else {
             try {
                 _val = cast<T>(val_str);
+                return true;
             } catch (...) {
                 // do nothing
             }
         }
+        return false;
     }
 
     inline bool equal_parse(const std::string& val_str) override {
@@ -527,8 +530,9 @@ private:
         return "";
     }
 
-    void set_parse(const std::string& val_str) override {
+    bool set_parse(const std::string& val_str) override {
         RELLAF_UNUSED(val_str);
+        return false;
     }
 
     bool equal_parse(const std::string& val_str) override {
@@ -625,8 +629,9 @@ private:
         return "";
     }
 
-    void set_parse(const std::string& val_str) override {
+    bool set_parse(const std::string& val_str) override {
         RELLAF_UNUSED(val_str);
+        return false;
     }
 
     bool equal_parse(const std::string& val_str) override {
@@ -667,43 +672,46 @@ private:                                                                        
 #define rellaf_model_def_double(_name_, _dft_) RELLAF_MODEL_DEF_type(double, double, _name_, _dft_)
 #define rellaf_model_def_str(_name_, _dft_) RELLAF_MODEL_DEF_type(std::string, str, _name_, _dft_)
 
-#define rellaf_model_def_object(_name_, _type_)             \
-public:                                                     \
-    inline _type_* _name_() {                               \
-        return (_type_*)get_object(#_name_);                \
-    }                                                       \
-    inline _type_* _name_() const {                         \
-        return (_type_*)get_object(#_name_);                \
-    }                                                       \
-    inline void set_##_name_(_type_* val) {                 \
-        auto entry = _objects.find(#_name_);                \
-        if (entry != _objects.end()) {                      \
-            delete entry->second;                           \
-            entry->second = nullptr;                        \
-            if (val != nullptr) {                           \
-                entry->second = (Object*)val->clone();      \
-            }                                               \
-        } else {                                            \
-            if (val != nullptr) {                           \
-                _objects.emplace(#_name_, (Object*)val->clone());    \
-            } else {                                        \
-                _objects.emplace(#_name_, nullptr);         \
-            }                                               \
-        }                                                   \
-    }                                                       \
-private:                                                    \
+#define rellaf_model_def_object(_name_, _type_)                         \
+public:                                                                 \
+    inline _type_* _name_() {                                           \
+        return (_type_*)get_object(#_name_);                            \
+    }                                                                   \
+    inline _type_* _name_() const {                                     \
+        return (_type_*)get_object(#_name_);                            \
+    }                                                                   \
+    inline void set_##_name_(_type_* val) {                             \
+        auto entry = _objects.find(#_name_);                            \
+        if (entry != _objects.end()) {                                  \
+            delete entry->second;                                       \
+            entry->second = nullptr;                                    \
+            if (val != nullptr) {                                       \
+                entry->second = (Object*)val->clone();                  \
+            }                                                           \
+        } else {                                                        \
+            if (val != nullptr) {                                       \
+                _objects.emplace(#_name_, (Object*)val->clone());       \
+            } else {                                                    \
+                _objects.emplace(#_name_, nullptr);                     \
+            }                                                           \
+        }                                                               \
+    }                                                                   \
+private:                                                                \
     RegObject _reg_##_name_##_object{#_name_, this}
 
 
-#define rellaf_model_def_list(_name_, _type_)               \
-public:                                                     \
-    inline ModelList& _name_() {                            \
-        return get_list(#_name_);                           \
-    }                                                       \
-    inline const ModelType& _name_##_list_type() const {    \
-        return _name_##_type.rellaf_type();                 \
-    }                                                       \
-private:                                                    \
-    RegList _reg_##_name_##_list{#_name_, this};            \
+#define rellaf_model_def_list(_name_, _type_)                           \
+public:                                                                 \
+    inline ModelList& _name_() {                                        \
+        return get_list(#_name_);                                       \
+    }                                                                   \
+    inline const ModelType& _name_##_list_type() const {                \
+        return _name_##_type.rellaf_type();                             \
+    }                                                                   \
+private:                                                                \
+    RegList _reg_##_name_##_list{#_name_, this};                        \
     _type_ _name_##_type
-}
+
+bool is_plain(const Model* model);
+
+} //namespace

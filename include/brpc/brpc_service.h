@@ -108,16 +108,28 @@ void _sign_(RpcController* controller, const pb_req_t* request,                 
 #define rellaf_brpc_http_def_api(_sign_, _api_, _method_, _func_, _Ret_, _Req_)                 \
 RELLAF_BRPC_HTTP_DEF_SIGN(_sign_)                                                               \
 private:                                                                                        \
+    static_assert(std::is_base_of<Model, _Ret_>::value, #_Ret_" not Model");                    \
+    static_assert(std::is_base_of<Model, _Req_>::value, #_Req_" not Model");                    \
     Reg _reg_##_sign_##_method_##_func_{this, #_sign_, _api_,                                   \
         #_sign_"-"#_method_"-"#_func_"-"#_Req_, HttpMethod::HTTP_METHOD_##_method_,             \
         [this] (const std::string& body, std::string& ret_body) {                               \
+            bool s;                                                                             \
             _Req_ request;                                                                      \
-            if (!json_str_to_model(body, &request)) {                                           \
+            if (is_plain(&request)) {                                                           \
+                s = ((Model*)&request)->set_parse(body);                                        \
+            } else {                                                                            \
+                s = json_to_model(body, &request);                                              \
+            }                                                                                   \
+            if (!s) {                                                                           \
                 return -1;                                                                      \
             }                                                                                   \
             _Ret_ ret = _func_(request);                                                        \
-            if (!model_to_json_str(&ret, ret_body)) {                                           \
-                return -1;                                                                      \
+            if (is_plain(&ret)) {                                                               \
+                ret_body = ((Model*)&ret)->str();                                               \
+            } else {                                                                            \
+                if (!model_to_json(&ret, ret_body)) {                                           \
+                    return -1;                                                                  \
+                }                                                                               \
             }                                                                                   \
             return 0;                                                                           \
         }                                                                                       \
@@ -128,15 +140,29 @@ public:                                                                         
 #define rellaf_brpc_http_def_api_ctx(_sign_, _api_, _method_, _func_, _Ret_, _Req_)             \
 RELLAF_BRPC_HTTP_DEF_SIGN(_sign_)                                                               \
 private:                                                                                        \
+    static_assert(std::is_base_of<Model, _Ret_>::value, #_Ret_" not Model");                    \
+    static_assert(std::is_base_of<Model, _Req_>::value, #_Req_" not Model");                    \
     Reg _reg_##_sign_##_method_##_func_{this, #_sign_, _api_,                                   \
         #_sign_"-"#_method_"-"#_func_"-"#_Req_, HttpMethod::HTTP_METHOD_##_method_,             \
         [this] (const std::string& body, std::string& ret_body, HttpContext& ctx) {             \
+            bool s;                                                                             \
             _Req_ request;                                                                      \
-            if (!json_str_to_model(body, &request)) {                                           \
+            if (is_plain(&request)) {                                                           \
+                s = ((Model*)&request)->set_parse(body);                                        \
+            } else {                                                                            \
+                s = json_to_model(body, &request);                                              \
+            }                                                                                   \
+            if (!s) {                                                                           \
                 return -1;                                                                      \
             }                                                                                   \
             _Ret_ ret = _func_(request, ctx);                                                   \
-            ret_body = model_to_json_str(&ret);                                                 \
+            if (is_plain(&ret)) {                                                               \
+                ret_body = ((Model*)&ret)->str();                                               \
+            } else {                                                                            \
+                if (!model_to_json(&ret, ret_body)) {                                           \
+                    return -1;                                                                  \
+                }                                                                               \
+            }                                                                                   \
             return 0;                                                                           \
         }                                                                                       \
     };                                                                                          \
