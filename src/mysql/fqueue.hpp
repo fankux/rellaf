@@ -25,15 +25,11 @@
 
 namespace rellaf {
 
-const int QUEUE_ETIMEOUT = 1;
-const int QUEUE_OK = 0;
-const int QUEUE_FAIL = -1;
-
-template <class T>
+template<class T>
 class Queue {
 
 public:
-    virtual ~Queue() {}
+    virtual ~Queue() = default;
 
     Queue(const size_t size, bool blocking) {
         _max_size = size == 0 ? SIZE_MAX : size;
@@ -54,13 +50,16 @@ public:
     }
 
     inline bool isfull() {
-        return  _list.size() >= _max_size;
+        return _list.size() >= _max_size;
     }
 
+    /**
+     * @return 0, succ; -1, failed; 1, timeout
+     */
     inline int add_block(T val, uint32_t timeout_mills = 0) {
         pthread_mutex_lock(&_mutex);
 
-        while (isfull()) {
+        if (isfull()) {
             if (timeout_mills == 0) {
                 while (!_full_signal) {
                     pthread_cond_wait(&_full_cond, &_mutex);
@@ -78,12 +77,13 @@ public:
                 }
             }
         }
-        bool result = _list.add_tail(val);
+
+        bool result = isfull() ? false : _list.add_tail(val);
 
         _empty_signal = true;
         pthread_cond_signal(&_empty_cond);
-
         _full_signal = false;
+
         pthread_mutex_unlock(&_mutex);
         return result ? 0 : -1;
     }
@@ -99,13 +99,17 @@ public:
         return _list.add_tail(val) ? 0 : -1;
     }
 
+    /**
+    * @return 0, succ; -1, failed; 1, timeout
+    */
     inline int pop_block(ListNode<T>** n, uint32_t timeout_mills = 0) {
-        if (n == NULL) {
+        if (n == nullptr) {
             return -1;
         }
 
         pthread_mutex_lock(&_mutex);
-        while (isempty()) {
+
+        if (isempty()) {
             if (timeout_mills == 0) {
                 while (!_empty_signal) {
                     pthread_cond_wait(&_empty_cond, &_mutex);
@@ -116,7 +120,7 @@ public:
                 tspec.tv_sec += timeout_mills / 1000;
                 while (!_empty_signal) {
                     if (pthread_cond_timedwait(&_empty_cond, &_mutex, &tspec) == ETIMEDOUT) {
-                        *n = NULL;
+                        *n = nullptr;
                         _empty_signal = false;
                         pthread_mutex_unlock(&_mutex);
                         return 1;
@@ -124,18 +128,21 @@ public:
                 }
             }
         }
-        *n = _list.pop_head();
+
+        // here might be nullptr, after `clear()` called,
+        // `_empty_signal` set to true, so the condition would not be waited
+        *n = isempty() ? nullptr : _list.pop_head();
 
         _full_signal = true;
         pthread_cond_signal(&_full_cond);
-
         _empty_signal = false;
+
         pthread_mutex_unlock(&_mutex);
         return 0;
     }
 
     inline int pop(ListNode<T>** n, uint32_t timeout_mills = 0) {
-        if (n == NULL) {
+        if (n == nullptr) {
             return -1;
         }
         if (_blocking) {
@@ -146,26 +153,20 @@ public:
         return 0;
     }
 
-    inline ListNode<T>* peek() {
-        return _list.get_head();
-    }
-
     inline void clear() {
         if (_blocking) {
             pthread_mutex_lock(&_mutex);
 
-            _full_signal = true;
-            pthread_cond_signal(&_full_cond);
             _empty_signal = true;
             pthread_cond_signal(&_empty_cond);
 
+            _full_signal = true;
+            pthread_cond_signal(&_full_cond);
+
+            _list.clear();
             pthread_mutex_unlock(&_mutex);
         }
-        _full_signal = false;
-        _empty_signal = false;
-        _list.clear();
     }
-
 
 private:
     List<T> _list;
@@ -174,10 +175,11 @@ private:
 
     pthread_mutex_t _mutex;
 
-    bool _full_signal = false;
-    bool _empty_signal = false;
     pthread_cond_t _full_cond;
     pthread_cond_t _empty_cond;
+
+    volatile bool _full_signal = false;
+    volatile bool _empty_signal = false;
 };
 
 }

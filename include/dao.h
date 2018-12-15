@@ -25,7 +25,7 @@
 #include <deque>
 #include <memory>
 #include "common.h"
-#include "sql_pattern.h"
+#include "var_pattern.h"
 #include "model.h"
 #include "model_type.h"
 #include "mysql_escape.h"
@@ -124,7 +124,7 @@ protected:
         Reg(Dao* inst, const std::string& method, const std::string& pattern) {
 
             std::deque<SqlPattern::Stub> pices;
-            SqlPattern::PatternErr err;
+            PatternErr err;
             if (!SqlPattern::explode(pattern, pices, err)) {
                 RELLAF_DEBUG("reg sql failed, explode pattern failed : %s", pattern.c_str());
                 exit(-1);

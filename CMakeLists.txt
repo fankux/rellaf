@@ -19,10 +19,10 @@ include_directories(
         ${INC}
 )
 
-option(WITH_JSON "enable rellaf model to json converter, default ON" ON)
-option(WITH_MYSQL "enable simple mysql connection pool, default ON" ON)
-option(WITH_BRPC_EXT "enable brpc invoker, default ON" ON)
-option(WITH_TEST "enable test, default ON" ON)
+option(WITH_JSON "enable rellaf model to json converter" ON)
+option(WITH_MYSQL "enable simple mysql connection pool" ON)
+option(WITH_BRPC_EXT "enable brpc invoker" ON)
+option(WITH_TEST "enable test" ON)
 
 set(THIRD_DEPS)
 if (WITH_JSON)

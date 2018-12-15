@@ -41,7 +41,7 @@ void print_pieces(std::deque<SqlPattern::Stub>& pieces) {
 
 #define test_explode_pattern_item(pattern, expect)          \
 {                                                           \
-    SqlPattern::PatternErr err;                             \
+    PatternErr err;                                         \
     std::deque<SqlPattern::Stub> pieces;                    \
     SqlPattern::explode(pattern, pieces, err);              \
     ASSERT_EQ(err, expect);                                 \

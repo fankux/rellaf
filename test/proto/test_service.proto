@@ -13,4 +13,6 @@ service TestService {
     rpc echo (TestRequest) returns (TestResponse);
 
     rpc hello (TestRequest) returns (TestResponse);
+
+    rpc hi (TestRequest) returns (TestResponse);
 }

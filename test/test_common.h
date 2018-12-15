@@ -32,4 +32,21 @@ static bool map_keys_equal_set(const std::map<K, V>& map, const std::set<K>& set
     return true;
 }
 
+template<class K, class V>
+static bool map_equal(const std::map<K, V>& map, const std::map<K, V>& expect) {
+    if (map.size() != expect.size()) {
+        return false;
+    }
+    for (auto& entry : map) {
+        auto iter = expect.find(entry.first);
+        if (iter == expect.end()) {
+            return false;
+        }
+        if (iter->second != entry.second) {
+            return false;
+        }
+    }
+    return true;
+}
+
 }

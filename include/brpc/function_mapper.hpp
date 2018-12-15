@@ -23,6 +23,7 @@
 #include "common.h"
 #include "trim.hpp"
 
+#include "var_pattern.h"
 #include "json_to_model.h"
 
 namespace rellaf {
@@ -30,19 +31,22 @@ namespace rellaf {
 using brpc::HttpHeader;
 using brpc::HttpMethod;
 
-class HttpContext {
+struct HttpContext {
     const HttpHeader& request_header;
     const butil::IOBuf& request_body;
     HttpHeader& response_header;
     butil::IOBuf& response_body;
+    std::map<std::string, std::string>& path_vars;
 
 public:
     HttpContext(const HttpHeader& req_header, const butil::IOBuf& req_body,
-            HttpHeader& resp_header, butil::IOBuf& resp_body) :
+            HttpHeader& resp_header, butil::IOBuf& resp_body,
+            std::map<std::string, std::string>& vars) :
             request_header(req_header),
             request_body(req_body),
             response_header(resp_header),
-            response_body(resp_body) {}
+            response_body(resp_body),
+            path_vars(vars) {}
 };
 
 class FunctionMapper {
@@ -60,37 +64,31 @@ public:
     }
 
     int invoke(const std::string& name, brpc::Controller* cntl, std::string& ret_body) {
-        int ret = -1;
         auto func_entry = _funcs.find(name);
-        if (func_entry != _funcs.end()) {
-            ret = (func_entry->second)(cntl->request_attachment().to_string(), ret_body);
-            cntl->http_response().set_content_type("application/json");
-            return ret;
+        if (func_entry == _funcs.end()) {
+            return -1;
+        }
+
+        std::map<std::string, std::string> vars;
+        auto var_entry = _path_vars.find(name);
+        if (var_entry != _path_vars.end()) {
+            if (!UrlPattern::fetch_path_vars(cntl->http_request().uri().path(),
+                    var_entry->second, vars)) {
+                return -1;
+            }
         }
 
         HttpContext ctx(cntl->http_request(), cntl->request_attachment(), cntl->http_response(),
-                cntl->response_attachment());
-        auto ctx_func_entry = _ctx_funcs.find(name);
-        if (ctx_func_entry != _ctx_funcs.end()) {
-            ret = (ctx_func_entry->second)(cntl->request_attachment().to_string(), ret_body, ctx);
-            cntl->http_response().set_content_type("application/json");
-            return ret;
-        }
-
-        return -1;
+                cntl->response_attachment(), vars);
+        int ret = (func_entry->second)(ctx, cntl->request_attachment().to_string(), ret_body);
+        cntl->http_response().set_content_type("application/json");
+        return ret;
     }
 
     void reg(const std::string& api, const std::string& name, HttpMethod method,
-            std::function<int(const std::string&, std::string&)> func) {
+            std::function<int(HttpContext&, const std::string&, std::string&)> ctx_func) {
         reg_api(api, name);
-        FunctionMapper::instance()._funcs.emplace(name, func);
-        RELLAF_DEBUG("default handler %s registered", name.c_str());
-    }
-
-    void reg(const std::string& api, const std::string& name, HttpMethod method,
-            std::function<int(const std::string&, std::string&, HttpContext&)> ctx_func) {
-        reg_api(api, name);
-        FunctionMapper::instance()._ctx_funcs.emplace(name, ctx_func);
+        FunctionMapper::instance()._funcs.emplace(name, ctx_func);
         RELLAF_DEBUG("default handler %s registered", name.c_str());
     }
 
@@ -99,6 +97,15 @@ private:
         std::string api_filter = api;
         trim(api_filter);
         FunctionMapper::instance()._api_hdrs.emplace(api_filter, name);
+
+        PatternErr err;
+        std::map<uint32_t, std::string> vars;
+        if (!UrlPattern::explode_path_vars(api_filter, vars, err)) {
+            RELLAF_DEBUG("api %s invalid, explode path vars failed : %d", api_filter.c_str(), err);
+            return;
+        }
+
+        _path_vars.emplace(api_filter, vars);
     }
 
 private:
@@ -106,13 +113,14 @@ private:
     // api ==> name
     std::unordered_map<std::string, std::string> _api_hdrs;
 
+    // api ==> indexes to path variables
+    std::unordered_map<std::string, std::map<uint32_t, std::string>> _path_vars;
+
     // request body as json string parsing to model,
     // return value as model convert json string as well
-    std::unordered_map<std::string, std::function<int(const std::string&, std::string&)>> _funcs;
-
     // function with http context
     std::unordered_map<std::string,
-            std::function<int(const std::string&, std::string&, HttpContext&)>> _ctx_funcs;
+            std::function<int(HttpContext&, const std::string&, std::string&)>> _funcs;
 };
 
 }

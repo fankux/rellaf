@@ -85,13 +85,7 @@ class Reg {                                                                     
 public:                                                                                         \
     Reg(_clazz_* inst, const std::string& sign, const std::string& api,                         \
             const std::string& name, HttpMethod method,                                         \
-            std::function<int(const std::string&, std::string&)> func) {                        \
-        inst->bind_api_sign(sign, api);                                                         \
-        FunctionMapper::instance().reg(api, name, method, func);                                \
-    }                                                                                           \
-    Reg(_clazz_* inst, const std::string& sign, const std::string& api,                         \
-            const std::string& name, HttpMethod method,                                         \
-            std::function<int(const std::string&, std::string&, HttpContext&)> func) {          \
+            std::function<int(HttpContext&, const std::string&, std::string&)> func) {          \
         inst->bind_api_sign(sign, api);                                                         \
         FunctionMapper::instance().reg(api, name, method, func);                                \
     }                                                                                           \
@@ -105,16 +99,27 @@ void _sign_(RpcController* controller, const pb_req_t* request,                 
     BrpcService::entry(controller, (Message*)request, (Message*)response, done);                \
 }
 
-#define rellaf_brpc_http_def_api(_sign_, _api_, _method_, _func_, _Ret_, _Req_)                 \
+#define rellaf_brpc_http_def_api(_sign_, _api_, _func_, _Ret_, _Param_, _PathVar_, _ReqBody_)  \
 RELLAF_BRPC_HTTP_DEF_SIGN(_sign_)                                                               \
 private:                                                                                        \
     static_assert(std::is_base_of<Model, _Ret_>::value, #_Ret_" not Model");                    \
-    static_assert(std::is_base_of<Model, _Req_>::value, #_Req_" not Model");                    \
-    Reg _reg_##_sign_##_method_##_func_{this, #_sign_, _api_,                                   \
-        #_sign_"-"#_method_"-"#_func_"-"#_Req_, HttpMethod::HTTP_METHOD_##_method_,             \
-        [this] (const std::string& body, std::string& ret_body) {                               \
+    static_assert(std::is_base_of<Object, _Param_>::value, #_Param_" not Object");              \
+    static_assert(std::is_base_of<Object, _PathVar_>::value, #_PathVar_" not Object");          \
+    static_assert(std::is_base_of<Model, _ReqBody_>::value, #_ReqBody_" not Model");            \
+    Reg _reg_##_sign_##_post_##_func_{this, #_sign_, _api_,                                     \
+        #_sign_"-POST-"#_func_"-"#_ReqBody_, HttpMethod::HTTP_METHOD_POST,                      \
+        [this] (HttpContext& ctx, const std::string& body, std::string& ret_body) {             \
             bool s;                                                                             \
-            _Req_ request;                                                                      \
+            _Param_ param;                                                                      \
+            const brpc::URI& uri = ctx.request_header.uri();                                    \
+            for (auto iter = uri.QueryBegin(); iter != uri.QueryEnd(); ++iter) {                \
+                param.set_plain(iter->first, iter->second);                                     \
+            }                                                                                   \
+            _PathVar_ var;                                                                      \
+            for (auto& entry : ctx.path_vars) {                                                 \
+                var.set_plain(entry.first, entry.second);                                       \
+            }                                                                                   \
+            _ReqBody_ request;                                                                  \
             if (is_plain(&request)) {                                                           \
                 s = ((Model*)&request)->set_parse(body);                                        \
             } else {                                                                            \
@@ -123,7 +128,7 @@ private:                                                                        
             if (!s) {                                                                           \
                 return -1;                                                                      \
             }                                                                                   \
-            _Ret_ ret = _func_(request);                                                        \
+            _Ret_ ret = _func_(ctx, param, var, request);                                       \
             if (is_plain(&ret)) {                                                               \
                 ret_body = ((Model*)&ret)->str();                                               \
             } else {                                                                            \
@@ -134,40 +139,48 @@ private:                                                                        
             return 0;                                                                           \
         }                                                                                       \
     };                                                                                          \
+public:                                                                                         \
+    _Ret_ _func_(HttpContext& context, const _Param_& params, const _PathVar_& vars,             \
+            const _ReqBody_& request)
+
+#define rellaf_brpc_http_def_post_ctx(_sign_, _api_, _func_, _Ret_, _Req_)                      \
+RELLAF_BRPC_HTTP_DEF_SIGN(_sign_)                                                               \
+private:                                                                                        \
+    static_assert(std::is_base_of<Model, _Ret_>::value, #_Ret_" not Model");                    \
+    static_assert(std::is_base_of<Model, _Req_>::value, #_Req_" not Model");                    \
+    Reg _reg_##_sign_##_post_##_func_{this, #_sign_, _api_,                                     \
+        #_sign_"-POST-"#_func_"-"#_Req_, HttpMethod::HTTP_METHOD_POST,                          \
+        [this] (HttpContext& ctx, const std::string& body, std::string& ret_body) {             \
+            bool s;                                                                             \
+            _Req_ request;                                                                      \
+            if (is_plain(&request)) {                                                           \
+                s = ((Model*)&request)->set_parse(body);                                        \
+            } else {                                                                            \
+                s = json_to_model(body, &request);                                              \
+            }                                                                                   \
+            if (!s) {                                                                           \
+                return -1;                                                                      \
+            }                                                                                   \
+            _Ret_ ret = _func_(ctx, request);                                                   \
+            if (is_plain(&ret)) {                                                               \
+                ret_body = ((Model*)&ret)->str();                                               \
+            } else {                                                                            \
+                if (!model_to_json(&ret, ret_body)) {                                           \
+                    return -1;                                                                  \
+                }                                                                               \
+            }                                                                                   \
+            return 0;                                                                           \
+        }                                                                                       \
+    };                                                                                          \
+public:                                                                                         \
+    _Ret_ _func_(HttpContext& context, const _Req_& request)
+
+#define rellaf_brpc_http_def_post(_sign_, _api_, _func_, _Ret_, _Req_)                          \
+private:                                                                                        \
+    rellaf_brpc_http_def_post_ctx(_sign_, _api_, _func_, _Ret_, _Req_) {                        \
+        return std::forward<_Ret_>(_func_(request));                                            \
+    }                                                                                           \
 public:                                                                                         \
     _Ret_ _func_(const _Req_& request)
-
-#define rellaf_brpc_http_def_api_ctx(_sign_, _api_, _method_, _func_, _Ret_, _Req_)             \
-RELLAF_BRPC_HTTP_DEF_SIGN(_sign_)                                                               \
-private:                                                                                        \
-    static_assert(std::is_base_of<Model, _Ret_>::value, #_Ret_" not Model");                    \
-    static_assert(std::is_base_of<Model, _Req_>::value, #_Req_" not Model");                    \
-    Reg _reg_##_sign_##_method_##_func_{this, #_sign_, _api_,                                   \
-        #_sign_"-"#_method_"-"#_func_"-"#_Req_, HttpMethod::HTTP_METHOD_##_method_,             \
-        [this] (const std::string& body, std::string& ret_body, HttpContext& ctx) {             \
-            bool s;                                                                             \
-            _Req_ request;                                                                      \
-            if (is_plain(&request)) {                                                           \
-                s = ((Model*)&request)->set_parse(body);                                        \
-            } else {                                                                            \
-                s = json_to_model(body, &request);                                              \
-            }                                                                                   \
-            if (!s) {                                                                           \
-                return -1;                                                                      \
-            }                                                                                   \
-            _Ret_ ret = _func_(request, ctx);                                                   \
-            if (is_plain(&ret)) {                                                               \
-                ret_body = ((Model*)&ret)->str();                                               \
-            } else {                                                                            \
-                if (!model_to_json(&ret, ret_body)) {                                           \
-                    return -1;                                                                  \
-                }                                                                               \
-            }                                                                                   \
-            return 0;                                                                           \
-        }                                                                                       \
-    };                                                                                          \
-public:                                                                                         \
-    _Ret_ _func_(const _Req_& request, HttpContext& context)
-
 
 } // namespace

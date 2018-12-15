@@ -20,8 +20,27 @@
 
 #include <string>
 #include <deque>
+#include <map>
 
 namespace rellaf {
+
+typedef enum {
+    OK = 0,
+    ILL_TOKEN,
+    ILL_BEGIN,
+    ILL_END,
+    UNMATCH,
+    NONE_FIELD,
+    UNKNOWN
+} PatternErr;
+
+typedef enum {
+    STATE_INIT = 0,
+    STATE_NORMAL,
+    STATE_MATCH_TOKEN,
+    STATE_FETCH,
+    STATE_END_FETCH,
+} PatternState;
 
 class SqlPattern {
 public:
@@ -54,16 +73,6 @@ public:
         std::string _value;
     };
 
-    typedef enum {
-        OK = 0,
-        ILL_TOKEN,
-        ILL_BEGIN,
-        ILL_END,
-        UNMATCH,
-        NONE_FIELD,
-        UNKNOWN
-    } PatternErr;
-
 public:
     static bool explode(const std::string& pattern, std::deque<Stub>& pieces, PatternErr& err);
 
@@ -72,12 +81,15 @@ private:
     static const char token_pairs[128];
     static const uint8_t tokens[128];
     static const uint8_t end_tokens[128];
+};
 
-    static const enum {
-        STATE_INIT = 0,
-        STATE_MATCH_TOKEN,
-        STATE_FETCH,
-    } State;
+class UrlPattern {
+public:
+    static bool explode_path_vars(const std::string& path, std::map<uint32_t, std::string>& vars,
+            PatternErr& err);
+
+    static bool fetch_path_vars(const std::string& path, std::map<uint32_t, std::string>& vars,
+            std::map<std::string, std::string>& vals);
 };
 
 }

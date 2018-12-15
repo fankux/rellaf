@@ -15,7 +15,7 @@
 // Author: Fankux (fankux@gmail.com)
 //
 
-#include "sql_pattern.h"
+#include "var_pattern.h"
 #include "common.h"
 
 namespace rellaf {
@@ -160,7 +160,182 @@ bool SqlPattern::explode(const std::string& pattern, std::deque<Stub>& pieces, P
             break;
     }
     return ret;
+}
 
+bool UrlPattern::explode_path_vars(const std::string& path, std::map<uint32_t, std::string>& vars,
+        PatternErr& err) {
+    vars.clear();
+
+    bool start_flag = false;
+
+    uint32_t idx = 0;
+    std::string section;
+    PatternState state = STATE_INIT;
+    for (size_t i = 0; i < path.size();) {
+        char c = path[i];
+
+        if (state == STATE_INIT) {
+            if (c == '/' || c == '{' || c == '}') {
+                if (c == '/') {
+                    if (start_flag) {
+                        ++idx;
+                    }
+                    state = STATE_MATCH_TOKEN;
+                } else {
+                    err = ILL_TOKEN;
+                    RELLAF_DEBUG("unexpected token : %c", c);
+                    vars.clear();
+                    return false;
+                }
+            }
+
+            start_flag = true;
+            ++i;
+            continue;
+        }
+
+        if (state == STATE_MATCH_TOKEN) {
+            if (c == '/' || c == '{' || c == '}') {
+                if (c == '/') {
+                    ++i;
+                    continue;
+                }
+                if (c != '{') {
+                    err = ILL_BEGIN;
+                    RELLAF_DEBUG("unexpected start token : %c", c);
+                    vars.clear();
+                    return false;
+                }
+
+                state = STATE_FETCH;
+            } else {
+                state = STATE_NORMAL;
+            }
+
+            ++i;
+            continue;
+        }
+
+        if (state == STATE_NORMAL) {
+            if (c == '{' || c == '}') {
+                err = ILL_TOKEN;
+                RELLAF_DEBUG("unexpected token : %c", c);
+                vars.clear();
+                return false;
+            }
+            if (c == '/') {
+                state = STATE_INIT;
+                continue;
+            }
+
+            ++i;
+            continue;
+        }
+
+        if (state == STATE_FETCH) {
+            if (c == '/' || c == '{' || c == '}') {
+                if (c == '}') {
+                    if (section.empty()) {
+                        err = NONE_FIELD;
+                        RELLAF_DEBUG("field empty");
+                        vars.clear();
+                        return false;
+                    }
+                    vars.emplace(idx, section);
+                    section.clear();
+
+                    state = STATE_END_FETCH;
+                } else {
+                    err = ILL_END;
+                    RELLAF_DEBUG("unexpected end token %c", c);
+                    vars.clear();
+                    return false;
+                }
+
+            } else {
+                section += c;
+            }
+
+            ++i;
+            continue;
+        }
+
+        if (state == STATE_END_FETCH) {
+            if (c != '/') {
+                err = ILL_TOKEN;
+                RELLAF_DEBUG("unexpected token : %c after end token", c);
+                vars.clear();
+                return false;
+            }
+            state = STATE_INIT;
+            continue;
+        }
+    }
+
+    bool ret;
+    switch (state) {
+        case STATE_INIT:
+        case STATE_NORMAL:
+        case STATE_END_FETCH:
+            if (!section.empty()) {
+                vars.emplace(idx, section);
+            }
+            err = OK;
+            ret = true;
+            break;
+        case STATE_MATCH_TOKEN:
+            err = OK;
+            ret = true;
+            break;
+        case STATE_FETCH:
+            err = ILL_END;
+            vars.clear();
+            ret = false;
+            break;
+        default:
+            err = UNKNOWN;
+            RELLAF_DEBUG("unknow state : %d", state);
+            vars.clear();
+            ret = false;
+            break;
+    }
+    return ret;
+}
+
+bool UrlPattern::fetch_path_vars(const std::string& path,
+        std::map<uint32_t, std::string>& vars,
+        std::map<std::string, std::string>& vals) {
+
+    uint32_t idx = 0;
+    std::string section;
+    PatternState state = STATE_INIT;
+    for (size_t i = 0; i < path.size(); ++i) {
+        char c = path[i];
+
+        if (state == STATE_INIT) {
+            if (c == '/') {
+                if (vars.count(idx) == 1) {
+                    vals.emplace(vars[idx], section);
+                    section.clear();
+                }
+
+                ++idx;
+                state = STATE_MATCH_TOKEN;
+            }
+
+            continue;
+        }
+
+        if (state == STATE_MATCH_TOKEN) {
+            if (c == '/') {
+                ++i;
+                continue;
+            }
+        }
+
+        section += c;
+    }
+    return true;
 }
 
 }

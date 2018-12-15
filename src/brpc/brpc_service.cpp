@@ -30,7 +30,6 @@ void BrpcService::entry(RpcController* controller, Message* req, Message* resp,
     brpc::ClosureGuard done_guard(done);
     brpc::Controller* cntl = dynamic_cast<brpc::Controller*>(controller);
 
-    // check if current api need to forward to master
     std::string name = FunctionMapper::instance().fetch_name(cntl->http_request());
     if (name.empty()) {
         cntl->http_response().set_status_code(brpc::HTTP_STATUS_NOT_FOUND);
