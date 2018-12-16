@@ -25,12 +25,16 @@
 namespace rellaf {
 namespace test {
 
-#define test_url_pattern_item(pattern, expect)              \
-{                                                           \
-    PatternErr err;                                         \
-    UrlPattern::explode_path_vars(pattern, pieces, err);    \
-    ASSERT_EQ(expect, err);                                 \
+#define test_url_pattern_item(pattern, expect)                      \
+{                                                                   \
+    PatternErr err;                                                 \
+    UrlPattern::explode_path_vars(pattern, pieces, err);            \
+    ASSERT_EQ(expect, err);                                         \
 }
+
+#define test_url_fetch_item(pattern, path)                          \
+    UrlPattern::explode_path_vars(pattern, pieces, err);            \
+    ASSERT_TRUE(UrlPattern::fetch_path_vars(path, pieces, vals))
 
 class TestUrl : public testing::Test {
 protected:
@@ -234,19 +238,6 @@ TEST_F(TestUrl, test_explode_path_vars) {
     ASSERT_TRUE(map_equal(pieces, {{0, "a"}}));
     test_url_pattern_item("//{a}//", PatternErr::OK);
     ASSERT_TRUE(map_equal(pieces, {{0, "a"}}));
-    test_url_pattern_item("//{a}//", PatternErr::OK);
-    ASSERT_TRUE(map_equal(pieces, {{0, "a"}}));
-
-    test_url_pattern_item("/{a}", PatternErr::OK);
-    ASSERT_TRUE(map_equal(pieces, {{0, "a"}}));
-    test_url_pattern_item("//{a}", PatternErr::OK);
-    ASSERT_TRUE(map_equal(pieces, {{0, "a"}}));
-    test_url_pattern_item("///{a}", PatternErr::OK);
-    ASSERT_TRUE(map_equal(pieces, {{0, "a"}}));
-    test_url_pattern_item("/{a}/", PatternErr::OK);
-    ASSERT_TRUE(map_equal(pieces, {{0, "a"}}));
-    test_url_pattern_item("//{a}//", PatternErr::OK);
-    ASSERT_TRUE(map_equal(pieces, {{0, "a"}}));
     test_url_pattern_item("///{a}///", PatternErr::OK);
     ASSERT_TRUE(map_equal(pieces, {{0, "a"}}));
 
@@ -256,7 +247,6 @@ TEST_F(TestUrl, test_explode_path_vars) {
     ASSERT_TRUE(map_equal(pieces, {{0, "a"}}));
     test_url_pattern_item("///{a}///x", PatternErr::OK);
     ASSERT_TRUE(map_equal(pieces, {{0, "a"}}));
-
 
     test_url_pattern_item("x/{a}", PatternErr::OK);
     ASSERT_TRUE(map_equal(pieces, {{1, "a"}}));
@@ -303,19 +293,6 @@ TEST_F(TestUrl, test_explode_path_vars) {
     test_url_pattern_item("///{a}///{b}///", PatternErr::OK);
     ASSERT_TRUE(map_equal(pieces, {{0, "a"}, {1, "b"}}));
 
-    test_url_pattern_item("/{a}/{b}", PatternErr::OK);
-    ASSERT_TRUE(map_equal(pieces, {{0, "a"}, {1, "b"}}));
-    test_url_pattern_item("//{a}//{b}", PatternErr::OK);
-    ASSERT_TRUE(map_equal(pieces, {{0, "a"}, {1, "b"}}));
-    test_url_pattern_item("///{a}///{b}", PatternErr::OK);
-    ASSERT_TRUE(map_equal(pieces, {{0, "a"}, {1, "b"}}));
-    test_url_pattern_item("/{a}/{b}/", PatternErr::OK);
-    ASSERT_TRUE(map_equal(pieces, {{0, "a"}, {1, "b"}}));
-    test_url_pattern_item("//{a}//{b}//", PatternErr::OK);
-    ASSERT_TRUE(map_equal(pieces, {{0, "a"}, {1, "b"}}));
-    test_url_pattern_item("///{a}///{b}///", PatternErr::OK);
-    ASSERT_TRUE(map_equal(pieces, {{0, "a"}, {1, "b"}}));
-
     test_url_pattern_item("x/{a}/{b}", PatternErr::OK);
     ASSERT_TRUE(map_equal(pieces, {{1, "a"}, {2, "b"}}));
     test_url_pattern_item("/x/{a}/{b}", PatternErr::OK);
@@ -339,7 +316,286 @@ TEST_F(TestUrl, test_explode_path_vars) {
 }
 
 TEST_F(TestUrl, test_fetch_path_vars) {
+    PatternErr err;
+    std::map<uint32_t, std::string> pieces;
+    std::map<std::string, std::string> vals;
+    test_url_fetch_item("", "");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item(" ", " ");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("  ", "  ");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("x", "x");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("xx", "xx");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("/", "/");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("//", "//");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("///", "///");
+    ASSERT_TRUE(map_equal(vals, {}));
 
+    test_url_fetch_item("x/", "x/");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("/x", "/x");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("x/x", "x/x");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("x//", "x//");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("/x/", "/x/");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("//x", "//x");
+    ASSERT_TRUE(map_equal(vals, {}));
+
+    test_url_fetch_item("x/x/", "x/x/");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("/x/x", "/x/x");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("x//x", "x//x");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("x/x/x", "x/x/x");
+    ASSERT_TRUE(map_equal(vals, {}));
+
+    test_url_fetch_item("x///", "x///");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("/x//", "/x//");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("//x/", "//x/");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("///x", "///x");
+    ASSERT_TRUE(map_equal(vals, {}));
+
+    test_url_fetch_item("x/x//", "x/x//");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("/x/x/", "/x/x/");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("//x/x", "//x/x");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("x/x/x/", "x/x/x/");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("/x/x/x", "/x/x/x");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("x/x/x/x", "x/x/x/x");
+    ASSERT_TRUE(map_equal(vals, {}));
+
+    test_url_fetch_item("{", "{");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("}", "}");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("{{", "{{");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("}}", "}}");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("}{", "}{");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("{}", "{}");
+    ASSERT_TRUE(map_equal(vals, {}));
+
+    test_url_fetch_item("/}", "/}");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("/{", "/{");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("/{{", "/{{");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("/{/", "/{/");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("/{}", "/{}");
+    ASSERT_TRUE(map_equal(vals, {}));
+
+    test_url_fetch_item("//}", "//}");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("//{", "//{");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("//{{", "//{{");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("//{}", "//{}");
+    ASSERT_TRUE(map_equal(vals, {}));
+
+    test_url_fetch_item("///}", "///}");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("///{", "///{");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("///{{", "///{{");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("///{}", "///{}");
+    ASSERT_TRUE(map_equal(vals, {}));
+
+    test_url_fetch_item("/{a}{", "/x");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("/{a}}", "/x");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("/x{a}", "/x");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("/{a}x", "/x");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("/{a}x/", "/x");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("/{a}/{{", "/x/x");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("/{a}/{", "/x/x");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("/{a}/{/", "/x/x/");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("/{a}/{}", "/x/x");
+    ASSERT_TRUE(map_equal(vals, {}));
+
+    test_url_fetch_item("//{a}{", "//x");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("//{a}}", "//x");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("//x{a}", "//x");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("//{a}x", "//x");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("//{a}x//", "//x");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("//{a}//{{", "//x//x");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("//{a}//{", "//x//x");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("//{a}//{//", "//x//x//");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("//{a}//{}", "//x//x");
+    ASSERT_TRUE(map_equal(vals, {}));
+
+    test_url_fetch_item("///{a}{", "///x");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("///{a}}", "///x");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("///x{a}", "///x");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("///{a}x", "///x");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("///{a}x///", "///x");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("///{a}///{{", "///x///x");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("///{a}///{", "///x///x");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("///{a}///{///", "///x///x///");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("///{a}///{}", "///x///x");
+    ASSERT_TRUE(map_equal(vals, {}));
+
+    test_url_fetch_item("/{a}/{b}{", "/x/x");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("/{a}/{b}}", "/x/x");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("/x{a}", "/x/x");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("/{a}/{b}x", "/x/x");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("/{a}/{b}x/", "/x/x");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("/{a}/{b}/{{", "/x/x/x");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("/{a}/{b}/{", "/x/x/x");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("/{a}/{b}/{/", "/x/x/x");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("/{a}/{b}/{}", "/x/x/x");
+    ASSERT_TRUE(map_equal(vals, {}));
+
+    test_url_fetch_item("/{a}", "/");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("/{a}", "//");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("/{a}/", "/");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("/{a}/", "//");
+    ASSERT_TRUE(map_equal(vals, {}));
+    test_url_fetch_item("/{a}/{b}", "/x");
+    ASSERT_TRUE(map_equal(vals, {{"a", "x"}, {"b", ""}}));
+    test_url_fetch_item("/{a}/{b}", "//x");
+    ASSERT_TRUE(map_equal(vals, {{"a", "x"}, {"b", ""}}));
+
+    test_url_fetch_item("/{a}", "/x");
+    ASSERT_TRUE(map_equal(vals, {{"a", "x"}}));
+    test_url_fetch_item("//{a}", "//x");
+    ASSERT_TRUE(map_equal(vals, {{"a", "x"}}));
+    test_url_fetch_item("///{a}", "///x");
+    ASSERT_TRUE(map_equal(vals, {{"a", "x"}}));
+    test_url_fetch_item("/{a}/", "/x/");
+    ASSERT_TRUE(map_equal(vals, {{"a", "x"}}));
+    test_url_fetch_item("//{a}//", "//x//");
+    ASSERT_TRUE(map_equal(vals, {{"a", "x"}}));
+    test_url_fetch_item("///{a}///", "///x///x");
+    ASSERT_TRUE(map_equal(vals, {{"a", "x"}}));
+
+    test_url_fetch_item("/{a}/x", "/y/x");
+    ASSERT_TRUE(map_equal(vals, {{"a", "y"}}));
+    test_url_fetch_item("//{a}//x", "//y//x");
+    ASSERT_TRUE(map_equal(vals, {{"a", "y"}}));
+    test_url_fetch_item("///{a}///x", "///y///x");
+    ASSERT_TRUE(map_equal(vals, {{"a", "y"}}));
+
+    test_url_fetch_item("x/{a}", "x/y");
+    ASSERT_TRUE(map_equal(vals, {{"a", "y"}}));
+    test_url_fetch_item("/x/{a}", "/x/y");
+    ASSERT_TRUE(map_equal(vals, {{"a", "y"}}));
+    test_url_fetch_item("x/x/{a}", "x/x/y");
+    ASSERT_TRUE(map_equal(vals, {{"a", "y"}}));
+    test_url_fetch_item("x/{a}/x", "x/y/x");
+    ASSERT_TRUE(map_equal(vals, {{"a", "y"}}));
+
+    test_url_fetch_item("x//{a}", "x//y");
+    ASSERT_TRUE(map_equal(vals, {{"a", "y"}}));
+    test_url_fetch_item("//x//{a}", "//x//y");
+    ASSERT_TRUE(map_equal(vals, {{"a", "y"}}));
+    test_url_fetch_item("x//x//{a}", "x//x//y");
+    ASSERT_TRUE(map_equal(vals, {{"a", "y"}}));
+    test_url_fetch_item("x//{a}//x", "x//y//x");
+    ASSERT_TRUE(map_equal(vals, {{"a", "y"}}));
+
+    test_url_fetch_item("x///{a}", "x///yy");
+    ASSERT_TRUE(map_equal(vals, {{"a", "yy"}}));
+    test_url_fetch_item("///x///{a}", "///x///yy");
+    ASSERT_TRUE(map_equal(vals, {{"a", "yy"}}));
+    test_url_fetch_item("x///x///{a}", "x///x///yyy");
+    ASSERT_TRUE(map_equal(vals, {{"a", "yyy"}}));
+    test_url_fetch_item("x///{a}///x", "x///yy///x");
+    ASSERT_TRUE(map_equal(vals, {{"a", "yy"}}));
+
+    test_url_fetch_item("//{a}//x", "//y//x");
+    ASSERT_TRUE(map_equal(vals, {{"a", "y"}}));
+    test_url_fetch_item("///{a}///x", "///y///x");
+    ASSERT_TRUE(map_equal(vals, {{"a", "y"}}));
+
+    test_url_fetch_item("/{a}/{b}", "/x/y");
+    ASSERT_TRUE(map_equal(vals, {{"a", "x"}, {"b", "y"}}));
+    test_url_fetch_item("//{a}//{b}", "//x//y");
+    ASSERT_TRUE(map_equal(vals, {{"a", "x"}, {"b", "y"}}));
+    test_url_fetch_item("///{a}///{b}", "///x///y");
+    ASSERT_TRUE(map_equal(vals, {{"a", "x"}, {"b", "y"}}));
+    test_url_fetch_item("/{a}/{b}/", "/x/y/");
+    ASSERT_TRUE(map_equal(vals, {{"a", "x"}, {"b", "y"}}));
+    test_url_fetch_item("//{a}//{b}//", "//x//y//");
+    ASSERT_TRUE(map_equal(vals, {{"a", "x"}, {"b", "y"}}));
+    test_url_fetch_item("///{a}///{b}///", "///x///y///");
+    ASSERT_TRUE(map_equal(vals, {{"a", "x"}, {"b", "y"}}));
+
+    test_url_fetch_item("x/{a}/{b}", "x/mmm/nnn");
+    ASSERT_TRUE(map_equal(vals, {{"a", "mmm"}, {"b", "nnn"}}));
+    test_url_fetch_item("/x/{a}/{b}", "/x/mmm/nnn");
+    ASSERT_TRUE(map_equal(vals, {{"a", "mmm"}, {"b", "nnn"}}));
+    test_url_fetch_item("/{a}/x/{b}", "/mmm/x/nnn");
+    ASSERT_TRUE(map_equal(vals, {{"a", "mmm"}, {"b", "nnn"}}));
+    test_url_fetch_item("/{a}/{b}/x", "/mmm/nnn/x");
+    ASSERT_TRUE(map_equal(vals, {{"a", "mmm"}, {"b", "nnn"}}));
+    test_url_fetch_item("/{a}/{b}/x/", "/mmm/nnn/x");
+    ASSERT_TRUE(map_equal(vals, {{"a", "mmm"}, {"b", "nnn"}}));
+    test_url_fetch_item("x/{a}/x/{b}", "x/mmm/x/nnn");
+    ASSERT_TRUE(map_equal(vals, {{"a", "mmm"}, {"b", "nnn"}}));
+    test_url_fetch_item("/x/{a}/x/{b}", "/x/mmm/x/nnn");
+    ASSERT_TRUE(map_equal(vals, {{"a", "mmm"}, {"b", "nnn"}}));
+    test_url_fetch_item("/{a}/x/{b}/x", "/mmm/x/nnn/x");
+    ASSERT_TRUE(map_equal(vals, {{"a", "mmm"}, {"b", "nnn"}}));
+    test_url_fetch_item("/x/{a}/{b}/x", "/x/mmm/nnn/x");
+    ASSERT_TRUE(map_equal(vals, {{"a", "mmm"}, {"b", "nnn"}}));
+    test_url_fetch_item("/{a}/x/x/{b}", "/mmm/x/x/nnn");
+    ASSERT_TRUE(map_equal(vals, {{"a", "mmm"}, {"b", "nnn"}}));
 }
 
 static inline std::string json2str(const Json::Value& json, bool is_format = false) {
@@ -421,7 +677,9 @@ class TestSerivceImpl : public BrpcService, public TestService {
 
 rellaf_brpc_http_dcl(TestSerivceImpl, TestRequest, TestResponse);
 
-rellaf_brpc_http_def_post(echo, "/", echo, Plain<int>, Plain<int>);
+rellaf_brpc_http_def_post(echo, "/", echo, Plain<int>, Plain<int>) {
+        return Plain<int>{111};
+    }
 
 rellaf_brpc_http_def_post_ctx(hello, "/hello", hello, HelloRet, HelloRequest);
 
@@ -433,10 +691,6 @@ rellaf_brpc_http_def_api(hi, "/hi", hi, HelloRet, Params, Vars, HelloRequest) {
 };
 
 rellaf_brpc_http_def(TestSerivceImpl);
-
-Plain<int> TestSerivceImpl::echo(const Plain<int>& request) {
-    return Plain<int>{111};
-};
 
 HelloRet TestSerivceImpl::hello(HttpContext& context, const HelloRequest& request) {
     HelloRet ret;
