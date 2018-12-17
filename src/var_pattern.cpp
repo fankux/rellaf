@@ -305,35 +305,57 @@ bool UrlPattern::explode_path_vars(const std::string& path, std::map<uint32_t, s
 bool UrlPattern::fetch_path_vars(const std::string& path,
         std::map<uint32_t, std::string>& vars,
         std::map<std::string, std::string>& vals) {
+    vals.clear();
+
+    bool start_flag = false;
 
     uint32_t idx = 0;
     std::string section;
     PatternState state = STATE_INIT;
-    for (size_t i = 0; i < path.size(); ++i) {
+    for (size_t i = 0; i < path.size();) {
         char c = path[i];
 
         if (state == STATE_INIT) {
             if (c == '/') {
-                if (vars.count(idx) == 1) {
-                    vals.emplace(vars[idx], section);
+                if (!section.empty()) {
+                    if (vars.count(idx) == 1) {
+                        vals.emplace(vars[idx], section);
+                    }
                     section.clear();
+                    if (start_flag) {
+                        ++idx;
+                    }
                 }
+                ++i;
 
-                ++idx;
+            } else {
                 state = STATE_MATCH_TOKEN;
             }
 
+            start_flag = true;
             continue;
         }
 
         if (state == STATE_MATCH_TOKEN) {
             if (c == '/') {
-                ++i;
+                state = STATE_INIT;
                 continue;
             }
         }
 
         section += c;
+        ++i;
+    }
+
+    switch (state) {
+        case STATE_INIT:
+        case STATE_MATCH_TOKEN:
+            if (vars.count(idx) == 1 && !section.empty()) {
+                vals.emplace(vars[idx], section);
+            }
+            break;
+        default:
+            break;
     }
     return true;
 }

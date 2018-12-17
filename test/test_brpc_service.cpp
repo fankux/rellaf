@@ -507,9 +507,9 @@ TEST_F(TestUrl, test_fetch_path_vars) {
     test_url_fetch_item("/{a}/", "//");
     ASSERT_TRUE(map_equal(vals, {}));
     test_url_fetch_item("/{a}/{b}", "/x");
-    ASSERT_TRUE(map_equal(vals, {{"a", "x"}, {"b", ""}}));
+    ASSERT_TRUE(map_equal(vals, {{"a", "x"}}));
     test_url_fetch_item("/{a}/{b}", "//x");
-    ASSERT_TRUE(map_equal(vals, {{"a", "x"}, {"b", ""}}));
+    ASSERT_TRUE(map_equal(vals, {{"a", "x"}}));
 
     test_url_fetch_item("/{a}", "/x");
     ASSERT_TRUE(map_equal(vals, {{"a", "x"}}));
