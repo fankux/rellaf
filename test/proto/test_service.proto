@@ -14,5 +14,14 @@ service TestService {
 
     rpc hello (TestRequest) returns (TestResponse);
 
-    rpc hi (TestRequest) returns (TestResponse);
+    rpc hi1 (TestRequest) returns (TestResponse);
+    rpc hi2 (TestRequest) returns (TestResponse);
+    rpc hi3 (TestRequest) returns (TestResponse);
+    rpc hi4 (TestRequest) returns (TestResponse);
+    rpc hi5 (TestRequest) returns (TestResponse);
+    rpc hi6 (TestRequest) returns (TestResponse);
+    rpc hi7 (TestRequest) returns (TestResponse);
+    rpc hi8 (TestRequest) returns (TestResponse);
+    rpc hi9 (TestRequest) returns (TestResponse);
+    rpc hi10 (TestRequest) returns (TestResponse);
 }

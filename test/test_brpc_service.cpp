@@ -677,13 +677,40 @@ class TestSerivceImpl : public BrpcService, public TestService {
 
 rellaf_brpc_http_dcl(TestSerivceImpl, TestRequest, TestResponse);
 
-rellaf_brpc_http_def_post(echo, "/", echo, Plain<int>, Plain<int>) {
-        return Plain<int>{111};
+rellaf_brpc_http_def_post(hi1, "/hi1", hi1, HelloRet, Params, Vars, HelloRequest);
+
+rellaf_brpc_http_def_post_body(hi2, "/hi2", hi2, HelloRet, HelloRequest);
+
+rellaf_brpc_http_def_post_param(hi3, "/hi3", hi3, HelloRet, HelloRequest);
+
+rellaf_brpc_http_def_post_pathvar(hi4, "/hi4", hi4, HelloRet, HelloRequest);
+
+rellaf_brpc_http_def_post_param_body(hi5, "/hi5", hi5, HelloRet, HelloRequest, HelloRequest) {
+        HelloRet ret;
+        return ret;
     }
 
-rellaf_brpc_http_def_post_ctx(hello, "/hello", hello, HelloRet, HelloRequest);
+rellaf_brpc_http_def_post_pathvar_body(hi6, "/hi6", hi6, HelloRet, HelloRequest, HelloRequest) {
+        HelloRet ret;
+        return ret;
+    }
 
-rellaf_brpc_http_def_api(hi, "/hi", hi, HelloRet, Params, Vars, HelloRequest) {
+rellaf_brpc_http_def_post_param_pathvar(hi7, "/hi7", hi7, HelloRet, HelloRequest, HelloRequest) {
+        HelloRet ret;
+        return ret;
+    }
+
+rellaf_brpc_http_def_get(hi8, "/hi8", hi8, HelloRet, HelloRequest, HelloRequest) {
+        HelloRet ret;
+        return ret;
+    }
+
+rellaf_brpc_http_def_get_param(hi9, "/hi9", hi9, HelloRet, HelloRequest) {
+        HelloRet ret;
+        return ret;
+    }
+
+rellaf_brpc_http_def_get_pathvar(hi10, "/hi10", hi10, HelloRet, HelloRequest) {
         HelloRet ret;
         return ret;
     }
@@ -692,9 +719,24 @@ rellaf_brpc_http_def_api(hi, "/hi", hi, HelloRet, Params, Vars, HelloRequest) {
 
 rellaf_brpc_http_def(TestSerivceImpl);
 
-HelloRet TestSerivceImpl::hello(HttpContext& context, const HelloRequest& request) {
+HelloRet TestSerivceImpl::hi1(HttpContext& context, const Params& params, const Vars& vars,
+        const HelloRequest& request) {
     HelloRet ret;
-    ret.set_status(233);
+    return ret;
+}
+
+HelloRet TestSerivceImpl::hi2(HttpContext& context, const HelloRequest& request) {
+    HelloRet ret;
+    return ret;
+}
+
+HelloRet TestSerivceImpl::hi3(HttpContext& context, const HelloRequest& request) {
+    HelloRet ret;
+    return ret;
+}
+
+HelloRet TestSerivceImpl::hi4(HttpContext& context, const HelloRequest& request) {
+    HelloRet ret;
     return ret;
 }
 

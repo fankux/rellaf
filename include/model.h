@@ -180,6 +180,19 @@ public:
         return "";
     }
 
+    /**
+     * markup current model with a tag which is Enum
+     */
+    template<class T>
+    T& tag(EnumItem& tag_enum) {
+        _tag = tag_enum;
+        return *this;
+    }
+
+    const EnumItem& rellaf_tag() const {
+        return _tag;
+    }
+
     virtual Model* create() const = 0;
 
     virtual Model* clone() const = 0;
@@ -188,6 +201,9 @@ public:
 
     virtual void clear() = 0;
 
+    /**
+     * @brief pass a string that parsing to value
+     */
     virtual bool set_parse(const std::string& val_str) = 0;
 
     /**
@@ -201,6 +217,39 @@ public:
 
 protected:
     ModelType _type;
+    EnumItem _tag;
+};
+
+class Avoid : public Model {
+public:
+    Avoid() {
+        _type = ModelTypeEnum::e().no;
+    }
+
+    Model* create() const override;
+
+    Model* clone() const override;
+
+private:
+    void assign(const Model* val) override {}
+
+    void clear() override {}
+
+    bool set_parse(const std::string& val_str) override {
+        return true;
+    }
+
+    bool equal_parse(const std::string& val_str) override {
+        return true;
+    }
+
+    std::string str() const override {
+        return "";
+    }
+
+    std::string debug_str() const override {
+        return "";
+    }
 };
 
 template<class T>

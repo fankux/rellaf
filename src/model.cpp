@@ -19,6 +19,14 @@
 
 namespace rellaf {
 
+Model* Avoid::create() const {
+    return new(std::nothrow) Avoid;
+}
+
+Model* Avoid::clone() const {
+    return create();
+}
+
 ModelList::~ModelList() {
     clear();
 }

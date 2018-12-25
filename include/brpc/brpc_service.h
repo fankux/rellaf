@@ -25,6 +25,7 @@
 #include "common.h"
 #include "model.h"
 #include "function_mapper.hpp"
+#include "http_arg_type.h"
 
 namespace rellaf {
 
@@ -99,88 +100,165 @@ void _sign_(RpcController* controller, const pb_req_t* request,                 
     BrpcService::entry(controller, (Message*)request, (Message*)response, done);                \
 }
 
-#define rellaf_brpc_http_def_api(_sign_, _api_, _func_, _Ret_, _Param_, _PathVar_, _ReqBody_)  \
-RELLAF_BRPC_HTTP_DEF_SIGN(_sign_)                                                               \
-private:                                                                                        \
-    static_assert(std::is_base_of<Model, _Ret_>::value, #_Ret_" not Model");                    \
-    static_assert(std::is_base_of<Object, _Param_>::value, #_Param_" not Object");              \
-    static_assert(std::is_base_of<Object, _PathVar_>::value, #_PathVar_" not Object");          \
-    static_assert(std::is_base_of<Model, _ReqBody_>::value, #_ReqBody_" not Model");            \
-    Reg _reg_##_sign_##_post_##_func_{this, #_sign_, _api_,                                     \
-        #_sign_"-POST-"#_func_"-"#_ReqBody_, HttpMethod::HTTP_METHOD_POST,                      \
-        [this] (HttpContext& ctx, const std::string& body, std::string& ret_body) {             \
-            bool s;                                                                             \
-            _Param_ param;                                                                      \
-            const brpc::URI& uri = ctx.request_header.uri();                                    \
-            for (auto iter = uri.QueryBegin(); iter != uri.QueryEnd(); ++iter) {                \
-                param.set_plain(iter->first, iter->second);                                     \
-            }                                                                                   \
-            _PathVar_ var;                                                                      \
-            for (auto& entry : ctx.path_vars) {                                                 \
-                var.set_plain(entry.first, entry.second);                                       \
-            }                                                                                   \
-            _ReqBody_ request;                                                                  \
-            if (is_plain(&request)) {                                                           \
-                s = ((Model*)&request)->set_parse(body);                                        \
-            } else {                                                                            \
-                s = json_to_model(body, &request);                                              \
-            }                                                                                   \
-            if (!s) {                                                                           \
-                return -1;                                                                      \
-            }                                                                                   \
-            _Ret_ ret = _func_(ctx, param, var, request);                                       \
-            if (is_plain(&ret)) {                                                               \
-                ret_body = ((Model*)&ret)->str();                                               \
-            } else {                                                                            \
-                if (!model_to_json(&ret, ret_body)) {                                           \
-                    return -1;                                                                  \
-                }                                                                               \
-            }                                                                                   \
-            return 0;                                                                           \
-        }                                                                                       \
-    };                                                                                          \
-public:                                                                                         \
-    _Ret_ _func_(HttpContext& context, const _Param_& params, const _PathVar_& vars,             \
-            const _ReqBody_& request)
+template<class T>
+void flatten_args(std::deque<Model*>& args, T& arg) {
+    if (std::is_base_of<Model, T>::value) {
+        args.emplace_back(&arg);
+    }
+}
 
-#define rellaf_brpc_http_def_post_ctx(_sign_, _api_, _func_, _Ret_, _Req_)                      \
-RELLAF_BRPC_HTTP_DEF_SIGN(_sign_)                                                               \
-private:                                                                                        \
-    static_assert(std::is_base_of<Model, _Ret_>::value, #_Ret_" not Model");                    \
-    static_assert(std::is_base_of<Model, _Req_>::value, #_Req_" not Model");                    \
-    Reg _reg_##_sign_##_post_##_func_{this, #_sign_, _api_,                                     \
-        #_sign_"-POST-"#_func_"-"#_Req_, HttpMethod::HTTP_METHOD_POST,                          \
-        [this] (HttpContext& ctx, const std::string& body, std::string& ret_body) {             \
-            bool s;                                                                             \
-            _Req_ request;                                                                      \
-            if (is_plain(&request)) {                                                           \
-                s = ((Model*)&request)->set_parse(body);                                        \
-            } else {                                                                            \
-                s = json_to_model(body, &request);                                              \
-            }                                                                                   \
-            if (!s) {                                                                           \
-                return -1;                                                                      \
-            }                                                                                   \
-            _Ret_ ret = _func_(ctx, request);                                                   \
-            if (is_plain(&ret)) {                                                               \
-                ret_body = ((Model*)&ret)->str();                                               \
-            } else {                                                                            \
-                if (!model_to_json(&ret, ret_body)) {                                           \
-                    return -1;                                                                  \
-                }                                                                               \
-            }                                                                                   \
-            return 0;                                                                           \
-        }                                                                                       \
-    };                                                                                          \
-public:                                                                                         \
-    _Ret_ _func_(HttpContext& context, const _Req_& request)
+template<class ...Args>
+bool prepare_args(HttpContext& ctx, const std::string& body, Args ... args) {
 
-#define rellaf_brpc_http_def_post(_sign_, _api_, _func_, _Ret_, _Req_)                          \
+    std::deque<Model*> model_args;
+    bool arr[] = {(flatten_args(model_args, args), true)...}; // for arguments expansion
+    (void)(arr);// suppress warning
+
+    bool s;
+    for (Model* arg : model_args) {
+        switch (arg->rellaf_tag().code) {
+            case HttpArgTypeEnum::REQ_BODY_code:
+                if (is_plain(arg)) {
+                    s = arg->set_parse(body);
+                } else {
+                    s = json_to_model(body, arg);
+                }
+                if (!s) {
+                    return false;
+                }
+                break;
+
+            case HttpArgTypeEnum::REQ_PARAM_code:
+                if (arg->rellaf_type() == ModelTypeEnum::e().OBJECT) {
+                    const brpc::URI& uri = ctx.request_header.uri();
+                    for (auto iter = uri.QueryBegin(); iter != uri.QueryEnd(); ++iter) {
+                        ((Object*)arg)->set_plain(iter->first, iter->second);
+                    }
+                }
+                break;
+
+            case HttpArgTypeEnum::PATH_VAR_code:
+                if (arg->rellaf_type() == ModelTypeEnum::e().OBJECT) {
+                    for (auto& entry : ctx.path_vars) {
+                        ((Object*)arg)->set_plain(entry.first, entry.second);
+                    }
+                }
+                break;
+
+            default:
+                break;
+        }
+    }
+    return true;
+}
+
+
+#define rellaf_brpc_http_def_api(_sign_, _api_, _method_, _func_, _Ret_, _Params_, _Vars_, _Req_)  \
+RELLAF_BRPC_HTTP_DEF_SIGN(_sign_)                                                                  \
+private:                                                                                           \
+    Reg _reg_##_sign_##_method_##_func_{this, #_sign_, _api_, #_sign_"-"#_method_"-"#_func_,       \
+        HttpMethod::HTTP_METHOD_##_method_,                                                        \
+        [this] (HttpContext& ctx, const std::string& body, std::string& ret_body) {                \
+            _Params_ p;                                                                            \
+            _Vars_ v;                                                                              \
+            _Req_ r;                                                                               \
+            if (!prepare_args<_Params_, _Vars_, _Req_>(ctx, body, p, v, r)) {                      \
+                return -1;                                                                         \
+            }                                                                                      \
+            _Ret_ ret = _func_##_base(ctx, p, v, r);                                               \
+            if (is_plain(&ret)) {                                                                  \
+                ret_body = ((Model*)&ret)->str();                                                  \
+            } else {                                                                               \
+                if (!model_to_json(&ret, ret_body)) {                                              \
+                    return -1;                                                                     \
+                }                                                                                  \
+            }                                                                                      \
+            return 0;                                                                              \
+        }                                                                                          \
+    };                                                                                             \
+    _Ret_ _func_##_base(HttpContext& ctx, const _Params_& p, const _Vars_& v, const _Req_& r)
+
+
+#define rellaf_brpc_http_def_get(_sign_, _api_, _func_, _Ret_, _Params_, _Vars_)                \
 private:                                                                                        \
-    rellaf_brpc_http_def_post_ctx(_sign_, _api_, _func_, _Ret_, _Req_) {                        \
-        return std::forward<_Ret_>(_func_(request));                                            \
+    rellaf_brpc_http_def_api(_sign_, _api_, GET, _func_, _Ret_, _Params_, _Vars_, Avoid) {      \
+        return std::forward<_Ret_>(_func_(ctx, p, v));                                          \
     }                                                                                           \
 public:                                                                                         \
-    _Ret_ _func_(const _Req_& request)
+    _Ret_ _func_(HttpContext& ctx, const _Params_& p, const _Vars_& v)
+
+#define rellaf_brpc_http_def_get_param(_sign_, _api_, _func_, _Ret_, _Params_)                  \
+private:                                                                                        \
+    rellaf_brpc_http_def_get(_sign_, _api_, _func_, _Ret_, _Params_, Avoid) {                   \
+        return std::forward<_Ret_>(_func_(ctx, p));                                             \
+    }                                                                                           \
+public:                                                                                         \
+    _Ret_ _func_(HttpContext& ctx, const _Params_& p)
+
+#define rellaf_brpc_http_def_get_pathvar(_sign_, _api_, _func_, _Ret_, _Vars_)                  \
+private:                                                                                        \
+    rellaf_brpc_http_def_get(_sign_, _api_, _func_, _Ret_, Avoid, _Vars_) {                     \
+        return std::forward<_Ret_>(_func_(ctx, v));                                             \
+    }                                                                                           \
+public:                                                                                         \
+    _Ret_ _func_(HttpContext& ctx, const _Vars_& v)
+
+
+#define rellaf_brpc_http_def_post(_sign_, _api_, _func_, _Ret_, _Params_, _Vars_, _Req_)        \
+private:                                                                                        \
+    rellaf_brpc_http_def_api(_sign_, _api_, POST, _func_, _Ret_, _Params_, _Vars_, _Req_) {     \
+        return std::forward<_Ret_>(_func_(ctx, p, v, r));                                       \
+    }                                                                                           \
+public:                                                                                         \
+    _Ret_ _func_(HttpContext& ctx, const _Params_& p, const _Vars_& v, const _Req_& r)
+
+#define rellaf_brpc_http_def_post_body(_sign_, _api_, _func_, _Ret_, _Req_)                     \
+private:                                                                                        \
+    rellaf_brpc_http_def_post(_sign_, _api_, _func_, _Ret_, Avoid, Avoid, _Req_) {              \
+        return std::forward<_Ret_>(_func_(ctx, r));                                             \
+    }                                                                                           \
+public:                                                                                         \
+    _Ret_ _func_(HttpContext& ctx, const _Req_& r)
+
+#define rellaf_brpc_http_def_post_param(_sign_, _api_, _func_, _Ret_, _Params_)                 \
+private:                                                                                        \
+    rellaf_brpc_http_def_post(_sign_, _api_, _func_, _Ret_, _Params_, Avoid, Avoid) {           \
+        return std::forward<_Ret_>(_func_(ctx, p));                                             \
+    }                                                                                           \
+public:                                                                                         \
+    _Ret_ _func_(HttpContext& ctx, const _Params_& p)
+
+#define rellaf_brpc_http_def_post_pathvar(_sign_, _api_, _func_, _Ret_, _Vars_)                 \
+private:                                                                                        \
+    rellaf_brpc_http_def_post(_sign_, _api_, _func_, _Ret_, Avoid, _Vars_, Avoid) {             \
+        return std::forward<_Ret_>(_func_(ctx, v));                                             \
+    }                                                                                           \
+public:                                                                                         \
+    _Ret_ _func_(HttpContext& ctx, const _Vars_& v)
+
+#define rellaf_brpc_http_def_post_param_body(_sign_, _api_, _func_, _Ret_, _Params_, _Req_)     \
+private:                                                                                        \
+    rellaf_brpc_http_def_post(_sign_, _api_, _func_, _Ret_, _Params_, Avoid, _Req_) {           \
+        return std::forward<_Ret_>(_func_(ctx, p, r));                                          \
+    }                                                                                           \
+public:                                                                                         \
+    _Ret_ _func_(HttpContext& ctx, const _Params_& p, const _Req_& r)
+
+#define rellaf_brpc_http_def_post_pathvar_body(_sign_, _api_, _func_, _Ret_, _Vars_, _Req_)     \
+private:                                                                                        \
+    rellaf_brpc_http_def_post(_sign_, _api_, _func_, _Ret_, Avoid, _Vars_, _Req_) {             \
+        return std::forward<_Ret_>(_func_(ctx, v, r));                                          \
+    }                                                                                           \
+public:                                                                                         \
+    _Ret_ _func_(HttpContext& ctx, const _Vars_& v, const _Req_& r)
+
+#define rellaf_brpc_http_def_post_param_pathvar(_sign_, _api_, _func_, _Ret_, _Params_, _Vars_) \
+private:                                                                                        \
+    rellaf_brpc_http_def_post(_sign_, _api_, _func_, _Ret_, _Params_, _Vars_, Avoid) {          \
+        return std::forward<_Ret_>(_func_(ctx, p, v));                                          \
+    }                                                                                           \
+public:                                                                                         \
+    _Ret_ _func_(HttpContext& ctx, const _Params_& p, const _Vars_& v)
+
 
 } // namespace
