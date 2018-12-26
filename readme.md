@@ -3,7 +3,7 @@
 ## 介绍
 **Rellaf**是一个C++反射库，得益于C++11的语法，让我们可以做到一些神奇的效果——程序在运行时可以遍历对象自身的所有成员字段名字和值，并且可以通过对象名字（字符串）获得该成员的值。 基于此，实现了一系列常用并且非常实用的功能，如：
 - [反射类](docs/reference.md)
-- [反射枚举](docs/reference.md#Enum(枚举))
+- [反射枚举](docs/reference.md#Enum)
 - [Json序列化](docs/reference.md#Json)
 - [SQL Builder](docs/reference.md#Sql)
 - [BRPC](https://github.com/brpc/brpc) [HTTP接口映射分发](docs/reference.md#Brpc)
@@ -33,10 +33,12 @@ object.set_id(233);            // 修改
 val = object.id();             // 字段名方法调用, 返回 233
 val = object.get_int("id");    // 通过字段名字符串索引取值, 返回 233
 ```
-当前支持9种基本类型: 
+当前支持11种基本类型: 
 
 | ${type} | C++类型 |   
 | ---- | ------- |  
+| char | char |   
+| int16 | int16_t |   
 | int | int |   
 | int64 | int64_t |   
 | uint16 | uint16_t |   
@@ -137,7 +139,6 @@ list.pop_back();
 // 清空
 list.clear();
 ```
-详细的API见：参考手册。
 
 ## 枚举
 C/C++枚举（`enum`）能力很有限，只是一个数字，没有从字符串获得枚举的能力，也不能判断一个枚举是否存在。  
@@ -192,18 +193,31 @@ const std::map<std::string, int>& names = DemoEnum::e().names();
 const std::map<int, std::string>& codes = DemoEnum::e().codes();
 
 ```
+## [Json序列化](docs/reference.md#Json)
+   
+实现**Rellaf**对象Json相互转换。
 
-## Dao
+## [SQL Builder](docs/reference.md#Sql)
 这是一个`Java Mybatis like`的SQL语句生成器。并不是说使用方式和语法与`Mybatis`一样，我们强调写代码体验，`Rellaf`做到的是在写Dao的体验上，尽可能靠近`Mybatis`，简单灵活而'自动化'。用户简单配置一个SQL模板，然后`Rellaf`将生成Dao执行方法，运行过程中'自动'将`Model`填入SQL模板，生成可执行SQL语句，*执行SQL*（需要实现Mysql数据传递接口）后，将返回值'自动'转换为Model对象返回用户。
+
+`src/mysql`  
+包含一个简单的Mysql连接池实现，这个模块为了对接SQL生成后的执行过程。
 
 demo TODO。。
 
-## 功能扩展
-`src/json`   
-包含了使用Jsoncpp实现的**Rellaf**对象Json相互转换。
+## [BRPC](https://github.com/brpc/brpc) [HTTP接口映射分发](docs/reference.md#Brpc)
+`brpc`是baidu内部的rpc组件，真正意义上终结了公司内部网络传输组件的混乱之治，统一RPC场景。内部叫`baidu-rpc`，第一次接触大概是在2016年，那会儿还没开源，项目需要做HTTP服务端，“看上去可用”基本只有这一款，使用后，惊为天人，接入简单，protobuf直接定义接口，一个端口，支持多种协议，性能极高，自带的bthread还可以扩展到非RPC的通用并发场景。几年下来，稳定可靠，体验极佳。
+不过HTTP这块，封装还是比较初步的，先看一下[官方文档](https://github.com/brpc/brpc/blob/master/docs/cn/http_service.md) ，大体上，只是对协议层面的封装，而没有考虑业务层面（并不是说用C++写业务，但很多情况下总是要实现HTTP服务），对于HTTP常用使用模式（套路）的封装涉及不多，比如：
+- 把所有接口和proto接口签名拼接在一个字符串中，proto接口签名生成service请求入口后，不能够直观的看到HTTP API（请求路径）与 service请求入口之间的关联，API多了后会很混乱。
+- BRPC的http接口不使用protobuf service接口函数的request， response字段，不够简洁。
+- 不具有HTTP Json接口的套路（body解析为json）。
+- path variable支持很有限。
 
-`src/mysql`  
-包含一个简单的Mysql连接池实现（比较low，轻喷），这个模块为了对接SQL生成后的执行过程。
+这么几个问题，都是长期使用过程中总结的，由于BRPC定位并不是`Spring`那样“包办一切”，我自己也持续开发出了一套封装方法，并用到了线上，尽可能做到“简单可依赖”。于是，我把这个部分提取出来，作为`rellaf`的一个扩展。
+
+同样的，基于这种思路，对于brpc_std协议也可以进行同样的封装。（TODO）
+
+详细使用见 [API文档](docs/reference.md#Brpc)。
 
 ##  编译
 不开启扩展的话，不依赖第三方组件。开启不同扩展依赖不同第三方库。  
@@ -213,6 +227,7 @@ demo TODO。。
 | ------- | ----- | ------- | --------- | 
 | WITH_JSON | ON | json扩展 | jsoncpp |  
 | WITH_MYSQL | ON | 简单mysql连接池 |  mysqlclient |  
+| WITH_BRPC_EXT | ON | brpc接口映射 | brpc |  
 | WITH_TEST | ON | 单元测试 | gtest |   
 
 安装依赖（可选）：  

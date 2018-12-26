@@ -259,7 +259,7 @@ port = object.sub()->get_uint16("port");
 | **create** | 构造一个新的Model | Model* | N/A |
 | **clone** | 复制当前对象 | Model* | N/A |
 
-## Enum(枚举)
+## Enum
 **头文件:** `enum.h` 
 
 **说明:**   
@@ -294,9 +294,6 @@ rellaf_enum_def(DemoEnum);
 constexpr int DemoEnum::A_code;
 ```
 
-
-**方法列表:**  
-
 枚举成员类型是 `struct EnumItem`，**成员列表:**
 
 | 成员名 | 说明 | 类型 |
@@ -304,7 +301,7 @@ constexpr int DemoEnum::A_code;
 | **code** | 编码 | int |
 | **name** | 名字 | std::string |
 
-**方法列表:**
+**EnumItem方法列表:**
 
 | 方法名 | 说明 | 返回值 | 参数 |
 | ----- | ---- | ------ | ------ |
@@ -314,6 +311,8 @@ constexpr int DemoEnum::A_code;
 | **operator<** | 判断大小，根据`code` | bool | EnumItem |
 
 统一使用 Enum::e() 或 rellaf_enum(Enum) 单例访问枚举类方法。
+
+**Enum方法列表:**  
 
 | 方法名 | 说明 | 返回值 | 参数 |
 | ----- | ---- | ------ | ------ |
@@ -363,20 +362,112 @@ const std::map<int, std::string>& codes = DemoEnum::e().codes();
 ## 扩展部分
 
 ### Json
-显然，这是一个提供`Model`对象和`Json`互相转换的库。当前版本使用依赖Jsoncpp实现。(rapidjson性能更加, 待调研)
 
-### 使用
-包含头文件`json_to_model.h`，在目录`include/json/`中。
+**头文件:** `json_to_model.h`
 
-目前包含2个API：
+显然，这是一个提供`Model`对象和`Json`互相转换的库。当前版本使用依赖Jsoncpp实现(rapidjson性能更佳, 待调研)。目前包含2个API：
 
-**方法:**  
 bool **model_to_json**(const Model* model, std::string& json_str, bool is_format = false);
 
 bool **json_to_model**(const std::string& json_str, Model* model);
 
+根据字面意思，就是字符串表示的Json与`Model`类型的相互转换，`is_format`表示是否换行缩进。注意几点：
+- `model_to_jso`总是返回true，`Object`或者`List`成员如果是nullptr，则输出Json的null value。
+- `json_to_model`如果输入字符串parse json失败，返回false，否则返回true，`Model`定义的结构可能与输入的Json不一样，结构不一致的部分会跳过转换。
+
 ### Sql
+TODO。。。
 
 ### Brpc
 
-## 工具类
+**头文件:** `brpc_dispatcher.h`
+
+**主要功能:**  
+- 相同API的POST和GET类型请求可以直接映射到不同的处理函数。
+- 建立了HTTP API，proto接口签名，具体处理函数的直接关联。一行代码定义关联。
+- 包装了HTTP请求相关上下文数据，直接传递给处理函数。
+- HTTP body，request query，path variable都能自动到Model的转换。处理函数参数可指定。
+- 处理函数直接返回`Model`，可自动转换成Json或字符串。
+
+**HttpContext:**  
+HTTP请求上下文数据包，原型：
+```C++
+struct HttpContext {
+    const HttpHeader& request_header;
+    const butil::IOBuf& request_body;
+    HttpHeader& response_header;
+    butil::IOBuf& response_body;
+    std::map<std::string, std::string>& path_vars;
+};
+```
+
+我们先通过一个例子来看一下最简单的用法，假设场景：  
+我们需要实现rest风格接口`/api/hi/{id}`，并且能够将HTTP body转换为`Body`（`Object`），请求查询参数转换为`Params`（`Object`），路径变量转换为`Vars`(`Model`)（`{id}`就是一个路径变量，当请求路径是`/api/hi/111`时，`{id}`为`111`）。请求处理完成后，返回HTTP body字符串为“OK”拼接`{id}`的值。
+
+1. 定义protobuf文件，生成protobuf service接口，这个过程看[brpc文档](https://github.com/brpc/brpc/blob/master/docs/cn/http_service.md)。假设我们定义的Protobuf Service是：
+```protobuf
+option cc_generic_services = true;
+message DemoRequest {};
+message DemoResponse {};
+// DemoRequest，DemoResponse是protobuf要求的请求和应答类型，这个在这里不起作用，但是要写
+service DemoService {
+    rpc hi (DemoRequest) returns (DemoResponse);
+}
+```
+
+2. 定义一个`rellaf service`
+```C++
+class DemoServiceImpl : public BrpcService, public DemoService {
+rellaf_brpc_http_dcl(DemoServiceImpl, DemoRequest, DemoResponse);
+// 定义API和处理函数的映射
+rellaf_brpc_http_def_post(hi, "/api/hi/{id}", hi_handler, Plain<std::string>, Params, Vars, Body);
+};
+rellaf_brpc_http_def(DemoServiceImpl);
+```
+
+3. 定义接口处理函数
+```C++
+Plain<std::string> DemoServiceImpl::hi_handler(HttpContext& context, const Params& params, const Vars& vars, const Body& body) {
+    ...
+    // context.aaa
+    // body.xxx
+    // params.ooo
+    ...
+    return Plain<std::string>("OK" + vars.id());
+}
+```
+也可以不用第3步单独定义，第2部时"一气呵成"：
+```C++
+...
+rellaf_brpc_http_def_post(hi, "/api/hi/{id}", hi_handler, Plain<std::string>, Params, Vars, Body) {
+    ...
+    // 约定 Context, Params, Vars, Body 实参分别为 ctx, p, v, b
+    // ctx.aaa
+    // b.xxx
+    // p.ooo
+    ...
+    return Plain<std::string>("OK" + v.id()); 
+}
+...
+```
+
+这就完成了一个POST接口的请求处理。GET方法类似，区别在于没有请求Body。还提供其他宏可供不同的请求类型组合。
+
+**相关宏列表:**   
+
+| 宏名 | 对应接口签名（说明） |
+| ----- | ----------------- | 
+| rellaf_brpc_http_dcl | 申明`Enum`对象，参数：自定义类名，pb request，pb response  | 
+| rellaf_brpc_http_def | 定义`Enum`对象，参数：自定义类名 | 
+| rellaf_brpc_http_def_get | _Ret_ _func_(HttpContext& ctx, const _Params_& p, const _Vars_& v) |  | 
+| rellaf_brpc_http_def_get_param | _Ret_ _func_(HttpContext& ctx, const _Params_& p) | | 
+| rellaf_brpc_http_def_get_pathvar | _Ret_ _func_(HttpContext& ctx, const _Vars_& v) | | 
+| rellaf_brpc_http_def_post | _Ret_ _func_(HttpContext& ctx, const _Params_& p, const _Vars_& v, const _Body_& b) | | 
+| rellaf_brpc_http_def_post_body | _Ret_ _func_(HttpContext& ctx, const _Body_& b) | | 
+| rellaf_brpc_http_def_post_param | _Ret_ _func_(HttpContext& ctx, const _Params_& p) | | 
+| rellaf_brpc_http_def_post_pathvar | _Ret_ _func_(HttpContext& ctx, const _Vars_& v) | | 
+| rellaf_brpc_http_def_post_param_body | _Ret_ _func_(HttpContext& ctx, const _Params_& p, const _Body_& b) | | 
+| rellaf_brpc_http_def_post_pathvar_body | _Ret_ _func_(HttpContext& ctx, const _Vars_& v, const _Body_& b) | | 
+| rellaf_brpc_http_def_post_param_pathvar | _Ret_ _func_(HttpContext& ctx, const _Params_& p, const _Vars_& v) | | 
+
+更多Method支持，还有更多HTTP语义和特性的支持看需求逐步支持，欢迎提ISSUE。
