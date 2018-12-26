@@ -398,7 +398,7 @@ TEST_F(TestModel, test_list) {
 }
 
 TEST_F(TestModel, test_plain) {
-    Plain<uint32_t> list_int(0);
+    Plain<uint32_t> list_int = 0;
     ASSERT_EQ(list_int.value(), 0);
     list_int.set(2);
     ASSERT_EQ(list_int.value(), 2);

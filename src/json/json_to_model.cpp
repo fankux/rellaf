@@ -67,7 +67,7 @@ static void model_to_json_inner(const Model* model, Json::Value& json) {
 
     if (model->rellaf_type() == ModelTypeEnum::e().LIST) {
         json = Json::Value(Json::arrayValue);
-        for (auto& item : *((ModelList*)model)) {
+        for (auto& item : *((List*)model)) {
             Json::Value item_node;
             model_to_json_inner(item, item_node);
             json.append(item_node);
@@ -173,7 +173,7 @@ static void json_to_model_inner(const Json::Value& json, Model* model) {
     }
 
     if (json.isArray() && model->rellaf_type() == ModelTypeEnum::e().LIST) {
-        ModelList& list = *((ModelList*)model);
+        List& list = *((List*)model);
         for (size_t i = 0; i < list.size(); ++i) {
             if (json[(Json::ArrayIndex)i].isNull()) {
                 list.set(i, nullptr);

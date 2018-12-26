@@ -140,7 +140,7 @@ class RegList {                                                                 
 public:                                                                                 \
     RegList(const std::string& name, _clazz_* inst) {                                   \
         _clazz_::_s_list_names.emplace(name);                                           \
-        inst->_lists.emplace(name, ModelList());                                        \
+        inst->_lists.emplace(name, List());                                             \
     }                                                                                   \
 };                                                                                      \
 class RegObject {                                                                       \
@@ -255,11 +255,11 @@ private:
 template<class T>
 class Plain : public Model {
 public:
-    explicit Plain() {
+    Plain() {
         TypeDetect td(this, T());
     }
 
-    explicit Plain(const T& val) : _val(val) {
+    Plain(const T& val) : _val(val) {
         TypeDetect td(this, T());
     }
 
@@ -335,6 +335,9 @@ public:
         _val = val;
     }
 
+    /**
+     * @brief pass a string that parsing to value
+     */
     inline bool set_parse(const std::string& val_str) override {
         if (_parse_func) {
             _val = _parse_func(val_str);
@@ -350,6 +353,9 @@ public:
         return false;
     }
 
+    /**
+     * @brief if this equal to value which parsed from string `val_str`
+     */
     inline bool equal_parse(const std::string& val_str) override {
         if (_parse_func) {
             return _val == _parse_func(val_str);
@@ -467,26 +473,26 @@ protected:
 };
 
 /////////////////////// model list ////////////////////
-class ModelList : public Model {
+class List : public Model {
 public:
-    ~ModelList() override;
+    ~List() override;
 
-    ModelList();
+    List();
 
-    ModelList(const ModelList& o);
+    List(const List& o);
 
-    ModelList(ModelList&& o) noexcept;
+    List(List&& o) noexcept;
 
-    ModelList& operator=(const ModelList& o);
+    List& operator=(const List& o);
 
-    ModelList& operator=(ModelList&& o) noexcept;
+    List& operator=(List&& o) noexcept;
 
     inline Model* create() const override {
-        return new(std::nothrow) ModelList();
+        return new(std::nothrow) List();
     }
 
     inline Model* clone() const override {
-        ModelList* inst = (ModelList*)create();
+        List* inst = (List*)create();
         *inst = *this;
         return inst;
     }
@@ -496,7 +502,7 @@ public:
             return;
         }
 
-        ModelList* ptr = (ModelList*)val;
+        List* ptr = (List*)val;
         clear();
         for (auto& entry : ptr->_items) {
             Model* m = entry->clone();
@@ -655,21 +661,21 @@ public:
         return _lists.count(name) != 0;
     }
 
-    inline std::map<std::string, ModelList>& get_lists() {
+    inline std::map<std::string, List>& get_lists() {
         return _lists;
     }
 
-    inline const std::map<std::string, ModelList>& get_lists() const {
+    inline const std::map<std::string, List>& get_lists() const {
         return _lists;
     }
 
-    ModelList& get_list(const std::string& name);
+    List& get_list(const std::string& name);
 
-    const ModelList& get_list(const std::string& name) const;
+    const List& get_list(const std::string& name) const;
 
 protected:
     std::map<std::string, Model*> _plains;
-    std::map<std::string, ModelList> _lists;
+    std::map<std::string, List> _lists;
     std::map<std::string, Object*> _objects;
 
 private:
@@ -751,7 +757,7 @@ private:                                                                \
 
 #define rellaf_model_def_list(_name_, _type_)                           \
 public:                                                                 \
-    inline ModelList& _name_() {                                        \
+    inline List& _name_() {                                             \
         return get_list(#_name_);                                       \
     }                                                                   \
     inline const ModelType& _name_##_list_type() const {                \

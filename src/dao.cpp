@@ -134,7 +134,7 @@ bool Dao::get_plain_val(const Model* model, const std::deque<std::string>& secti
     }
 
     Object* travel = (Object*)const_cast<Model*>(model); // for travel only, so we need non const
-    ModelList* list = nullptr;
+    List* list = nullptr;
     for (auto& section : sections) {
         if (section.front() == '[' && section.back() == ']') {
             if (list == nullptr) { // current not list
@@ -179,7 +179,7 @@ bool Dao::get_list_val(const Model* model, const std::deque<std::string>& sectio
     }
 
     Model* travel = const_cast<Model*>(model);
-    ModelList* list = nullptr;
+    List* list = nullptr;
     for (auto& section : sections) {
         if (section.front() == '<' && section.back() == '>') {
             if (list == nullptr) { // current not list

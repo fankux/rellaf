@@ -231,9 +231,11 @@ protected:
             }
 
             for (const auto& entry : ret_list.front().row()) {
-                if (!ret.set(entry.first, entry.second)) {
-                    RELLAF_DEBUG("select impl set result key %s failed", entry.first.c_str());
-                    return -1;
+                if (ret.rellaf_type() == ModelTypeEnum::e().OBJECT) {
+                    if (!((Object*)&ret)->set_plain(entry.first, entry.second)) {
+                        RELLAF_DEBUG("select impl set result key %s failed", entry.first.c_str());
+                        return -1;
+                    }
                 }
             }
             return retval;

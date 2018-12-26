@@ -27,39 +27,39 @@ Model* Avoid::clone() const {
     return create();
 }
 
-ModelList::~ModelList() {
+List::~List() {
     clear();
 }
 
-ModelList::ModelList() : Model() {
+List::List() : Model() {
     _type = ModelTypeEnum::e().LIST;
 }
 
-ModelList::ModelList(const ModelList& o) : Model() {
+List::List(const List& o) : Model() {
     _type = ModelTypeEnum::e().LIST;
     assign(&o);
 }
 
-ModelList::ModelList(ModelList&& o) noexcept  : Model() {
+List::List(List&& o) noexcept  : Model() {
     _type = ModelTypeEnum::e().LIST;
     assign(&o);
     o.clear();
 }
 
-ModelList& ModelList::operator=(const ModelList& o) {
+List& List::operator=(const List& o) {
     _type = ModelTypeEnum::e().LIST;
     assign(&o);
     return *this;
 }
 
-ModelList& ModelList::operator=(ModelList&& o) noexcept {
+List& List::operator=(List&& o) noexcept {
     _type = ModelTypeEnum::e().LIST;
     assign(&o);
     o.clear();
     return *this;
 }
 
-std::string ModelList::debug_str() const {
+std::string List::debug_str() const {
     std::string buf = "[";
     for (auto _item : _items) {
         buf += _item->debug_str();
@@ -74,22 +74,22 @@ std::string ModelList::debug_str() const {
     return buf;
 }
 
-size_t ModelList::size() const {
+size_t List::size() const {
     return _items.size();
 }
 
-bool ModelList::empty() const {
+bool List::empty() const {
     return _items.empty();
 }
 
-void ModelList::clear() {
+void List::clear() {
     for (auto& item : _items) {
         delete item;
     }
     _items.clear();
 }
 
-void ModelList::push_front(Model* model) {
+void List::push_front(Model* model) {
     if (model == nullptr) {
         _items.push_front(nullptr);
     } else {
@@ -97,7 +97,7 @@ void ModelList::push_front(Model* model) {
     }
 }
 
-void ModelList::push_back(Model* model) {
+void List::push_back(Model* model) {
     if (model == nullptr) {
         _items.push_back(nullptr);
     } else {
@@ -105,21 +105,21 @@ void ModelList::push_back(Model* model) {
     }
 }
 
-void ModelList::pop_front() {
+void List::pop_front() {
     if (!_items.empty()) {
         delete _items.front();
     }
     _items.pop_front();
 }
 
-void ModelList::pop_back() {
+void List::pop_back() {
     if (!_items.empty()) {
         delete _items.back();
     }
     _items.pop_back();
 }
 
-void ModelList::set(size_t idx, Model* model) {
+void List::set(size_t idx, Model* model) {
     if (idx >= _items.size()) {
         return;
     }
@@ -127,15 +127,15 @@ void ModelList::set(size_t idx, Model* model) {
     _items[idx] = model == nullptr ? nullptr : model->clone();
 }
 
-const Model* ModelList::operator[](size_t idx) const {
+const Model* List::operator[](size_t idx) const {
     return at(idx);
 }
 
-std::deque<Model*>::const_iterator ModelList::begin() const {
+std::deque<Model*>::const_iterator List::begin() const {
     return _items.begin();
 }
 
-std::deque<Model*>::const_iterator ModelList::end() const {
+std::deque<Model*>::const_iterator List::end() const {
     return _items.end();
 }
 
@@ -189,11 +189,11 @@ const Object* Object::get_object(const std::string& name) const {
     return entry == _objects.end() ? nullptr : entry->second;
 }
 
-ModelList& Object::get_list(const std::string& name) {
+List& Object::get_list(const std::string& name) {
     return _lists.at(name);
 }
 
-const ModelList& Object::get_list(const std::string& name) const {
+const List& Object::get_list(const std::string& name) const {
     return _lists.at(name);
 }
 

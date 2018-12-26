@@ -1,49 +1,27 @@
 # Rellaf
 
 ## 介绍
-**Rellaf**是一个C++反射库，得益于C++11的语法，让我们可以做到一些神奇的效果——程序在运行时可以遍历对象自身的所有成员字段名字和值，并且可以通过对象名字（字符串）获得该成员的值。 
-
-**这么做意义何在？**  
-现今服务端程序两大"刚需"：Json序列化和拼SQL。写过Java的同学可能不以为然，写一个和Json对象成员对应的Model类，Gson，Jackson双向"一键直达"；拼SQL？Mybatis的SQL模板中条件预留好字段名称，例如`WHERE field=#{成员名}`，调用时传递对象，同样"一键直达"，Mybatis能够自动根据名称拿到对象的成员值。
-
-**以上两个场景都需要反射。**
-
-传统C++怎么做？（摘自真实线上代码，已"打码"）
-```c++
-json["name"] = _field_name;
-///////////////////
-_count_big = threshold.get("count_big", 10000).asInt();
-```
-同样的字段名我们需要写两遍，变量写错了还好，编译不过；Json取值的索引字符串错了只能运行时等报错。
-
-```c++
-std::string sql = "INSERT INTO XXX_OOO(product, stream, profile, environment, "
-        "plat_product, uniq_stream, plat_profile) VALUES('" + iden.product + "', '" +
-        iden.stream + "', '" + iden.profile + "', '" + iden.environment + "', '" + pdb +
-        "', '" + uniq_stream + "', '" + platform + "') ON DUPLICATE KEY UPDATE plat_product='" +
-        pdb + "', uniq_stream='" + uniq_stream + "', plat_profile='" + platform + "'";
-```
-如果说上面处理Json还能接受，这个简直是折磨，不言而喻……你可以用sprintf这类，但是%xxoo和后面变量检查对应同样很痛苦，没有本质区别。
+**Rellaf**是一个C++反射库，得益于C++11的语法，让我们可以做到一些神奇的效果——程序在运行时可以遍历对象自身的所有成员字段名字和值，并且可以通过对象名字（字符串）获得该成员的值。 基于此，实现了一系列常用并且非常实用的功能，如：
+- [反射类](docs/reference.md)
+- [反射枚举](docs/reference.md#Enum(枚举))
+- [Json序列化](docs/reference.md#Json)
+- [SQL Builder](docs/reference.md#Sql)
+- [BRPC](https://github.com/brpc/brpc) [HTTP接口映射分发](docs/reference.md#Brpc)
 
 
-**Rellaf**致力于解放C++程序员这块的生产力，也做到了和Java类似的十分爽快的体验，大大提高生产力，减少低级错误。
+**Rellaf**致力于解放C++程序员，从繁重的语法中解脱，保持高性能的同时，做到和解释型语言类似的十分爽快的体验，大大提高生产力，减少低级错误。
 
 ## 我们来QUICK START！
 首先，我们演示一个最简单的对象，设置一个`int`型字段名为`id`。  
 1. 包含头文件`rellaf.h`，在头文件申明反射类：
 ```c++
-// 1.申明对象Obj 继承 rellaf::Object
-// 2. rellaf_model_dcl宏申明这个类是一个Model对象反射类
-// 3. rellaf_model_def_${type}宏用来定义各个类型的数据字段名和默认值
-
-class Obj : public Object {
-rellaf_model_dcl(Obj)
-rellaf_model_def_int(id, -222);
-};
+class Obj : public Object {     // 继承 rellaf::Object
+rellaf_model_dcl(Obj);          // 申明这个类是一个Model对象反射类
+rellaf_model_def_int(id, -222); // rellaf_model_def_${type}宏用来定义类型，字段名和默认值
+}；
 ```
 2. 在源文件中定义反射类
 ```c++
-// 4. 在类定义外，用宏rellaf_model_def定义Model反射类
 rellaf_model_def(Obj);
 ```
 3. 好了，可以使用了：
@@ -71,18 +49,14 @@ val = object.get_int("id");    // 通过字段名字符串索引取值, 返回 2
 
 当然，成员可以加多个。更加重要的是，**支持嵌套！支持数组！** 我们来看相对复杂的例子，两个基本类型，一个对象成员，一个数组。
 ```c++
+// 子对象
 class SubObject : public Object {
 rellaf_model_dcl(SubObject)
 rellaf_model_def_uint16(port, 18765);
 };
 rellaf_model_def(SubObject);
 
-class List : public Object {
-rellaf_model_dcl(List)
-rellaf_model_def_float(ratio, 11.8);
-};
-rellaf_model_def(List);
-
+// 父对象
 class Obj : public Object {
 rellaf_model_dcl(Obj)
 rellaf_model_def_int(id, -111);
@@ -92,10 +66,11 @@ rellaf_model_def_str(name, "aaa");
 rellaf_model_def_object(sub, SubObject);
 
 // 定义数组，字段名，类型名（必须是Model类）
-rellaf_model_def_list(list, List);
+rellaf_model_def_list(list, Plain<int>);    // Plain是C++平凡类型Model的包装 
 };
 rellaf_model_def(Obj);
 ```
+
 定义好了，对象操作
 ```c++
 Obj object;
@@ -120,27 +95,27 @@ ptr->set_port(8121);
 uint16_t port = object.sub()->port();
 port = object.sub()->get_uint16("port");
 ```
+
 数组操作
 ```c++
 Obj object;
-// 数组通过ModuleList实现，模块size()==0
-ModuleList& list = object.list();
-// 与STL一致的接口
+List& list = object.list();
+// 与STL风格一致的接口
 size_t size = list.size();      // 返回 0
 bool is_empty = list.empty();   // 返回 true
 
 // 插入成员，会进行内存复制，生命周期由Model管理。
-List item;
+Plain<int> item = 222;
 list.push_front(&item);
 list.push_back(&item);
 size = list.size();             // 返回 2
 is_empty = list.empty();        // 返回 false
 
 // 索引数组成员，注意返回的是 Model*, 转换成具体类型即可
-List* ptr = list.front<List>();
-ptr = list.back<List>();
-ptr = (List*)list[0];
-ptr = (List*)list[1];
+Plain<int>* ptr = list.front<Plain<int>>();
+ptr = list.back<Plain<int>>();
+ptr = (Plain<int>*)list[0];
+ptr = (Plain<int>*)list[1];
 
 // 遍历
 for (Model* item : list) {
@@ -151,7 +126,7 @@ for (auto i = list.begin(); i != list.end(); ++i) {
 }
 
 // 修改
-List item_to_mod;
+Plain<int> item_to_mod = 222;
 list.set(0, &item_to_mod);
 list.set(1, &item_to_mod);
 
@@ -265,6 +240,28 @@ mkdir build && cd build
 cmake —DWITH_JSON=OFF -DWITH_MYSQL=OFF -DWITH_TEST=OFF .. && make
 ```
 
+**意义何在？**  
+很多典型场景下，如现今服务端程序两大"刚需"：Json序列化和拼SQL。写过Java的同学可能不以为然，写一个和Json对象成员对应的Model类，Gson，Jackson双向"一键直达"；拼SQL？Mybatis的SQL模板中条件预留好字段名称，例如`WHERE field=#{成员名}`，调用时传递对象，同样"一键直达"，Mybatis能够自动根据名称拿到对象的成员值。
+
+**以上两个场景都需要反射。**
+
+传统C++怎么做？（摘自真实线上代码，已"打码"）
+```c++
+json["name"] = _field_name;
+///////////////////
+_count_big = threshold.get("count_big", 10000).asInt();
+```
+同样的字段名我们需要写两遍，变量写错了还好，编译不过；Json取值的索引字符串错了只能运行时等报错。
+
+```c++
+std::string sql = "INSERT INTO XXX_OOO(product, stream, profile, environment, "
+        "plat_product, uniq_stream, plat_profile) VALUES('" + iden.product + "', '" +
+        iden.stream + "', '" + iden.profile + "', '" + iden.environment + "', '" + pdb +
+        "', '" + uniq_stream + "', '" + platform + "') ON DUPLICATE KEY UPDATE plat_product='" +
+        pdb + "', uniq_stream='" + uniq_stream + "', plat_profile='" + platform + "'";
+```
+如果说上面处理Json还能接受，这个简直是折磨，不言而喻……你可以用sprintf这类，但是%xxoo和后面变量检查对应同样很痛苦，没有本质区别。
+
 
 **如何实现？**  
 C++11特性，成员变量就地初始化，可变参模板。静态注册套路。另外，宏, 大量的宏, 对, 多到令人发指的宏。虽然，宏在课堂里或者大部分编程规范里，是badcase，然而我们不得不这么做，至少C++11的语法范围，不得不用宏。  
@@ -278,7 +275,6 @@ relief（得到解脱），reflection（反射），relax（放松），3个单�
 
 ## TODO
 * C++ SQL Dao
-* brpc接口映射
 
 ## 最后
 本人能力有限，精力也有限，存在很多不足，欢迎交流指出。

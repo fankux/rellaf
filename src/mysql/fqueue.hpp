@@ -169,7 +169,7 @@ public:
     }
 
 private:
-    List<T> _list;
+    LinkList<T> _list;
     bool _blocking;
     size_t _max_size;
 

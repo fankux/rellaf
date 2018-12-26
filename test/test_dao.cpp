@@ -45,125 +45,125 @@ void print_pieces(std::deque<SqlPattern::Stub>& pieces) {
     std::deque<SqlPattern::Stub> pieces;                    \
     SqlPattern::explode(pattern, pieces, err);              \
     ASSERT_EQ(err, expect);                                 \
-    if (err == SqlPattern::OK) {                            \
+    if (err == PatternErr::OK) {                            \
         print_pieces(pieces);                               \
     }                                                       \
 }
 
 TEST_F(TestSqlPattern, test_pattern) {
-    test_explode_pattern_item("#", SqlPattern::ILL_BEGIN);
-    test_explode_pattern_item("##", SqlPattern::ILL_BEGIN);
-    test_explode_pattern_item("###", SqlPattern::ILL_BEGIN);
-    test_explode_pattern_item("{", SqlPattern::ILL_TOKEN);
-    test_explode_pattern_item("[", SqlPattern::ILL_TOKEN);
-    test_explode_pattern_item("}", SqlPattern::ILL_TOKEN);
-    test_explode_pattern_item("]", SqlPattern::ILL_TOKEN);
-    test_explode_pattern_item("#{", SqlPattern::ILL_END);
-    test_explode_pattern_item("#}", SqlPattern::ILL_BEGIN);
-    test_explode_pattern_item("#[", SqlPattern::ILL_END);
-    test_explode_pattern_item("#]", SqlPattern::ILL_BEGIN);
-    test_explode_pattern_item("#{{", SqlPattern::ILL_END);
-    test_explode_pattern_item("#[[", SqlPattern::ILL_END);
-    test_explode_pattern_item("#}}", SqlPattern::ILL_BEGIN);
-    test_explode_pattern_item("#]]", SqlPattern::ILL_BEGIN);
-    test_explode_pattern_item("#{[", SqlPattern::ILL_END);
-    test_explode_pattern_item("#[{", SqlPattern::ILL_END);
-    test_explode_pattern_item("#}]", SqlPattern::ILL_BEGIN);
-    test_explode_pattern_item("#]}", SqlPattern::ILL_BEGIN);
-    test_explode_pattern_item("#[}", SqlPattern::UNMATCH);
-    test_explode_pattern_item("#{]", SqlPattern::UNMATCH);
-    test_explode_pattern_item("#{}", SqlPattern::NONE_FIELD);
-    test_explode_pattern_item("#[]", SqlPattern::NONE_FIELD);
+    test_explode_pattern_item("#", PatternErr::ILL_BEGIN);
+    test_explode_pattern_item("##", PatternErr::ILL_BEGIN);
+    test_explode_pattern_item("###", PatternErr::ILL_BEGIN);
+    test_explode_pattern_item("{", PatternErr::ILL_TOKEN);
+    test_explode_pattern_item("[", PatternErr::ILL_TOKEN);
+    test_explode_pattern_item("}", PatternErr::ILL_TOKEN);
+    test_explode_pattern_item("]", PatternErr::ILL_TOKEN);
+    test_explode_pattern_item("#{", PatternErr::ILL_END);
+    test_explode_pattern_item("#}", PatternErr::ILL_BEGIN);
+    test_explode_pattern_item("#[", PatternErr::ILL_END);
+    test_explode_pattern_item("#]", PatternErr::ILL_BEGIN);
+    test_explode_pattern_item("#{{", PatternErr::ILL_END);
+    test_explode_pattern_item("#[[", PatternErr::ILL_END);
+    test_explode_pattern_item("#}}", PatternErr::ILL_BEGIN);
+    test_explode_pattern_item("#]]", PatternErr::ILL_BEGIN);
+    test_explode_pattern_item("#{[", PatternErr::ILL_END);
+    test_explode_pattern_item("#[{", PatternErr::ILL_END);
+    test_explode_pattern_item("#}]", PatternErr::ILL_BEGIN);
+    test_explode_pattern_item("#]}", PatternErr::ILL_BEGIN);
+    test_explode_pattern_item("#[}", PatternErr::UNMATCH);
+    test_explode_pattern_item("#{]", PatternErr::UNMATCH);
+    test_explode_pattern_item("#{}", PatternErr::NONE_FIELD);
+    test_explode_pattern_item("#[]", PatternErr::NONE_FIELD);
 
-    test_explode_pattern_item("", SqlPattern::OK);
-    test_explode_pattern_item("a", SqlPattern::OK);
-    test_explode_pattern_item("aaa", SqlPattern::OK);
-    test_explode_pattern_item("a#", SqlPattern::ILL_BEGIN);
-    test_explode_pattern_item("a#b", SqlPattern::ILL_BEGIN);
-    test_explode_pattern_item("a{", SqlPattern::ILL_TOKEN);
-    test_explode_pattern_item("a{b", SqlPattern::ILL_TOKEN);
-    test_explode_pattern_item("a##", SqlPattern::ILL_BEGIN);
-    test_explode_pattern_item("a##b", SqlPattern::ILL_BEGIN);
-    test_explode_pattern_item("a#{", SqlPattern::ILL_END);
-    test_explode_pattern_item("a#{b", SqlPattern::ILL_END);
-    test_explode_pattern_item("a#[", SqlPattern::ILL_END);
-    test_explode_pattern_item("a#[b", SqlPattern::ILL_END);
-    test_explode_pattern_item("a#}", SqlPattern::ILL_BEGIN);
-    test_explode_pattern_item("a#}b", SqlPattern::ILL_BEGIN);
-    test_explode_pattern_item("a#]", SqlPattern::ILL_BEGIN);
-    test_explode_pattern_item("a#]b", SqlPattern::ILL_BEGIN);
-    test_explode_pattern_item("a#{{", SqlPattern::ILL_END);
-    test_explode_pattern_item("a#{{b", SqlPattern::ILL_END);
-    test_explode_pattern_item("a#{[", SqlPattern::ILL_END);
-    test_explode_pattern_item("a#{[b", SqlPattern::ILL_END);
-    test_explode_pattern_item("a#[[", SqlPattern::ILL_END);
-    test_explode_pattern_item("a#[[b", SqlPattern::ILL_END);
-    test_explode_pattern_item("a#[{", SqlPattern::ILL_END);
-    test_explode_pattern_item("a#[{b", SqlPattern::ILL_END);
-    test_explode_pattern_item("a#{]", SqlPattern::UNMATCH);
-    test_explode_pattern_item("a#{]b", SqlPattern::UNMATCH);
-    test_explode_pattern_item("a#[}", SqlPattern::UNMATCH);
-    test_explode_pattern_item("a#[}b", SqlPattern::UNMATCH);
+    test_explode_pattern_item("", PatternErr::OK);
+    test_explode_pattern_item("a", PatternErr::OK);
+    test_explode_pattern_item("aaa", PatternErr::OK);
+    test_explode_pattern_item("a#", PatternErr::ILL_BEGIN);
+    test_explode_pattern_item("a#b", PatternErr::ILL_BEGIN);
+    test_explode_pattern_item("a{", PatternErr::ILL_TOKEN);
+    test_explode_pattern_item("a{b", PatternErr::ILL_TOKEN);
+    test_explode_pattern_item("a##", PatternErr::ILL_BEGIN);
+    test_explode_pattern_item("a##b", PatternErr::ILL_BEGIN);
+    test_explode_pattern_item("a#{", PatternErr::ILL_END);
+    test_explode_pattern_item("a#{b", PatternErr::ILL_END);
+    test_explode_pattern_item("a#[", PatternErr::ILL_END);
+    test_explode_pattern_item("a#[b", PatternErr::ILL_END);
+    test_explode_pattern_item("a#}", PatternErr::ILL_BEGIN);
+    test_explode_pattern_item("a#}b", PatternErr::ILL_BEGIN);
+    test_explode_pattern_item("a#]", PatternErr::ILL_BEGIN);
+    test_explode_pattern_item("a#]b", PatternErr::ILL_BEGIN);
+    test_explode_pattern_item("a#{{", PatternErr::ILL_END);
+    test_explode_pattern_item("a#{{b", PatternErr::ILL_END);
+    test_explode_pattern_item("a#{[", PatternErr::ILL_END);
+    test_explode_pattern_item("a#{[b", PatternErr::ILL_END);
+    test_explode_pattern_item("a#[[", PatternErr::ILL_END);
+    test_explode_pattern_item("a#[[b", PatternErr::ILL_END);
+    test_explode_pattern_item("a#[{", PatternErr::ILL_END);
+    test_explode_pattern_item("a#[{b", PatternErr::ILL_END);
+    test_explode_pattern_item("a#{]", PatternErr::UNMATCH);
+    test_explode_pattern_item("a#{]b", PatternErr::UNMATCH);
+    test_explode_pattern_item("a#[}", PatternErr::UNMATCH);
+    test_explode_pattern_item("a#[}b", PatternErr::UNMATCH);
 
-    test_explode_pattern_item("a#{}", SqlPattern::NONE_FIELD);
-    test_explode_pattern_item("a#{}b", SqlPattern::NONE_FIELD);
-    test_explode_pattern_item("a#[]", SqlPattern::NONE_FIELD);
-    test_explode_pattern_item("a#[]b", SqlPattern::NONE_FIELD);
+    test_explode_pattern_item("a#{}", PatternErr::NONE_FIELD);
+    test_explode_pattern_item("a#{}b", PatternErr::NONE_FIELD);
+    test_explode_pattern_item("a#[]", PatternErr::NONE_FIELD);
+    test_explode_pattern_item("a#[]b", PatternErr::NONE_FIELD);
 
-    test_explode_pattern_item("#{c}", SqlPattern::OK);
-    test_explode_pattern_item("a#{c}", SqlPattern::OK);
-    test_explode_pattern_item("#{c}b", SqlPattern::OK);
-    test_explode_pattern_item("a#{c}b", SqlPattern::OK);
-    test_explode_pattern_item("#[c]", SqlPattern::OK);
-    test_explode_pattern_item("a#[c]", SqlPattern::OK);
-    test_explode_pattern_item("#[c]b", SqlPattern::OK);
-    test_explode_pattern_item("a#[c]b", SqlPattern::OK);
+    test_explode_pattern_item("#{c}", PatternErr::OK);
+    test_explode_pattern_item("a#{c}", PatternErr::OK);
+    test_explode_pattern_item("#{c}b", PatternErr::OK);
+    test_explode_pattern_item("a#{c}b", PatternErr::OK);
+    test_explode_pattern_item("#[c]", PatternErr::OK);
+    test_explode_pattern_item("a#[c]", PatternErr::OK);
+    test_explode_pattern_item("#[c]b", PatternErr::OK);
+    test_explode_pattern_item("a#[c]b", PatternErr::OK);
 
-    test_explode_pattern_item("#{c1}#{c2}", SqlPattern::OK);
-    test_explode_pattern_item("#{c1}#{c2}#{c3}", SqlPattern::OK);
-    test_explode_pattern_item("#[c1]#[c2]", SqlPattern::OK);
-    test_explode_pattern_item("#[c1]#[c2]#[c3]", SqlPattern::OK);
+    test_explode_pattern_item("#{c1}#{c2}", PatternErr::OK);
+    test_explode_pattern_item("#{c1}#{c2}#{c3}", PatternErr::OK);
+    test_explode_pattern_item("#[c1]#[c2]", PatternErr::OK);
+    test_explode_pattern_item("#[c1]#[c2]#[c3]", PatternErr::OK);
 
-    test_explode_pattern_item("a#{c1}#{c2}", SqlPattern::OK);
-    test_explode_pattern_item("#{c1}a#{c2}", SqlPattern::OK);
-    test_explode_pattern_item("#{c1}#{c2}a", SqlPattern::OK);
-    test_explode_pattern_item("a#{c1}b#{c2}", SqlPattern::OK);
-    test_explode_pattern_item("#{c1}a#{c2}b", SqlPattern::OK);
-    test_explode_pattern_item("a#{c1}#{c2}b", SqlPattern::OK);
-    test_explode_pattern_item("a#{c1}b#{c2}d", SqlPattern::OK);
+    test_explode_pattern_item("a#{c1}#{c2}", PatternErr::OK);
+    test_explode_pattern_item("#{c1}a#{c2}", PatternErr::OK);
+    test_explode_pattern_item("#{c1}#{c2}a", PatternErr::OK);
+    test_explode_pattern_item("a#{c1}b#{c2}", PatternErr::OK);
+    test_explode_pattern_item("#{c1}a#{c2}b", PatternErr::OK);
+    test_explode_pattern_item("a#{c1}#{c2}b", PatternErr::OK);
+    test_explode_pattern_item("a#{c1}b#{c2}d", PatternErr::OK);
 
-    test_explode_pattern_item("a#[c1]#[c2]", SqlPattern::OK);
-    test_explode_pattern_item("#[c1]a#[c2]", SqlPattern::OK);
-    test_explode_pattern_item("#[c1]#[c2]a", SqlPattern::OK);
-    test_explode_pattern_item("a#[c1]b#[c2]", SqlPattern::OK);
-    test_explode_pattern_item("#[c1]a#[c2]b", SqlPattern::OK);
-    test_explode_pattern_item("a#[c1]#[c2]b", SqlPattern::OK);
-    test_explode_pattern_item("a#[c1]b#[c2]d", SqlPattern::OK);
+    test_explode_pattern_item("a#[c1]#[c2]", PatternErr::OK);
+    test_explode_pattern_item("#[c1]a#[c2]", PatternErr::OK);
+    test_explode_pattern_item("#[c1]#[c2]a", PatternErr::OK);
+    test_explode_pattern_item("a#[c1]b#[c2]", PatternErr::OK);
+    test_explode_pattern_item("#[c1]a#[c2]b", PatternErr::OK);
+    test_explode_pattern_item("a#[c1]#[c2]b", PatternErr::OK);
+    test_explode_pattern_item("a#[c1]b#[c2]d", PatternErr::OK);
 
-    test_explode_pattern_item("#{c1}#[c2]", SqlPattern::OK);
-    test_explode_pattern_item("a#{c1}#[c2]", SqlPattern::OK);
-    test_explode_pattern_item("#{c1}a#[c2]", SqlPattern::OK);
-    test_explode_pattern_item("#{c1}#[c2]a", SqlPattern::OK);
-    test_explode_pattern_item("a#{c1}b#[c2]", SqlPattern::OK);
-    test_explode_pattern_item("#{c1}a#[c2]b", SqlPattern::OK);
-    test_explode_pattern_item("a#{c1}#[c2]b", SqlPattern::OK);
-    test_explode_pattern_item("a#{c1}b#[c2]d", SqlPattern::OK);
+    test_explode_pattern_item("#{c1}#[c2]", PatternErr::OK);
+    test_explode_pattern_item("a#{c1}#[c2]", PatternErr::OK);
+    test_explode_pattern_item("#{c1}a#[c2]", PatternErr::OK);
+    test_explode_pattern_item("#{c1}#[c2]a", PatternErr::OK);
+    test_explode_pattern_item("a#{c1}b#[c2]", PatternErr::OK);
+    test_explode_pattern_item("#{c1}a#[c2]b", PatternErr::OK);
+    test_explode_pattern_item("a#{c1}#[c2]b", PatternErr::OK);
+    test_explode_pattern_item("a#{c1}b#[c2]d", PatternErr::OK);
 
-    test_explode_pattern_item("#[c1]#{c2}", SqlPattern::OK);
-    test_explode_pattern_item("a#[c1]#{c2}", SqlPattern::OK);
-    test_explode_pattern_item("#[c1]a#{c2}", SqlPattern::OK);
-    test_explode_pattern_item("#[c1]#{c2}a", SqlPattern::OK);
-    test_explode_pattern_item("a#[c1]b#{c2}", SqlPattern::OK);
-    test_explode_pattern_item("#[c1]a#{c2}b", SqlPattern::OK);
-    test_explode_pattern_item("a#[c1]#{c2}b", SqlPattern::OK);
-    test_explode_pattern_item("a#[c1]b#{c2}d", SqlPattern::OK);
+    test_explode_pattern_item("#[c1]#{c2}", PatternErr::OK);
+    test_explode_pattern_item("a#[c1]#{c2}", PatternErr::OK);
+    test_explode_pattern_item("#[c1]a#{c2}", PatternErr::OK);
+    test_explode_pattern_item("#[c1]#{c2}a", PatternErr::OK);
+    test_explode_pattern_item("a#[c1]b#{c2}", PatternErr::OK);
+    test_explode_pattern_item("#[c1]a#{c2}b", PatternErr::OK);
+    test_explode_pattern_item("a#[c1]#{c2}b", PatternErr::OK);
+    test_explode_pattern_item("a#[c1]b#{c2}d", PatternErr::OK);
 }
 
 class Arg : public Object {
 rellaf_model_dcl(Arg);
 
 rellaf_model_def_str(cond, "str' cond");
-rellaf_model_def_list(ids, PlainWrap<int>);
+rellaf_model_def_list(ids, Plain<int>);
 
 };
 
@@ -246,9 +246,10 @@ TEST_F(TestSqlPattern, test_split_section) {
 TEST_F(TestSqlPattern, test_sql_mapper) {
     Ret ret;
     Arg arg;
-    Model<int> id(1);
+    Plain<int> id(1);
     arg.ids().push_back(&id);
-    id.set_value(2);
+    id.set(2);
+    id = 2;
     arg.ids().push_back(&id);
 
     ASSERT_GE(TestDao::instance().select(ret, DaoModel(arg)), 0);

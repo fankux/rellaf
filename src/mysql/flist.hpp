@@ -30,24 +30,24 @@ public:
 };
 
 template<class T>
-class List {
+class LinkList {
 
 public:
-    List() {
+    LinkList() {
         _max_len = 0;
         _len = 0;
         _head = NULL;
         _tail = NULL;
     }
 
-    explicit List(const size_t max_len) {
+    explicit LinkList(const size_t max_len) {
         _max_len = max_len;
         _len = 0;
         _head = NULL;
         _tail = NULL;
     }
 
-    virtual ~List() {
+    virtual ~LinkList() {
         clear();
     }
 
