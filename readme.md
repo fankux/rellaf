@@ -139,8 +139,9 @@ list.pop_back();
 // 清空
 list.clear();
 ```
+详细使用见 [API文档](docs/reference.md)。
 
-## 枚举
+## [枚举](docs/reference.md#Enum)
 C/C++枚举（`enum`）能力很有限，只是一个数字，没有从字符串获得枚举的能力，也不能判断一个枚举是否存在。  
 `Rellaf`实现了灵活的枚举类，使用同样非常简单。
 1. 包含头文件`"enum.h"`，申明枚举类
@@ -207,10 +208,10 @@ demo TODO。。
 
 ## [BRPC](https://github.com/brpc/brpc) [HTTP接口映射分发](docs/reference.md#Brpc)
 `brpc`是baidu内部的rpc组件，真正意义上终结了公司内部网络传输组件的混乱之治，统一RPC场景。内部叫`baidu-rpc`，第一次接触大概是在2016年，那会儿还没开源，项目需要做HTTP服务端，“看上去可用”基本只有这一款，使用后，惊为天人，接入简单，protobuf直接定义接口，一个端口，支持多种协议，性能极高，自带的bthread还可以扩展到非RPC的通用并发场景。几年下来，稳定可靠，体验极佳。
-不过HTTP这块，封装还是比较初步的，先看一下[官方文档](https://github.com/brpc/brpc/blob/master/docs/cn/http_service.md) ，大体上，只是对协议层面的封装，而没有考虑业务层面（并不是说用C++写业务，但很多情况下总是要实现HTTP服务），对于HTTP常用使用模式（套路）的封装涉及不多，比如：
+不过HTTP这块，封装还是比较初步的，可以先看一下[官方文档](https://github.com/brpc/brpc/blob/master/docs/cn/http_service.md) ，大体上，只是对协议层面的封装，而没有考虑业务层面（并不是说用C++写业务，但很多情况下总是要实现HTTP服务），对于HTTP常用使用模式（套路）的封装涉及不多，比如：
 - 把所有接口和proto接口签名拼接在一个字符串中，proto接口签名生成service请求入口后，不能够直观的看到HTTP API（请求路径）与 service请求入口之间的关联，API多了后会很混乱。
-- BRPC的http接口不使用protobuf service接口函数的request， response字段，不够简洁。
-- 不具有HTTP Json接口的套路（body解析为json）。
+- BRPC的HTTP接口不使用protobuf service接口函数的request，response字段，但是每个请求入口必须写出来，不够简洁。
+- 不具有HTTP Json接口的套路（body解析为Json）。
 - path variable支持很有限。
 
 这么几个问题，都是长期使用过程中总结的，由于BRPC定位并不是`Spring`那样“包办一切”，我自己也持续开发出了一套封装方法，并用到了线上，尽可能做到“简单可依赖”。于是，我把这个部分提取出来，作为`rellaf`的一个扩展。

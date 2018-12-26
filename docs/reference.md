@@ -365,15 +365,32 @@ const std::map<int, std::string>& codes = DemoEnum::e().codes();
 
 **头文件:** `json_to_model.h`
 
-显然，这是一个提供`Model`对象和`Json`互相转换的库。当前版本使用依赖Jsoncpp实现(rapidjson性能更佳, 待调研)。目前包含2个API：
+显然，这是一个提供`Model`对象和`Json`互相转换的库。当前版本使用依赖Jsoncpp实现(rapidjson性能更佳, 待调研)。
 
-bool **model_to_json**(const Model* model, std::string& json_str, bool is_format = false);
-
+目前包含2个API：  
+bool **model_to_json**(const Model* model, std::string& json_str, bool is_format = false);  
 bool **json_to_model**(const std::string& json_str, Model* model);
 
 根据字面意思，就是字符串表示的Json与`Model`类型的相互转换，`is_format`表示是否换行缩进。注意几点：
 - `model_to_jso`总是返回true，`Object`或者`List`成员如果是nullptr，则输出Json的null value。
-- `json_to_model`如果输入字符串parse json失败，返回false，否则返回true，`Model`定义的结构可能与输入的Json不一样，结构不一致的部分会跳过转换。
+- `json_to_model`如果输入字符串parse json失败，返回false，否则返回true。
+- `Model`定义的结构可能与输入的Json不一样，结构不一致的部分会跳过转换。
+- Json object为null value的成员，不会进行转换。
+
+**类型对应:**
+| rellaf类型 | Jsoncpp类型 |
+| ------ | -------- |
+| CHAR | Json::Int |
+| INT16 | Json::Int |
+| INT  | Json::Int |
+| INT64 | Json::Int64 |
+| UINT16 | Json::UInt |
+| UINT32 | Json::UInt |
+| UINT64 | Json::UInt64 |
+| BOOL  | Json::booleanValue |
+| FLOAT  | Json::realValue |
+| DOUBLE  | Json::realValue |
+| STR  | Json::stringValue |
 
 ### Sql
 TODO。。。
@@ -469,5 +486,7 @@ rellaf_brpc_http_def_post(hi, "/api/hi/{id}", hi_handler, Plain<std::string>, Pa
 | rellaf_brpc_http_def_post_param_body | _Ret_ _func_(HttpContext& ctx, const _Params_& p, const _Body_& b) | | 
 | rellaf_brpc_http_def_post_pathvar_body | _Ret_ _func_(HttpContext& ctx, const _Vars_& v, const _Body_& b) | | 
 | rellaf_brpc_http_def_post_param_pathvar | _Ret_ _func_(HttpContext& ctx, const _Params_& p, const _Vars_& v) | | 
+
+TODO 详细解释路劲变量和查询字符串转换。
 
 更多Method支持，还有更多HTTP语义和特性的支持看需求逐步支持，欢迎提ISSUE。
