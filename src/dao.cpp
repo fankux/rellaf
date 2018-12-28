@@ -18,6 +18,7 @@
 // mybatis like sql dao framework
 //
 
+#include <assert.h>
 #include "dao.h"
 
 namespace rellaf {
@@ -95,7 +96,7 @@ void Dao::split_section(const std::string& section_str, std::deque<std::string>&
     } while (*begin != '\0');
 }
 
-bool Dao::get_plain_val_str(const Model* model, const std::string& key, std::string& val,
+bool Dao::get_plain_val_str(const Model* model, std::string& val,
         bool& need_quote, bool& need_escape) {
     switch (model->rellaf_type().code) {
         case ModelTypeEnum::INT16_code:
@@ -125,44 +126,45 @@ bool Dao::get_plain_val_str(const Model* model, const std::string& key, std::str
 bool Dao::get_plain_val(const Model* model, const std::deque<std::string>& sections,
         std::string& val, bool& need_quote, bool& need_escape) {
     val.clear();
-    if (sections.empty() || model == nullptr) {
+    if (model == nullptr) {
         return false;
     }
 
-    if (model->rellaf_type() != ModelTypeEnum::e().OBJECT) {
+    if (is_plain(model)) {
+        return get_plain_val_str(model, val, need_quote, need_escape);
+    }
+
+    if (sections.empty() || !is_object(model)) {
         return false;
     }
 
-    Object* travel = (Object*)const_cast<Model*>(model); // for travel only, so we need non const
-    List* list = nullptr;
+    Model* travel = const_cast<Model*>(model); // for travel only, so we need non const
     for (auto& section : sections) {
-        if (section.front() == '[' && section.back() == ']') {
-            if (list == nullptr) { // current not list
+
+        if (is_plain(travel)) { // plain type just return
+            return get_plain_val_str(travel, val, need_quote, need_escape);
+
+        } else if (is_object(travel)) {
+            Object* obj = (Object*)travel;
+            if (obj->is_plain_member(section)) {
+                travel = obj->get_plain(section);
+            } else if (obj->is_list_member(section)) {
+                travel = &(obj->get_list(section));
+            } else if (obj->is_object_member(section)) {
+                travel = obj->get_object(section);
+            } else {
+                assert(false);
+            }
+
+        } else if (is_list(travel)) {
+
+            if (section.front() != '<' || section.back() != '>') {
+                RELLAF_DEBUG("key %s is not list", section.c_str());
                 return false;
             }
 
             size_t idx = strtoul(section.c_str() + 1, nullptr, 10);
-            travel = list->at<Object>(idx);
-
-            continue;
-        }
-
-        if (travel->is_plain_member(section)) { // plain type just return;
-            return get_plain_val_str(travel, section, val, need_quote, need_escape);
-
-        } else if (travel->is_object_member(section)) {
-            Object* temp = travel->get_object(section);
-            if (temp == nullptr) {
-                RELLAF_DEBUG("key %s is not object", section.c_str());
-                return false;
-            }
-            list = nullptr;
-            travel = temp;
-        } else if (travel->is_list_member(section)) {
-            list = &(travel->get_list(section));
-        } else {
-            RELLAF_DEBUG("key %s is not list", section.c_str());
-            return false;
+            travel = ((List*)travel)->at(idx);
         }
     }
 
@@ -178,45 +180,40 @@ bool Dao::get_list_val(const Model* model, const std::deque<std::string>& sectio
         return false;
     }
 
-    Model* travel = const_cast<Model*>(model);
-    List* list = nullptr;
+    Model* travel = const_cast<Model*>(model); // never modify memory here,just force convert
     for (auto& section : sections) {
-        if (section.front() == '<' && section.back() == '>') {
-            if (list == nullptr) { // current not list
-                return false;
-            }
 
-            size_t idx = strtoul(section.c_str() + 1, nullptr, 10);
-            travel = list->at(idx); // never modify mem here,just force convert
-            continue;
-        }
-
-        if (travel->rellaf_type() != ModelTypeEnum::e().LIST &&
-                travel->rellaf_type() != ModelTypeEnum::e().OBJECT) {
+        if (sections.size() == 1 && is_plain(model)) {
             RELLAF_DEBUG("key %s should not be plain", section.c_str());
             return false;
         }
 
-        if (travel->rellaf_type() == ModelTypeEnum::e().OBJECT) {
-            Object* temp = ((Object*)travel)->get_object(section);
-            if (temp == nullptr) {
-                RELLAF_DEBUG("key %s is not object", section.c_str());
+        if (is_object(model)) {
+            Object* obj = (Object*)travel;
+            if (obj->is_plain_member(section)) {
+                travel = obj->get_plain(section);
+            } else if (obj->is_list_member(section)) {
+                travel = &(obj->get_list(section));
+            } else if (obj->is_object_member(section)) {
+                travel = obj->get_object(section);
+            } else {
+                assert(false);
+            }
+
+        } else if (is_list(model)) {
+            if (section.front() != '<' || section.back() != '>') {
+                RELLAF_DEBUG("key %s is not list", section.c_str());
                 return false;
             }
-            list = nullptr;
-            travel = temp;
-        } else if (travel->rellaf_type() == ModelTypeEnum::e().LIST) {
-            list = &(((Object*)travel)->get_list(section));
-        } else {
-            RELLAF_DEBUG("key %s is not list", section.c_str());
-            return false;
+
+            size_t idx = strtoul(section.c_str() + 1, nullptr, 10);
+            travel = ((List*)travel)->at(idx);
         }
     }
 
-    if (list != nullptr) { // convert to array list
-        for (const Model* m : *list) {
-            if (travel->rellaf_type() != ModelTypeEnum::e().LIST &&
-                    travel->rellaf_type() != ModelTypeEnum::e().OBJECT) {
+    if (is_list(travel)) { // convert to array list
+        for (const Model* m : *((List*)travel)) {
+            if (!is_plain(m)) {
                 continue;
             }
             vals.emplace_back(m->str());
@@ -224,7 +221,7 @@ bool Dao::get_list_val(const Model* model, const std::deque<std::string>& sectio
         return true;
     }
 
-    // last section MUST be list, and should be returned in for loop
+    // last section MUST be list, and should be returned in the scope of for loop
     RELLAF_DEBUG("section %s invalid, last not list", sections.back().c_str());
     return false;
 }

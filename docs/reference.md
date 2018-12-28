@@ -38,8 +38,8 @@
 | ----- | --- | ------ | ------ |
 | **rellaf_type** | 返回Model类型 | ModelType | N/A |
 | **rellaf_name** | 返回Model名字 | std::string | N/A |
-| **\<T\>tag** | 给当前Model设置一个枚举类型tag | T&(当前Model的引用) | EnumItem |
-| **rellaf_tag** | 返回Model的tag | EnumItem | N/A |
+| **\<T\>tag** | 给当前Model设置一个枚举类型tag | T&(当前Model的引用) | std::string |
+| **rellaf_tag** | 返回Model的tag | std::string | N/A |
 | **create** | 构造一个新的Model | Model* | N/A |
 | **clone** | 复制当前对象 | Model* | N/A |
 | **assign** | 对象赋值 | void | N/A |
@@ -378,6 +378,7 @@ bool **json_to_model**(const std::string& json_str, Model* model);
 - Json object为null value的成员，不会进行转换。
 
 **类型对应:**
+
 | rellaf类型 | Jsoncpp类型 |
 | ------ | -------- |
 | CHAR | Json::Int |

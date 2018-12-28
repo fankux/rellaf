@@ -83,14 +83,14 @@ size_t SqlEscape::escape_field_quote(const std::string& from, char quote, char* 
 }
 
 bool SqlEscape::escape_field(const std::string& field, std::string& out) {
-    out.clear();
 
     char field_buf[1024];
     bool alloc_flag = false;
     char* p = field_buf;
-    if (field.size() > 768) { // rest space(1024-768-1) for blackslash added after escaped
+    if (field.size() > 768) { // the rest of space(1024-768-1) for blackslash added after escaped
         p = (char*)malloc((size_t)(field.size() * 1.5));
         if (p == nullptr) {
+            out.clear();
             return false;
         }
         alloc_flag = true;

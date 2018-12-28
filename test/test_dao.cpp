@@ -252,9 +252,9 @@ TEST_F(TestSqlPattern, test_sql_mapper) {
     id = 2;
     arg.ids().push_back(&id);
 
-    ASSERT_GE(TestDao::instance().select(ret, DaoModel(arg)), 0);
-    ASSERT_EQ(TestDao::instance().select_single(ret, DaoModel("a", arg)), -1);
-    ASSERT_GE(TestDao::instance().select_multi(ret, DaoModel("a", arg), DaoModel("b", arg)), 0);
+    ASSERT_GE(TestDao::instance().select(ret, arg), 0);
+    ASSERT_EQ(TestDao::instance().select_single(ret, arg), -1);
+    ASSERT_GE(TestDao::instance().select_multi(ret, arg.tag("a"), arg.tag("b")), 0);
 }
 
 }

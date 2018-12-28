@@ -32,25 +32,6 @@
 
 namespace rellaf {
 
-class DaoModel {
-public:
-    explicit DaoModel(const Model& model) : _model(&model) {}
-
-    DaoModel(const std::string& name, const Model& model) : _name(name), _model(&model) {}
-
-    const std::string& name() const {
-        return _name;
-    }
-
-    const Model* model() const {
-        return _model;
-    }
-
-private:
-    std::string _name;
-    const Model* _model;
-};
-
 class DaoResultRow {
 public:
     void set(const std::string& name, const std::string& val) {
@@ -138,7 +119,7 @@ protected:
     template<class T>
     void build_dao_models(std::map<std::string, const Model*>& dao_models, const T& arg) {
         if (std::is_base_of<Model, T>::value) {
-            dao_models.emplace(arg.name(), &arg);
+            dao_models.emplace(arg.rellaf_tag(), &arg);
         }
     }
 
@@ -275,7 +256,7 @@ protected:
 protected:
     void split_section(const std::string& section_str, std::deque<std::string>& sections);
 
-    bool get_plain_val_str(const Model* model, const std::string& key, std::string& val,
+    bool get_plain_val_str(const Model* model, std::string& val,
             bool& need_quote, bool& need_escape);
 
     bool get_plain_val(const Model* model, const std::deque<std::string>& sections,

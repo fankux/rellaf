@@ -142,7 +142,8 @@ void* MysqlSimplePool::thd_routine(void* ptr) {
             break;
         }
         if (ret_list == 1 || context == nullptr) {
-            RELLAF_DEBUG("pop task timeout, ret : %d, context : %x", ret_list, context);
+            RELLAF_DEBUG("pop task timeout, ret : %d, context : %lx", ret_list,
+                    reinterpret_cast<unsigned long>(context));
             continue;
         }
 
@@ -220,7 +221,7 @@ void* MysqlSimplePool::thd_routine(void* ptr) {
     RELLAF_DEBUG("mysql thread end");
     MysqlSimplePool::close(&mysql);
     mysql_thread_end();
-    return (void*)0;
+    return (void*)nullptr;
 }
 
 Queue<SqlContext*>* MysqlSimplePool::fetch_thread() {

@@ -183,13 +183,13 @@ public:
     /**
      * markup current model with a tag which is Enum
      */
-    template<class T>
-    T& tag(EnumItem& tag_enum) {
+    template<class T=Model>
+    T& tag(const std::string& tag_enum) {
         _tag = tag_enum;
-        return *this;
+        return *((T*)this);
     }
 
-    const EnumItem& rellaf_tag() const {
+    const std::string& rellaf_tag() const {
         return _tag;
     }
 
@@ -217,7 +217,7 @@ public:
 
 protected:
     ModelType _type;
-    EnumItem _tag;
+    std::string _tag;
 };
 
 class Avoid : public Model {
@@ -768,5 +768,9 @@ private:                                                                \
     _type_ _name_##_type
 
 bool is_plain(const Model* model);
+
+bool is_list(const Model* model);
+
+bool is_object(const Model* model);
 
 } //namespace

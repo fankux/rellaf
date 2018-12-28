@@ -203,4 +203,12 @@ bool is_plain(const Model* model) {
             model->rellaf_type() != ModelTypeEnum::e().LIST);
 }
 
+bool is_list(const Model* model) {
+    return (model->rellaf_type() == ModelTypeEnum::e().LIST);
+}
+
+bool is_object(const Model* model) {
+    return (model->rellaf_type() == ModelTypeEnum::e().OBJECT);
+}
+
 }

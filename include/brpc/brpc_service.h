@@ -116,37 +116,37 @@ bool prepare_args(HttpContext& ctx, const std::string& body, Args ... args) {
 
     bool s;
     for (Model* arg : model_args) {
-        switch (arg->rellaf_tag().code) {
-            case HttpArgTypeEnum::REQ_BODY_code:
-                if (is_plain(arg)) {
-                    s = arg->set_parse(body);
-                } else {
-                    s = json_to_model(body, arg);
-                }
-                if (!s) {
-                    return false;
-                }
-                break;
+        if (arg->rellaf_tag() == HttpArgTypeEnum::e().REQ_BODY.name) {
+            if (is_plain(arg)) {
+                s = arg->set_parse(body);
+            } else {
+                s = json_to_model(body, arg);
+            }
+            if (!s) {
+                return false;
+            }
+            continue;
+        }
 
-            case HttpArgTypeEnum::REQ_PARAM_code:
-                if (arg->rellaf_type() == ModelTypeEnum::e().OBJECT) {
-                    const brpc::URI& uri = ctx.request_header.uri();
-                    for (auto iter = uri.QueryBegin(); iter != uri.QueryEnd(); ++iter) {
-                        ((Object*)arg)->set_plain(iter->first, iter->second);
-                    }
-                }
-                break;
+        if (arg->rellaf_tag() == HttpArgTypeEnum::e().REQ_PARAM.name) {
 
-            case HttpArgTypeEnum::PATH_VAR_code:
-                if (arg->rellaf_type() == ModelTypeEnum::e().OBJECT) {
-                    for (auto& entry : ctx.path_vars) {
-                        ((Object*)arg)->set_plain(entry.first, entry.second);
-                    }
+            if (is_object(arg)) {
+                const brpc::URI& uri = ctx.request_header.uri();
+                for (auto iter = uri.QueryBegin(); iter != uri.QueryEnd(); ++iter) {
+                    ((Object*)arg)->set_plain(iter->first, iter->second);
                 }
-                break;
+            }
+            continue;
+        }
 
-            default:
-                break;
+        if (arg->rellaf_tag() == HttpArgTypeEnum::e().PATH_VAR.name) {
+
+            if (is_object(arg)) {
+                for (auto& entry : ctx.path_vars) {
+                    ((Object*)arg)->set_plain(entry.first, entry.second);
+                }
+            }
+            continue;
         }
     }
     return true;
@@ -162,7 +162,10 @@ private:                                                                        
             _Params_ p;                                                                            \
             _Vars_ v;                                                                              \
             _Body_ b;                                                                              \
-            if (!prepare_args<_Params_, _Vars_, _Body_>(ctx, body, p, v, b)) {                     \
+            if (!prepare_args<_Params_, _Vars_, _Body_>(ctx, body,                                 \
+                    p.tag<_Params_>(HttpArgTypeEnum::e().REQ_PARAM.name),                          \
+                    v.tag<_Vars_>(HttpArgTypeEnum::e().PATH_VAR.name),                             \
+                    b.tag<_Body_>(HttpArgTypeEnum::e().REQ_BODY.name))) {                          \
                 return -1;                                                                         \
             }                                                                                      \
             _Ret_ ret = _func_##_base(ctx, p, v, b);                                               \
