@@ -220,9 +220,9 @@ protected:
     std::string _tag;
 };
 
-class Avoid : public Model {
+class Void : public Model {
 public:
-    Avoid() {
+    Void() {
         _type = ModelTypeEnum::e().no;
     }
 
@@ -520,7 +520,19 @@ public:
 
     void push_front(Model* model);
 
+    template<class T>
+    void push_front(const T& model) {
+        static_assert(std::is_base_of<Model, T>::value, "type not Model");
+        _items.push_front(model.clone());
+    }
+
     void push_back(Model* model);
+
+    template<class T>
+    void push_back(const T& model) {
+        static_assert(std::is_base_of<Model, T>::value, "type not Model");
+        _items.push_back(model.clone());
+    }
 
     void pop_front();
 

@@ -184,7 +184,7 @@ private:                                                                        
 
 #define rellaf_brpc_http_def_get(_sign_, _api_, _func_, _Ret_, _Params_, _Vars_)                \
 private:                                                                                        \
-    rellaf_brpc_http_def_api(_sign_, _api_, GET, _func_, _Ret_, _Params_, _Vars_, Avoid) {      \
+    rellaf_brpc_http_def_api(_sign_, _api_, GET, _func_, _Ret_, _Params_, _Vars_, Void) {       \
         return std::forward<_Ret_>(_func_(ctx, p, v));                                          \
     }                                                                                           \
 public:                                                                                         \
@@ -192,7 +192,7 @@ public:                                                                         
 
 #define rellaf_brpc_http_def_get_param(_sign_, _api_, _func_, _Ret_, _Params_)                  \
 private:                                                                                        \
-    rellaf_brpc_http_def_get(_sign_, _api_, _func_, _Ret_, _Params_, Avoid) {                   \
+    rellaf_brpc_http_def_get(_sign_, _api_, _func_, _Ret_, _Params_, Void) {                    \
         return std::forward<_Ret_>(_func_(ctx, p));                                             \
     }                                                                                           \
 public:                                                                                         \
@@ -200,7 +200,7 @@ public:                                                                         
 
 #define rellaf_brpc_http_def_get_pathvar(_sign_, _api_, _func_, _Ret_, _Vars_)                  \
 private:                                                                                        \
-    rellaf_brpc_http_def_get(_sign_, _api_, _func_, _Ret_, Avoid, _Vars_) {                     \
+    rellaf_brpc_http_def_get(_sign_, _api_, _func_, _Ret_, Void, _Vars_) {                      \
         return std::forward<_Ret_>(_func_(ctx, v));                                             \
     }                                                                                           \
 public:                                                                                         \
@@ -217,7 +217,7 @@ public:                                                                         
 
 #define rellaf_brpc_http_def_post_body(_sign_, _api_, _func_, _Ret_, _Body_)                    \
 private:                                                                                        \
-    rellaf_brpc_http_def_post(_sign_, _api_, _func_, _Ret_, Avoid, Avoid, _Body_) {             \
+    rellaf_brpc_http_def_post(_sign_, _api_, _func_, _Ret_, Void, Void, _Body_) {               \
         return std::forward<_Ret_>(_func_(ctx, b));                                             \
     }                                                                                           \
 public:                                                                                         \
@@ -225,7 +225,7 @@ public:                                                                         
 
 #define rellaf_brpc_http_def_post_param(_sign_, _api_, _func_, _Ret_, _Params_)                 \
 private:                                                                                        \
-    rellaf_brpc_http_def_post(_sign_, _api_, _func_, _Ret_, _Params_, Avoid, Avoid) {           \
+    rellaf_brpc_http_def_post(_sign_, _api_, _func_, _Ret_, _Params_, Void, Void) {             \
         return std::forward<_Ret_>(_func_(ctx, p));                                             \
     }                                                                                           \
 public:                                                                                         \
@@ -233,7 +233,7 @@ public:                                                                         
 
 #define rellaf_brpc_http_def_post_pathvar(_sign_, _api_, _func_, _Ret_, _Vars_)                 \
 private:                                                                                        \
-    rellaf_brpc_http_def_post(_sign_, _api_, _func_, _Ret_, Avoid, _Vars_, Avoid) {             \
+    rellaf_brpc_http_def_post(_sign_, _api_, _func_, _Ret_, Void, _Vars_, Void) {               \
         return std::forward<_Ret_>(_func_(ctx, v));                                             \
     }                                                                                           \
 public:                                                                                         \
@@ -241,7 +241,7 @@ public:                                                                         
 
 #define rellaf_brpc_http_def_post_param_body(_sign_, _api_, _func_, _Ret_, _Params_, _Body_)    \
 private:                                                                                        \
-    rellaf_brpc_http_def_post(_sign_, _api_, _func_, _Ret_, _Params_, Avoid, _Body_) {          \
+    rellaf_brpc_http_def_post(_sign_, _api_, _func_, _Ret_, _Params_, Void, _Body_) {           \
         return std::forward<_Ret_>(_func_(ctx, p, b));                                          \
     }                                                                                           \
 public:                                                                                         \
@@ -249,7 +249,7 @@ public:                                                                         
 
 #define rellaf_brpc_http_def_post_pathvar_body(_sign_, _api_, _func_, _Ret_, _Vars_, _Body_)    \
 private:                                                                                        \
-    rellaf_brpc_http_def_post(_sign_, _api_, _func_, _Ret_, Avoid, _Vars_, _Body_) {            \
+    rellaf_brpc_http_def_post(_sign_, _api_, _func_, _Ret_, Void, _Vars_, _Body_) {             \
         return std::forward<_Ret_>(_func_(ctx, v, b));                                          \
     }                                                                                           \
 public:                                                                                         \
@@ -257,7 +257,7 @@ public:                                                                         
 
 #define rellaf_brpc_http_def_post_param_pathvar(_sign_, _api_, _func_, _Ret_, _Params_, _Vars_) \
 private:                                                                                        \
-    rellaf_brpc_http_def_post(_sign_, _api_, _func_, _Ret_, _Params_, _Vars_, Avoid) {          \
+    rellaf_brpc_http_def_post(_sign_, _api_, _func_, _Ret_, _Params_, _Vars_, Void) {           \
         return std::forward<_Ret_>(_func_(ctx, p, v));                                          \
     }                                                                                           \
 public:                                                                                         \

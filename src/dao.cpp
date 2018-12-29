@@ -153,7 +153,8 @@ bool Dao::get_plain_val(const Model* model, const std::deque<std::string>& secti
             } else if (obj->is_object_member(section)) {
                 travel = obj->get_object(section);
             } else {
-                assert(false);
+                RELLAF_DEBUG("invalid key %s", section.c_str());
+                return false;
             }
 
         } else if (is_list(travel)) {
@@ -166,6 +167,10 @@ bool Dao::get_plain_val(const Model* model, const std::deque<std::string>& secti
             size_t idx = strtoul(section.c_str() + 1, nullptr, 10);
             travel = ((List*)travel)->at(idx);
         }
+    }
+
+    if (is_plain(travel)) {
+        return get_plain_val_str(travel, val, need_quote, need_escape);
     }
 
     // last section MUST be plain, and should be returned in for loop

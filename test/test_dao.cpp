@@ -240,17 +240,20 @@ TEST_F(TestSqlPattern, test_split_section) {
     ASSERT_TRUE(test_split_section_item(". a ", {" a "}));
     ASSERT_TRUE(test_split_section_item(" .a", {" ", "a"}));
     ASSERT_TRUE(test_split_section_item("a.b", {"a", "b"}));
+    ASSERT_TRUE(test_split_section_item("aa.bb", {"aa", "bb"}));
+    ASSERT_TRUE(test_split_section_item("a.b.c", {"a", "b", "c"}));
+    ASSERT_TRUE(test_split_section_item("aa.bb.cc", {"aa", "bb", "cc"}));
 
 }
 
 TEST_F(TestSqlPattern, test_sql_mapper) {
     Ret ret;
     Arg arg;
-    Plain<int> id(1);
-    arg.ids().push_back(&id);
+    Plain<int> id = 1;
+    arg.ids().push_back(id);
     id.set(2);
     id = 2;
-    arg.ids().push_back(&id);
+    arg.ids().push_back(id);
 
     ASSERT_GE(TestDao::instance().select(ret, arg), 0);
     ASSERT_EQ(TestDao::instance().select_single(ret, arg), -1);

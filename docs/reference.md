@@ -94,6 +94,8 @@ if (intval.equal_parse("555")) {
 | **empty** | 是否空 | bool | N/A |
 | **push_front** | 头部插入 | void | Model* |
 | **push_back** | 尾部插入 | void | Model* |
+| **\<T\>push_front** | 头部插入 | void | const T&(Model子类) |
+| **\<T\>push_back** | 尾部插入 | void | const T&(Model子类) |
 | **pop_front** | 头部删除 | void | N/A |
 | **pop_back** | 尾部删除 | void | N/A |
 | **\<T\>front** | 头部成员 | T* | N/A |
@@ -247,7 +249,7 @@ port = object.sub()->get_uint16("port");
 ```
 
 
-### Avoid
+### Void
 **说明:**  
 继承`Model`，表示`无类型`。
 

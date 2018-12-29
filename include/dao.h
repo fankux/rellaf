@@ -117,9 +117,9 @@ protected:
     };
 
     template<class T>
-    void build_dao_models(std::map<std::string, const Model*>& dao_models, const T& arg) {
+    void build_dao_models(std::map<std::string, const Model*>& models, const T& arg) {
         if (std::is_base_of<Model, T>::value) {
-            dao_models.emplace(arg.rellaf_tag(), &arg);
+            models.emplace(arg.rellaf_tag(), &arg);
         }
     }
 
@@ -138,6 +138,11 @@ protected:
         std::map<std::string, const Model*> models;
         bool arr[] = {(build_dao_models(models, args), true)...}; // for arguments expansion
         (void)(arr);// suppress warning
+
+        for (auto& m_entry : models) {
+            RELLAF_DEBUG("%s ==> %s[tag:%s]", m_entry.first.c_str(),
+                    m_entry.second->debug_str().c_str(), m_entry.second->rellaf_tag().c_str());
+        }
 
         for (const SqlPattern::Stub& stub : entry->second) {
             std::deque<std::string> sections;
