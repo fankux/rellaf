@@ -19,61 +19,61 @@
 //
 
 #include <assert.h>
-#include "dao.h"
+#include "sql_builder.h"
 
 namespace rellaf {
 
-rellaf_enum_def(Dao::Charset);
+rellaf_enum_def(SqlBuilder::Charset);
 
-void DaoResultList::push(const DaoResultRow& row) {
+void SqlResultList::push(const SqlResultRow& row) {
     _datas.emplace_back(row);
 }
 
-void DaoResultList::push(DaoResultRow&& row) {
+void SqlResultList::push(SqlResultRow&& row) {
     _datas.emplace_back(row);
 }
 
-size_t DaoResultList::size() const {
+size_t SqlResultList::size() const {
     return _datas.size();
 }
 
-bool DaoResultList::empty() const {
+bool SqlResultList::empty() const {
     return _datas.empty();
 }
 
-DaoResultRow& DaoResultList::front() {
+SqlResultRow& SqlResultList::front() {
     return _datas.front();
 }
 
-const DaoResultRow& DaoResultList::front() const {
+const SqlResultRow& SqlResultList::front() const {
     return _datas.front();
 }
 
-DaoResultRow& DaoResultList::back() {
+SqlResultRow& SqlResultList::back() {
     return _datas.back();
 }
 
-const DaoResultRow& DaoResultList::back() const {
+const SqlResultRow& SqlResultList::back() const {
     return _datas.back();
 }
 
-const DaoResultRow& DaoResultList::get(size_t idx) const {
+const SqlResultRow& SqlResultList::get(size_t idx) const {
     return _datas[idx];
 }
 
-const DaoResultRow& DaoResultList::operator[](size_t idx) const {
+const SqlResultRow& SqlResultList::operator[](size_t idx) const {
     return _datas[idx];
 }
 
-std::deque<DaoResultRow>::const_iterator DaoResultList::begin() const {
+std::deque<SqlResultRow>::const_iterator SqlResultList::begin() const {
     return _datas.begin();
 }
 
-std::deque<DaoResultRow>::const_iterator DaoResultList::end() const {
+std::deque<SqlResultRow>::const_iterator SqlResultList::end() const {
     return _datas.end();
 }
 
-void Dao::split_section(const std::string& section_str, std::deque<std::string>& sections) {
+void SqlBuilder::split_section(const std::string& section_str, std::deque<std::string>& sections) {
     sections.clear();
     if (section_str.empty()) {
         return;
@@ -96,7 +96,7 @@ void Dao::split_section(const std::string& section_str, std::deque<std::string>&
     } while (*begin != '\0');
 }
 
-bool Dao::get_plain_val_str(const Model* model, std::string& val,
+bool SqlBuilder::get_plain_val_str(const Model* model, std::string& val,
         bool& need_quote, bool& need_escape) {
     switch (model->rellaf_type().code) {
         case ModelTypeEnum::INT16_code:
@@ -115,7 +115,7 @@ bool Dao::get_plain_val_str(const Model* model, std::string& val,
         case ModelTypeEnum::STR_code:
             need_quote = true;
             need_escape = true;
-            return true;
+            break;
         default:
             return false;
     }
@@ -123,7 +123,7 @@ bool Dao::get_plain_val_str(const Model* model, std::string& val,
     return true;
 }
 
-bool Dao::get_plain_val(const Model* model, const std::deque<std::string>& sections,
+bool SqlBuilder::get_plain_val(const Model* model, const std::deque<std::string>& sections,
         std::string& val, bool& need_quote, bool& need_escape) {
     val.clear();
     if (model == nullptr) {
@@ -178,7 +178,7 @@ bool Dao::get_plain_val(const Model* model, const std::deque<std::string>& secti
     return false;
 }
 
-bool Dao::get_list_val(const Model* model, const std::deque<std::string>& sections,
+bool SqlBuilder::get_list_val(const Model* model, const std::deque<std::string>& sections,
         std::deque<std::string>& vals) {
     vals.clear();
     if (sections.empty() || model == nullptr) {
@@ -231,7 +231,7 @@ bool Dao::get_list_val(const Model* model, const std::deque<std::string>& sectio
     return false;
 }
 
-bool Dao::append_sql(std::string& sql, const std::string& val, bool need_quote, bool need_escape) {
+bool SqlBuilder::append_sql(std::string& sql, const std::string& val, bool need_quote, bool need_escape) {
     if (need_quote) {
         sql += '\'';
     }

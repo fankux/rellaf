@@ -28,40 +28,40 @@
 
 namespace rellaf {
 
-struct SqlResult {
+struct MyResult {
     int status;
     int row_count;
     std::string message;
     void* data;
 };
 
-struct SqlContext {
+struct MyContext {
     std::string sql;
     Latch latch;
-    SqlResult** result;
+    MyResult** result;
 };
 
 class MysqlSimplePool;
 
-struct SqlThread {
+struct MyThread {
     pthread_t tid;
     MysqlSimplePool* inst;
-    Queue<SqlContext*>* tasks;
+    Queue<MyContext*>* tasks;
     int status;
 };
 
 struct SqlTx {
     uint64_t tx_id = 0;
-    SqlThread* thread = nullptr;
+    MyThread* thread = nullptr;
 };
 
-class SqlRow {
-RELLAF_DEFMOVE_NO_CTOR(SqlRow)
+class MyRow {
+RELLAF_DEFMOVE_NO_CTOR(MyRow)
 
 public:
-    SqlRow() = default;
+    MyRow() = default;
 
-    friend class SqlRes;
+    friend class MyRes;
 
     template<class T=std::string>
     T get(size_t field) {
@@ -82,20 +82,20 @@ public:
     }
 
 private:
-    SqlRow(MYSQL_ROW row, size_t field_count) : _row(row), _field_count(field_count) {};
+    MyRow(MYSQL_ROW row, size_t field_count) : _row(row), _field_count(field_count) {};
 
 private:
     MYSQL_ROW _row = nullptr;
     size_t _field_count = 0;
 };
 
-class SqlField {
-RELLAF_DEFMOVE_NO_CTOR(SqlField);
+class MyField {
+RELLAF_DEFMOVE_NO_CTOR(MyField);
 
 public:
-    SqlField() = default;
+    MyField() = default;
 
-    friend class SqlRes;
+    friend class MyRes;
 
     const std::string& name() const {
         return _name;
@@ -106,20 +106,20 @@ public:
     }
 
 private:
-    SqlField(const std::string& name, enum enum_field_types type) : _name(name), _type(type) {}
+    MyField(const std::string& name, enum enum_field_types type) : _name(name), _type(type) {}
 
 private:
     std::string _name;
     enum enum_field_types _type;
 };
 
-class SqlRes {
-RELLAF_AVOID_COPY(SqlRes)
+class MyRes {
+RELLAF_AVOID_COPY(MyRes)
 
 public:
-    explicit SqlRes(MYSQL_RES* res) : _res(res) {}
+    explicit MyRes(MYSQL_RES* res) : _res(res) {}
 
-    virtual ~SqlRes();
+    virtual ~MyRes();
 
     void reset();
 
@@ -131,15 +131,15 @@ public:
 
     size_t field_count();
 
-    SqlRow fetch_row();
+    MyRow fetch_row();
 
-    void fetch_fields(std::deque<SqlField>& fields);
+    void fetch_fields(std::deque<MyField>& fields);
 
 private:
     MYSQL_RES* _res;
 };
 
-class SqlTxEx;
+class MyTxEx;
 
 class MysqlSimplePool {
 public:
@@ -183,9 +183,9 @@ private:
         }
     }
 
-    void execute(const std::string& sql, SqlResult** result_ptr);
+    void execute(const std::string& sql, MyResult** result_ptr);
 
-    void tx_execute(SqlTx* tx, const std::string& sql, SqlResult** result_ptr);
+    void tx_execute(SqlTx* tx, const std::string& sql, MyResult** result_ptr);
 
     static bool connect(MYSQL* mysql);
 
@@ -195,9 +195,9 @@ private:
 
     static void* thd_routine(void*);
 
-    Queue<SqlContext*>* fetch_thread();
+    Queue<MyContext*>* fetch_thread();
 
-    SqlThread* new_thread();
+    MyThread* new_thread();
 
     bool tx_end(SqlTx& tx, const std::string& sql);
 
@@ -211,7 +211,7 @@ private:
     static uint32_t _s_thread_count;
     static uint32_t _s_task_queue_size;
 
-    static std::deque<SqlThread*> _s_pool;
+    static std::deque<MyThread*> _s_pool;
 
     static pthread_mutex_t _s_tx_lock;
     static std::map<uint64_t, SqlTx> _s_tx_pool; // tx_id ==> sql_tx
@@ -220,13 +220,13 @@ private:
 
 };
 
-class SqlTxEx {
-RELLAF_AVOID_COPY(SqlTxEx)
+class MyTxEx {
+RELLAF_AVOID_COPY(MyTxEx)
 
 public:
-    SqlTxEx();
+    MyTxEx();
 
-    virtual ~SqlTxEx();
+    virtual ~MyTxEx();
 
     bool rollback();
 

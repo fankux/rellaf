@@ -38,8 +38,8 @@
 | ----- | --- | ------ | ------ |
 | **rellaf_type** | 返回Model类型 | ModelType | N/A |
 | **rellaf_name** | 返回Model名字 | std::string | N/A |
-| **\<T\>tag** | 给当前Model设置一个枚举类型tag | T&(当前Model的引用) | std::string |
-| **rellaf_tag** | 返回Model的tag | std::string | N/A |
+| **\<T\>tag** | 给当前Model增加一个字符串类型tag | T&(当前Model的引用) | std::string |
+| **rellaf_tags** | 返回Model的tag集合 | std::deque\<std::string\> | N/A |
 | **create** | 构造一个新的Model | Model* | N/A |
 | **clone** | 复制当前对象 | Model* | N/A |
 | **assign** | 对象赋值 | void | N/A |
@@ -410,19 +410,32 @@ TODO。。。
 - 处理函数直接返回`Model`，可自动转换成Json或字符串。
 
 **HttpContext:**  
-HTTP请求上下文数据包，原型：
+HTTP请求上下文数据包，包装了Brpc HTTP请求相关的原始数据。`request_header`, `request_body`, `path_vars`是输入请求，其中`path_vars`是`std::map`形态的路径变量方便使用, 只读。`response_header`, `response_body` 是应答数据, 可以修改, 以实现HTTP的各种响应功能。原型：
 ```C++
 struct HttpContext {
     const HttpHeader& request_header;
     const butil::IOBuf& request_body;
+    const std::map<std::string, std::string>& path_vars;
     HttpHeader& response_header;
     butil::IOBuf& response_body;
-    std::map<std::string, std::string>& path_vars;
 };
 ```
+除了这个原始的Brpc HTTP上下文数据结构, `Rellaf`做的主要工作是, 把HTTP常用的方式和数据处理模型进行封装，包括几类：  
+
+**查询字符串:**  
+有HTTP API：`api/{id}/to/request?a=111&b=222`，其中`a=111&b=222`就是`查询字符串`, 简单来说就是k-v数据, `Rellaf`可以将其自动转换成`Object`供调用方直接使用。(HTTP允许一个k设置多个v, 这个暂时不支持)
+
+**路径变量:**  
+使用`{变量名}`的方式定义, 有HTTP API：`api/{id}/to/request?a=111&b=222`，其中`{id}`是`路径变量`, 假如真实请求是'http://www.xxxx.com/api/<span color="red">666</span>/to/request?a=111&b=222', 那么`666`就是`路径变量`的实参, 这也是k-v数据, `Rellaf`同样可以将其自动转换成`Object`
+
+**请求Body:**  
+目前业内常用的'套路'是`请求Body`用Json字符串, 借助于`Rellaf`的Json转换能力, 我们同样可以自动将其自动转换为`Model`。如果定义的是Plain类型，则会用这个字符串去解析赋值，比如`Plain<std::string>`可以拿到`请求Body`的原始字符串。
+
+**应答Body:**  
+与`请求Body`相反, 用户自定义处理完成后, 返回的`Model`将自动转换为Json字符串(如果是`Plain`就是对应的普通字符串)，然后放到HTTP的`应答Body`中。
 
 我们先通过一个例子来看一下最简单的用法，假设场景：  
-我们需要实现rest风格接口`/api/hi/{id}`，并且能够将HTTP body转换为`Body`（`Object`），请求查询参数转换为`Params`（`Object`），路径变量转换为`Vars`(`Model`)（`{id}`就是一个路径变量，当请求路径是`/api/hi/111`时，`{id}`为`111`）。请求处理完成后，返回HTTP body字符串为“OK”拼接`{id}`的值。
+使用与上面一样的rest风格接口`api/{id}/to/request`，并且能够将HTTP body转换为`Body`（`Object`），请求查询参数转换为`Params`（`Object`），路径变量转换为`Vars`(`Model`)。请求处理完成后，返回HTTP body字符串为“OK”拼接`{id}`的值。
 
 1. 定义protobuf文件，生成protobuf service接口，这个过程看[brpc文档](https://github.com/brpc/brpc/blob/master/docs/cn/http_service.md)。假设我们定义的Protobuf Service是：
 ```protobuf
@@ -440,7 +453,7 @@ service DemoService {
 class DemoServiceImpl : public BrpcService, public DemoService {
 rellaf_brpc_http_dcl(DemoServiceImpl, DemoRequest, DemoResponse);
 // 定义API和处理函数的映射
-rellaf_brpc_http_def_post(hi, "/api/hi/{id}", hi_handler, Plain<std::string>, Params, Vars, Body);
+rellaf_brpc_http_def_post(hi, "api/{id}/to/request", hi_handler, Plain<std::string>, Params, Vars, Body);
 };
 rellaf_brpc_http_def(DemoServiceImpl);
 ```
@@ -459,7 +472,7 @@ Plain<std::string> DemoServiceImpl::hi_handler(HttpContext& context, const Param
 也可以不用第3步单独定义，第2部时"一气呵成"：
 ```C++
 ...
-rellaf_brpc_http_def_post(hi, "/api/hi/{id}", hi_handler, Plain<std::string>, Params, Vars, Body) {
+rellaf_brpc_http_def_post(hi, "api/{id}/to/request", hi_handler, Plain<std::string>, Params, Vars, Body) {
     ...
     // 约定 Context, Params, Vars, Body 实参分别为 ctx, p, v, b
     // ctx.aaa
@@ -471,14 +484,24 @@ rellaf_brpc_http_def_post(hi, "/api/hi/{id}", hi_handler, Plain<std::string>, Pa
 ...
 ```
 
-这就完成了一个POST接口的请求处理。GET方法类似，区别在于没有请求Body。还提供其他宏可供不同的请求类型组合。
+当真实请求是'http://www.xxxx.com/api/666/to/request?a=111&b=222', HTTP Body为'12345', 有:  
+```C++
+/* 伪代码 */
+Params.a() == "111";        // true
+Params.b() == "222";        // true
+Vars.id() == "666";         // true
+Body.string() == "12345";   // true
+Ret.string() == "OK-666";   // true
+```
+
+这就完成了一个POST接口的请求处理。GET方法类似，区别在于没有请求Body。此外, 还提供其他宏可供不同的请求类型组合。
 
 **相关宏列表:**   
 
 | 宏名 | 对应接口签名（说明） |
 | ----- | ----------------- | 
-| rellaf_brpc_http_dcl | 申明`Enum`对象，参数：自定义类名，pb request，pb response  | 
-| rellaf_brpc_http_def | 定义`Enum`对象，参数：自定义类名 | 
+| rellaf_brpc_http_dcl | 申明HTTP Service，参数：自定义类名，pb request，pb response  | 
+| rellaf_brpc_http_def | 定义HTTP Service，参数：自定义类名 | 
 | rellaf_brpc_http_def_get | _Ret_ _func_(HttpContext& ctx, const _Params_& p, const _Vars_& v) |  | 
 | rellaf_brpc_http_def_get_param | _Ret_ _func_(HttpContext& ctx, const _Params_& p) | | 
 | rellaf_brpc_http_def_get_pathvar | _Ret_ _func_(HttpContext& ctx, const _Vars_& v) | | 
@@ -489,7 +512,5 @@ rellaf_brpc_http_def_post(hi, "/api/hi/{id}", hi_handler, Plain<std::string>, Pa
 | rellaf_brpc_http_def_post_param_body | _Ret_ _func_(HttpContext& ctx, const _Params_& p, const _Body_& b) | | 
 | rellaf_brpc_http_def_post_pathvar_body | _Ret_ _func_(HttpContext& ctx, const _Vars_& v, const _Body_& b) | | 
 | rellaf_brpc_http_def_post_param_pathvar | _Ret_ _func_(HttpContext& ctx, const _Params_& p, const _Vars_& v) | | 
-
-TODO 详细解释路劲变量和查询字符串转换。
 
 更多Method支持，还有更多HTTP语义和特性的支持看需求逐步支持，欢迎提ISSUE。

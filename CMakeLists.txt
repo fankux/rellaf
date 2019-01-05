@@ -134,7 +134,7 @@ if (WITH_TEST)
     link_libraries(rellaf)
     add_executable(test_model test/test_model.cpp)
     add_executable(test_enum test/test_enum.cpp)
-    add_executable(test_mapper test/test_dao.cpp)
+    add_executable(test_mapper test/test_sql_builder.cpp)
 
     if (WITH_BRPC_EXT)
         file(GLOB PROTOS

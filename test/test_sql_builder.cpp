@@ -17,7 +17,7 @@
 
 #include "gtest/gtest.h"
 #include "common.h"
-#include "dao.h"
+#include "sql_builder.h"
 
 namespace rellaf {
 namespace test {
@@ -179,7 +179,7 @@ rellaf_model_def_float(c, 0);
 
 rellaf_model_def(Ret);
 
-class TestDao : public Dao {
+class TestDao : public SqlBuilder {
 rellaf_singleton(TestDao);
 
 rellaf_dao_select(select, "SELECT a, b, c FROM table WHERE cond=#{cond}", Ret);
@@ -255,9 +255,26 @@ TEST_F(TestSqlPattern, test_sql_mapper) {
     id = 2;
     arg.ids().push_back(id);
 
+    std::string sql;
+
     ASSERT_GE(TestDao::instance().select(ret, arg), 0);
+    ASSERT_GE(TestDao::instance().select_sql(sql, arg), 0);
+    ASSERT_STREQ(sql.c_str(), R"(SELECT a, b, c FROM table WHERE cond='str\' cond')");
+
+    ASSERT_GE(TestDao::instance().select(ret, id), 0);
+    ASSERT_GE(TestDao::instance().select_sql(sql, id), 0);
+    ASSERT_STREQ(sql.c_str(), R"(SELECT a, b, c FROM table WHERE cond=2)");
+
     ASSERT_EQ(TestDao::instance().select_single(ret, arg), -1);
+    ASSERT_EQ(TestDao::instance().select_single_sql(sql, arg), -1);
+
     ASSERT_GE(TestDao::instance().select_multi(ret, arg.tag("a"), arg.tag("b")), 0);
+    ASSERT_GE(TestDao::instance().select_multi_sql(sql, arg.tag("a"), arg.tag("b")), 0);
+    ASSERT_STREQ(sql.c_str(), R"(SELECT a, b, c FROM table WHERE cond='str\' cond' AND id IN ('1','2'))");
+
+    arg.clear_tag();
+    ASSERT_GE(TestDao::instance().select_multi(ret, arg.tag("a"), id.tag("b")), -1);
+    ASSERT_GE(TestDao::instance().select_multi_sql(sql, arg.tag("a"), id.tag("b")), -1);
 }
 
 }

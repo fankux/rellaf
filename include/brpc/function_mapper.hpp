@@ -34,19 +34,18 @@ using brpc::HttpMethod;
 struct HttpContext {
     const HttpHeader& request_header;
     const butil::IOBuf& request_body;
+    const std::map<std::string, std::string>& path_vars;
     HttpHeader& response_header;
     butil::IOBuf& response_body;
-    std::map<std::string, std::string>& path_vars;
 
-public:
     HttpContext(const HttpHeader& req_header, const butil::IOBuf& req_body,
-            HttpHeader& resp_header, butil::IOBuf& resp_body,
-            std::map<std::string, std::string>& vars) :
+            const std::map<std::string, std::string>& vars,
+            HttpHeader& resp_header, butil::IOBuf& resp_body) :
             request_header(req_header),
             request_body(req_body),
+            path_vars(vars),
             response_header(resp_header),
-            response_body(resp_body),
-            path_vars(vars) {}
+            response_body(resp_body) {}
 };
 
 class FunctionMapper {
@@ -78,8 +77,8 @@ public:
             }
         }
 
-        HttpContext ctx(cntl->http_request(), cntl->request_attachment(), cntl->http_response(),
-                cntl->response_attachment(), vars);
+        HttpContext ctx(cntl->http_request(), cntl->request_attachment(), vars,
+                cntl->http_response(), cntl->response_attachment());
         int ret = (func_entry->second)(ctx, cntl->request_attachment().to_string(), ret_body);
         cntl->http_response().set_content_type("application/json");
         return ret;

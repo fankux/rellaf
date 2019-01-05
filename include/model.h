@@ -164,7 +164,7 @@ std::set<std::string> _clazz_::_s_list_names;                                   
 std::set<std::string> _clazz_::_s_object_names;                                         \
 RELLAF_MODEL_DEF_PLAIN(_clazz_)
 
-/////////////////////// plain ////////////////////
+/////////////////////// basic ////////////////////
 // plain default
 class Model {
 public:
@@ -185,12 +185,16 @@ public:
      */
     template<class T=Model>
     T& tag(const std::string& tag_enum) {
-        _tag = tag_enum;
+        _tags.emplace_back(tag_enum);
         return *((T*)this);
     }
 
-    const std::string& rellaf_tag() const {
-        return _tag;
+    void clear_tag() {
+        _tags.clear();
+    }
+
+    const std::deque<std::string>& rellaf_tags() const {
+        return _tags;
     }
 
     virtual Model* create() const = 0;
@@ -217,7 +221,7 @@ public:
 
 protected:
     ModelType _type;
-    std::string _tag;
+    std::deque<std::string> _tags;
 };
 
 class Void : public Model {
