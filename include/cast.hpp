@@ -47,7 +47,7 @@ public:
     }
 
     int64_t cast(const std::string& val, const uint64_t& ret) {
-        return strtoull(val.c_str(), nullptr, 10);
+        return (int64_t)(strtoull(val.c_str(), nullptr, 10));
     }
 
     bool cast(const std::string& val, const bool& ret) {

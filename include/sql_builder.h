@@ -15,7 +15,7 @@
 // Author: Fankux (fankux@gmail.com)
 //
 //
-// java mybatis like sql dao framework
+// sql builder framework
 //
 
 #pragma once
@@ -24,68 +24,22 @@
 #include <map>
 #include <deque>
 #include <memory>
+
+#include "mysql.h"
+
 #include "common.h"
 #include "var_pattern.h"
 #include "model.h"
 #include "model_type.h"
 #include "mysql_escape.h"
+#include "mysql/sql_executor.h"
 
 namespace rellaf {
-
-class SqlResultRow {
-public:
-    void set(const std::string& name, const std::string& val) {
-        _row.emplace(name, val);
-    }
-
-    void set(std::string&& name, std::string&& val) {
-        _row.emplace(name, val);
-    }
-
-    const std::map<std::string, std::string>& row() const {
-        return _row;
-    }
-
-private:
-    std::map<std::string, std::string> _row;
-};
-
-class SqlResultList {
-public:
-    friend class SqlBuilder;
-
-    void push(const SqlResultRow& row);
-
-    void push(SqlResultRow&& row);
-
-    size_t size() const;
-
-    bool empty() const;
-
-    SqlResultRow& front();
-
-    const SqlResultRow& front() const;
-
-    SqlResultRow& back();
-
-    const SqlResultRow& back() const;
-
-    const SqlResultRow& get(size_t idx) const;
-
-    const SqlResultRow& operator[](size_t idx) const;
-
-    std::deque<SqlResultRow>::const_iterator begin() const;
-
-    std::deque<SqlResultRow>::const_iterator end() const;
-
-private:
-    std::deque<SqlResultRow> _datas;
-};
 
 class SqlBuilder {
 
 public:
-    class Charset : public IEnum {
+    class Charset : public Enum {
     rellaf_enum_dcl(Charset);
 
     rellaf_enum_item_def(1, UTF8);
@@ -94,7 +48,6 @@ public:
 
     typedef EnumItem CharsetType;
 
-public:
     void set_charset(const CharsetType& charset) {
         _charset = charset;
     }
@@ -117,7 +70,7 @@ protected:
     };
 
     template<class T>
-    void build_dao_models(std::map<std::string, const Model*>& models, const T& arg) {
+    void collect_models(std::map<std::string, Model*>& models, T& arg) {
         if (!std::is_base_of<Model, T>::value) {
             return;
         }
@@ -131,8 +84,15 @@ protected:
     }
 
     template<class ...Args>
-    bool prepare_statement(const std::string& method, std::string& sql, const Args& ...args) {
+    bool prepare_statement(const std::string& method, std::string& sql, Args& ...args) {
         sql.clear();
+
+        std::map<std::string, Model*> models;
+        bool arr[] = {(collect_models(models, args), true)...}; // for arguments expansion
+        (void)(arr);// suppress warning
+        for (auto& entry : models) {
+            entry.second->clear_tags();
+        }
 
         auto entry = _pices.find(method);
         if (entry == _pices.end()) {
@@ -142,14 +102,10 @@ protected:
         int arg_count = sizeof...(args);
         bool is_multi_arg = arg_count > 1;
 
-        std::map<std::string, const Model*> models;
-        bool arr[] = {(build_dao_models(models, args), true)...}; // for arguments expansion
-        (void)(arr);// suppress warning
-
-        for (auto& m_entry : models) {
-            RELLAF_DEBUG("%s ==> %s", m_entry.first.c_str(),
-                    m_entry.second->debug_str().c_str());
-        }
+//        for (auto& m_entry : models) {
+//            RELLAF_DEBUG("%s ==> %s", m_entry.first.c_str(),
+//                    m_entry.second->debug_str().c_str());
+//        }
 
         for (const SqlPattern::Stub& stub : entry->second) {
             std::deque<std::string> sections;
@@ -216,7 +172,7 @@ protected:
     }
 
     template<class Ret, class ...Args>
-    int select_impl(std::string* sql, const std::string& method, Ret& ret, const Args& ...args) {
+    int select_impl(const std::string& method, std::string* sql, Ret& ret, Args& ...args) {
         std::string sql_inner;
         if (sql == nullptr) {
             sql = &sql_inner;
@@ -224,28 +180,30 @@ protected:
         if (!prepare_statement(method, *sql, args...)) {
             return -1;
         }
-        if (sql == &sql_inner && _s_select_func) {
-            SqlResultList ret_list;
-            int retval = _s_select_func(*sql, ret_list);
+        if (sql == &sql_inner && _executor != nullptr) {
+            SqlResult res;
+            int retval = _executor->select(*sql, res);
             if (retval <= 0) {
                 return retval;
             }
-
-            for (const auto& entry : ret_list.front().row()) {
-                if (ret.rellaf_type() == ModelTypeEnum::e().OBJECT) {
-                    if (!((Object*)&ret)->set_plain(entry.first, entry.second)) {
-                        RELLAF_DEBUG("select impl set result key %s failed", entry.first.c_str());
-                        return -1;
-                    }
-                }
-            }
+//
+//            for (SqlRow row = res.fetch_row(); row.notnull();) {
+//                if (ret.rellaf_type() == ModelTypeEnum::e().OBJECT) {
+//                    if (!((Object*)&ret)->set_plain(row., entry.second)) {
+//                        RELLAF_DEBUG("select impl set result key %s failed", entry.first.c_str());
+//                        return -1;
+//                    }
+//                } else if (is_plain(&ret)) {
+//                    ret->set_parse(row.get())
+//                }
+//            }
             return retval;
         }
         return 0;
     }
 
     template<class Ret, class ...Args>
-    int select_list_impl(std::string* sql, const std::string& method, std::deque<Ret>& ret_list,
+    int select_list_impl(const std::string& method, std::string* sql, std::deque<Ret>& ret_list,
             const Args& ...args) {
         std::string sql_inner;
         if (sql == nullptr) {
@@ -254,25 +212,40 @@ protected:
         if (!prepare_statement(method, *sql, args...)) {
             return -1;
         }
-        if (sql == &sql_inner && _s_select_func) {
-            SqlResultList dao_ret_list;
-            int retval = _s_select_func(*sql, dao_ret_list);
-            if (retval <= 0) {
-                return retval;
-            }
-
-            for (auto& item : dao_ret_list) {
-                Ret ret;
-                for (const auto& entry : item.row()) {
-                    if (!ret.set(entry.first, entry.second)) {
-                        RELLAF_DEBUG("select impl set result key %s failed", entry.first.c_str());
-                        return -1;
-                    }
-                }
-                ret_list.emplace_back(ret);
-            }
-            return retval;
+        if (sql == &sql_inner && _executor != nullptr) {
+//            std::deque<SqlResultRow> results;
+//            int retval = _s_select_func(*sql, dao_ret_list);
+//            if (retval <= 0) {
+//                return retval;
+//            }
+//
+//            for (auto& item : dao_ret_list) {
+//                Ret ret;
+//                for (const auto& entry : item.row()) {
+//                    if (!ret.set(entry.first, entry.second)) {
+//                        RELLAF_DEBUG("select impl set result key %s failed", entry.first.c_str());
+//                        return -1;
+//                    }
+//                }
+//                ret_list.emplace_back(ret);
+//            }
+//            return retval;
         }
+        return 0;
+    }
+
+    template<class ...Args>
+    int execute_impl(const std::string& method, std::string* sql, Args& ...args) {
+        std::string sql_inner;
+        if (sql == nullptr) {
+            sql = &sql_inner;
+        }
+        if (!prepare_statement(method, *sql, args...)) {
+            return -1;
+        }
+//        if (sql == &sql_inner && _s_execute_func) {
+//            return _s_execute_func(*sql);
+//        }
         return 0;
     }
 
@@ -291,7 +264,7 @@ protected:
     bool append_sql(std::string& sql, const std::string& val, bool need_quote, bool need_escape);
 
 protected:
-    std::function<int(const std::string&, SqlResultList&)> _s_select_func;
+    SqlExecutor* _executor = nullptr;
 
 private:
     CharsetType _charset = Charset::e().UTF8;
@@ -300,27 +273,43 @@ private:
 
 };
 
-#define rellaf_dao_select(_method_, _pattern_, _Ret_)                               \
+#define rellaf_sql_select(_method_, _pattern_, _Ret_)                               \
 public:                                                                             \
-template<class ...Args> int _method_(_Ret_& ret, const Args& ...args) {             \
-    return select_impl(nullptr, #_method_, ret, args...);                           \
+template<class ...Args> int _method_(_Ret_& ret, Args& ...args) {                   \
+    return select_impl(#_method_, nullptr, ret, args...);                           \
 }                                                                                   \
-template<class ...Args> int _method_##_sql(std::string& sql, const Args& ...args) { \
+template<class ...Args> int _method_##_sql(std::string& sql, Args& ...args) {       \
     Void v;                                                                         \
-    return select_impl(&sql, #_method_, v, args...);                                \
+    return select_impl(#_method_, &sql, v, args...);                                \
 }                                                                                   \
 private:                                                                            \
 Reg _reg_##_method_{this, #_method_, _pattern_}
 
-#define rellaf_dao_select_list(_method_, _pattern_, _Ret_)                          \
+#define rellaf_sql_select_list(_method_, _pattern_, _Ret_)                          \
 public:                                                                             \
-template<class ...Args> int _method_(std::deque<_Ret_>& ret, const Args& ...args) { \
-    return select_list_impl(nullptr, #_method_, ret, args...);                      \
+template<class ...Args> int _method_(std::deque<_Ret_>& ret, Args& ...args) {       \
+    return select_list_impl(#_method_, nullptr, ret, args...);                      \
 }                                                                                   \
-template<class ...Args> int _method_##_sql(std::string& sql, const Args& ...args) { \
-    return select_list_impl(&sql, #_method_, {}, args...);                          \
+template<class ...Args> int _method_##_sql(std::string& sql, Args& ...args) {       \
+    return select_list_impl(#_method_, &sql, {}, args...);                          \
 }                                                                                   \
 private:                                                                            \
 Reg _reg_##_method_{this, #_method_, _pattern_}
+
+#define rellaf_sql_insert(_method_, _pattern_)                                      \
+public:                                                                             \
+template<class ...Args> int _method_(Args& ...args) {                               \
+    return execute_impl(#_method_, nullptr, args...);                               \
+}                                                                                   \
+template<class ...Args> int _method_##_sql(std::string& sql, Args& ...args) {       \
+    return execute_impl(#_method_, &sql, args...);                                  \
+}                                                                                   \
+private:                                                                            \
+Reg _reg_##_method_{this, #_method_, _pattern_}
+
+// same as insert yet
+#define rellaf_sql_update(_method_, _pattern_) rellaf_sql_insert(_method_, _pattern_)
+
+#define rellaf_sql_delete(_method_, _pattern_) rellaf_sql_insert(_method_, _pattern_)
 
 }

@@ -24,7 +24,7 @@
 #include "trim.hpp"
 
 #include "var_pattern.h"
-#include "json_to_model.h"
+#include "json/json_to_model.h"
 
 namespace rellaf {
 

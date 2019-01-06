@@ -189,7 +189,7 @@ public:
         return *((T*)this);
     }
 
-    void clear_tag() {
+    void clear_tags() {
         _tags.clear();
     }
 

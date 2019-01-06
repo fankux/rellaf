@@ -17,7 +17,7 @@
 
 #include "brpc/channel.h"
 #include "common.h"
-#include "http_client.h"
+#include "brpc/http_client.h"
 
 namespace rellaf {
 

@@ -18,13 +18,19 @@
 
 #pragma once
 
+#include <assert.h>
 #include <string>
 #include <map>
-#include <mysql.h>
-#include "boost/lexical_cast.hpp"
+#include <functional>
+
+#include "mysql.h"
+
 #include "fqueue.hpp"
 #include "flatch.hpp"
+#include "cast.hpp"
 #include "common.h"
+
+#include "mysql/sql_executor.h"
 
 namespace rellaf {
 
@@ -55,93 +61,9 @@ struct SqlTx {
     MyThread* thread = nullptr;
 };
 
-class MyRow {
-RELLAF_DEFMOVE_NO_CTOR(MyRow)
-
-public:
-    MyRow() = default;
-
-    friend class MyRes;
-
-    template<class T=std::string>
-    T get(size_t field) {
-        assert(field < _field_count);
-        return boost::lexical_cast<T>(_row[field]);
-    }
-
-    std::string operator[](const size_t idx) {
-        return get(idx);
-    }
-
-    inline bool isnull() {
-        return _row == nullptr;
-    }
-
-    inline bool isnotnull() {
-        return !isnull();
-    }
-
-private:
-    MyRow(MYSQL_ROW row, size_t field_count) : _row(row), _field_count(field_count) {};
-
-private:
-    MYSQL_ROW _row = nullptr;
-    size_t _field_count = 0;
-};
-
-class MyField {
-RELLAF_DEFMOVE_NO_CTOR(MyField);
-
-public:
-    MyField() = default;
-
-    friend class MyRes;
-
-    const std::string& name() const {
-        return _name;
-    }
-
-    enum_field_types type() const {
-        return _type;
-    }
-
-private:
-    MyField(const std::string& name, enum enum_field_types type) : _name(name), _type(type) {}
-
-private:
-    std::string _name;
-    enum enum_field_types _type;
-};
-
-class MyRes {
-RELLAF_AVOID_COPY(MyRes)
-
-public:
-    explicit MyRes(MYSQL_RES* res) : _res(res) {}
-
-    virtual ~MyRes();
-
-    void reset();
-
-    void operator()(MYSQL_RES* res);
-
-    bool good();
-
-    size_t row_count();
-
-    size_t field_count();
-
-    MyRow fetch_row();
-
-    void fetch_fields(std::deque<MyField>& fields);
-
-private:
-    MYSQL_RES* _res;
-};
-
 class MyTxEx;
 
-class MysqlSimplePool {
+class MysqlSimplePool : public SqlExecutor {
 public:
     virtual ~MysqlSimplePool() {
         mysql_thread_end();
@@ -159,15 +81,26 @@ public:
             const std::string& charset = "utf8", uint32_t thread_count = 3,
             uint32_t task_queue_size = 10);
 
-    int insert(const std::string& sql, SqlTx* tx = nullptr);
+
+    ////////////////// sql executor API //////////////////
+    int select(const std::string& sql, SqlResult& res) override;
+
+    int insert(const std::string& sql) override;
+
+    int update(const std::string& sql) override;
+
+    int del(const std::string& sql) override;
+
+    ////////////////// transactional /////////////////////
+    int select(const std::string& sql, SqlResult& res, SqlTx* tx);
+
+    int insert(const std::string& sql, SqlTx* tx);
 
     int insert(const std::string& sql, uint64_t& keyid, SqlTx* tx = nullptr);
 
-    int remove(const std::string& sql, SqlTx* tx = nullptr);
+    int update(const std::string& sql, SqlTx* tx);
 
-    int update(const std::string& sql, SqlTx* tx = nullptr);
-
-    MYSQL_RES* query(const std::string& sql, SqlTx* tx = nullptr);
+    int del(const std::string& sql, SqlTx* tx);
 
     bool begin(SqlTx& tx);
 

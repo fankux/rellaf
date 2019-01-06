@@ -15,7 +15,7 @@
 // Author: Fankux (fankux@gmail.com)
 //
 
-#include "brpc_dispatcher.h"
+#include "brpc/brpc_dispatcher.h"
 
 namespace rellaf {
 

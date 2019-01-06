@@ -33,7 +33,7 @@ protected:
     void SetUp() override {}
 };
 
-class TestType : public IEnum {
+class TestType : public Enum {
 rellaf_enum_dcl(TestType);
 
 rellaf_enum_item_def(0, INT);

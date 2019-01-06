@@ -179,18 +179,27 @@ rellaf_model_def_float(c, 0);
 
 rellaf_model_def(Ret);
 
-class TestDao : public SqlBuilder {
-rellaf_singleton(TestDao);
+class TestBuilder : public SqlBuilder {
+rellaf_singleton(TestBuilder);
 
-rellaf_dao_select(select, "SELECT a, b, c FROM table WHERE cond=#{cond}", Ret);
+rellaf_sql_select(select, "SELECT a, b, c FROM table WHERE cond=#{cond}", Ret);
 
-rellaf_dao_select(select_single, "SELECT a, b, c FROM table WHERE cond=#{a.cond}", Ret);
+rellaf_sql_select(select_single, "SELECT a, b, c FROM table WHERE cond=#{a.cond}", Ret);
 
-rellaf_dao_select(select_multi,
+rellaf_sql_select(select_multi,
         "SELECT a, b, c FROM table WHERE cond=#{a.cond} AND id IN #[b.ids]", Ret);
 
-rellaf_dao_select_list(select_list,
+rellaf_sql_select_list(select_list,
         "SELECT a, b, c FROM table WHERE cond=#{a.cond} AND id IN #[b.ids]", Ret);
+
+rellaf_sql_insert(insert,
+        "INSERT table(a, b, c) VALUES (#{a}, #{b}, #{c})");
+
+rellaf_sql_update(update,
+        "UPDTE table SET a=#{a}, b=#{b}, c=#{c} WHERE 1=1");
+
+rellaf_sql_delete(del,
+        "DELETE FROM table WHERE a=#{a} AND b=#{b} AND c=#{c}");
 
 public:
     void test_split_sections(const std::string& section_str, std::deque<std::string>& sections) {
@@ -213,7 +222,7 @@ static bool deque_equal(const std::deque<std::string>& a, const std::deque<std::
 static bool test_split_section_item(const std::string& section_str,
         const std::deque<std::string>& expect) {
     std::deque<std::string> sections;
-    TestDao::instance().test_split_sections(section_str, sections);
+    TestBuilder::instance().test_split_sections(section_str, sections);
     return deque_equal(sections, expect);
 }
 
@@ -257,24 +266,38 @@ TEST_F(TestSqlPattern, test_sql_mapper) {
 
     std::string sql;
 
-    ASSERT_GE(TestDao::instance().select(ret, arg), 0);
-    ASSERT_GE(TestDao::instance().select_sql(sql, arg), 0);
+    TestBuilder& bd = TestBuilder::instance();
+
+    ASSERT_GE(bd.select(ret, arg), 0);
+    ASSERT_GE(bd.select_sql(sql, arg), 0);
     ASSERT_STREQ(sql.c_str(), R"(SELECT a, b, c FROM table WHERE cond='str\' cond')");
 
-    ASSERT_GE(TestDao::instance().select(ret, id), 0);
-    ASSERT_GE(TestDao::instance().select_sql(sql, id), 0);
+    ASSERT_GE(bd.select(ret, id), 0);
+    ASSERT_GE(bd.select_sql(sql, id), 0);
     ASSERT_STREQ(sql.c_str(), R"(SELECT a, b, c FROM table WHERE cond=2)");
 
-    ASSERT_EQ(TestDao::instance().select_single(ret, arg), -1);
-    ASSERT_EQ(TestDao::instance().select_single_sql(sql, arg), -1);
+    ASSERT_EQ(bd.select_single(ret, arg), -1);
+    ASSERT_EQ(bd.select_single_sql(sql, arg), -1);
 
-    ASSERT_GE(TestDao::instance().select_multi(ret, arg.tag("a"), arg.tag("b")), 0);
-    ASSERT_GE(TestDao::instance().select_multi_sql(sql, arg.tag("a"), arg.tag("b")), 0);
-    ASSERT_STREQ(sql.c_str(), R"(SELECT a, b, c FROM table WHERE cond='str\' cond' AND id IN ('1','2'))");
+    ASSERT_GE(bd.select_multi(ret, arg.tag("a"), arg.tag("b")), 0);
+    ASSERT_GE(bd.select_multi_sql(sql, arg.tag("a"), arg.tag("b")), 0);
+    ASSERT_STREQ(sql.c_str(),
+            R"(SELECT a, b, c FROM table WHERE cond='str\' cond' AND id IN ('1','2'))");
 
-    arg.clear_tag();
-    ASSERT_GE(TestDao::instance().select_multi(ret, arg.tag("a"), id.tag("b")), -1);
-    ASSERT_GE(TestDao::instance().select_multi_sql(sql, arg.tag("a"), id.tag("b")), -1);
+    ASSERT_GE(bd.select_multi(ret, arg.tag("a"), id.tag("b")), -1);
+    ASSERT_GE(bd.select_multi_sql(sql, arg.tag("a"), id.tag("b")), -1);
+
+    ASSERT_GE(bd.insert(id.tag("a"), id.tag("b"), id.tag("c")), 0);
+    ASSERT_GE(bd.insert_sql(sql, id.tag("a"), id.tag("b"), id.tag("c")), 0);
+    ASSERT_STREQ(sql.c_str(), R"(INSERT table(a, b, c) VALUES (2, 2, 2))");
+
+    ASSERT_GE(bd.update(id.tag("a"), id.tag("b"), id.tag("c")), 0);
+    ASSERT_GE(bd.update_sql(sql, id.tag("a"), id.tag("b"), id.tag("c")), 0);
+    ASSERT_STREQ(sql.c_str(), R"(UPDTE table SET a=2, b=2, c=2 WHERE 1=1)");
+
+    ASSERT_GE(bd.del(id.tag("a"), id.tag("b"), id.tag("c")), 0);
+    ASSERT_GE(bd.del_sql(sql, id.tag("a"), id.tag("b"), id.tag("c")), 0);
+    ASSERT_STREQ(sql.c_str(), R"(DELETE FROM table WHERE a=2 AND b=2 AND c=2)");
 }
 
 }

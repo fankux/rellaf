@@ -16,9 +16,9 @@
 //
 
 #include "common.h"
-#include "brpc_service.h"
-#include "function_mapper.hpp"
 #include "brpc/http_status_code.h"
+#include "brpc/brpc_service.h"
+#include "brpc/function_mapper.hpp"
 
 namespace rellaf {
 

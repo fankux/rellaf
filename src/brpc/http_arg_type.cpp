@@ -16,7 +16,7 @@
 //
 
 
-#include "http_arg_type.h"
+#include "brpc/http_arg_type.h"
 
 namespace rellaf {
 

@@ -21,7 +21,7 @@
 
 namespace rellaf {
 
-class ModelTypeEnum : public IEnum {
+class ModelTypeEnum : public Enum {
 rellaf_enum_dcl(ModelTypeEnum);
 
 rellaf_enum_item_def(0, no);

@@ -16,6 +16,7 @@
 //
 
 
+#include <strings.h>
 #include <deque>
 #include "mysql_simple_pool.h"
 
@@ -385,6 +386,51 @@ void MysqlSimplePool::execute(const std::string& sql, MyResult** result_ptr) {
     RELLAF_DEBUG("latch wait done");
 }
 
+////////////////// sql executor API //////////////////
+int MysqlSimplePool::select(const std::string& sql, SqlResult& res) {
+    return select(sql, res, nullptr);
+}
+
+int MysqlSimplePool::insert(const std::string& sql) {
+    return insert(sql, nullptr);
+}
+
+int MysqlSimplePool::update(const std::string& sql) {
+    return update(sql, nullptr);
+}
+
+int MysqlSimplePool::del(const std::string& sql) {
+    return del(sql, nullptr);
+}
+
+////////////////// transactional /////////////////////
+int MysqlSimplePool::select(const std::string& sql, SqlResult& res, SqlTx* tx) {
+    MyResult* result = nullptr;
+    if (tx != nullptr) {
+        tx_execute(tx, sql, &result);
+    } else {
+        execute(sql, &result);
+    }
+    if (result == nullptr) {
+        RELLAF_DEBUG("excute sql failed");
+        return -1;
+    }
+
+
+    MYSQL_RES* mysql_res = static_cast<MYSQL_RES*>(result->data);
+    if (!res.init(mysql_res)) {
+        return -1;
+    }
+
+    int status = result->status;
+    delete result;
+    if (status != 0) {
+        mysql_free_result(mysql_res);
+        return -1;
+    }
+    return (int)(res.row_count());
+}
+
 int MysqlSimplePool::insert(const std::string& sql, uint64_t& keyid, SqlTx* tx) {
     MyResult* result = nullptr;
     if (tx != nullptr) {
@@ -424,25 +470,6 @@ int MysqlSimplePool::insert(const std::string& sql, SqlTx* tx) {
     return status == 0 ? row_count : -1;
 }
 
-int MysqlSimplePool::remove(const std::string& sql, SqlTx* tx) {
-    MyResult* result = nullptr;
-    if (tx != nullptr) {
-        tx_execute(tx, sql, &result);
-    } else {
-        execute(sql, &result);
-    }
-    if (result == nullptr) {
-        RELLAF_DEBUG("excute sql failed");
-        return -1;
-    }
-
-    int row_count = result->row_count;
-
-    int status = result->status;
-    delete result;
-    return status == 0 ? row_count : -1;
-}
-
 int MysqlSimplePool::update(const std::string& sql, SqlTx* tx) {
     MyResult* result = nullptr;
     if (tx != nullptr) {
@@ -462,7 +489,7 @@ int MysqlSimplePool::update(const std::string& sql, SqlTx* tx) {
     return status == 0 ? row_count : -1;
 }
 
-MYSQL_RES* MysqlSimplePool::query(const std::string& sql, SqlTx* tx) {
+int MysqlSimplePool::del(const std::string& sql, SqlTx* tx) {
     MyResult* result = nullptr;
     if (tx != nullptr) {
         tx_execute(tx, sql, &result);
@@ -471,78 +498,17 @@ MYSQL_RES* MysqlSimplePool::query(const std::string& sql, SqlTx* tx) {
     }
     if (result == nullptr) {
         RELLAF_DEBUG("excute sql failed");
-        return nullptr;
+        return -1;
     }
 
-    MYSQL_RES* res = static_cast<MYSQL_RES*>(result->data);
+    int row_count = result->row_count;
 
     int status = result->status;
     delete result;
-    if (status != 0) {
-        mysql_free_result(res);
-        return nullptr;
-    }
-    return res;
+    return status == 0 ? row_count : -1;
 }
 
-MyRes::~MyRes() {
-    reset();
-}
-
-void MyRes::reset() {
-    if (_res != nullptr) {
-        mysql_free_result(_res);
-        _res = nullptr;
-    }
-}
-
-void MyRes::operator()(MYSQL_RES* res) {
-    reset();
-    _res = res;
-}
-
-bool MyRes::good() {
-    return _res != nullptr;
-}
-
-size_t MyRes::row_count() {
-    if (_res != nullptr) {
-        return mysql_num_rows(_res);
-    }
-    return 0;
-}
-
-size_t MyRes::field_count() {
-    if (_res != nullptr) {
-        return mysql_num_fields(_res);
-    }
-    return 0;
-}
-
-MyRow MyRes::fetch_row() {
-    if (_res != nullptr) {
-        return {mysql_fetch_row(_res), field_count()};
-    }
-    return {};
-}
-
-void MyRes::fetch_fields(std::deque<MyField>& fields) {
-    if (_res == nullptr) {
-        return;
-    }
-
-    MYSQL_FIELD* fields_ptr = mysql_fetch_fields(_res);
-    if (fields_ptr == nullptr) {
-        return;
-    }
-
-    uint32_t num = mysql_num_fields(_res);
-    for (uint32_t i = 0; i < num; ++i) {
-        std::string name(fields_ptr[i].name, fields_ptr[i].name_length);
-        fields.emplace_back(MyField(name, fields_ptr[i].type));
-    }
-}
-
+////////////////// result set /////////////////////
 MyTxEx::MyTxEx() {
     if (RELLAF_ATOMIC_CAS(_init, false, true)) {
         _init = _acc.begin(_tx);

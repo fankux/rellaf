@@ -25,54 +25,6 @@ namespace rellaf {
 
 rellaf_enum_def(SqlBuilder::Charset);
 
-void SqlResultList::push(const SqlResultRow& row) {
-    _datas.emplace_back(row);
-}
-
-void SqlResultList::push(SqlResultRow&& row) {
-    _datas.emplace_back(row);
-}
-
-size_t SqlResultList::size() const {
-    return _datas.size();
-}
-
-bool SqlResultList::empty() const {
-    return _datas.empty();
-}
-
-SqlResultRow& SqlResultList::front() {
-    return _datas.front();
-}
-
-const SqlResultRow& SqlResultList::front() const {
-    return _datas.front();
-}
-
-SqlResultRow& SqlResultList::back() {
-    return _datas.back();
-}
-
-const SqlResultRow& SqlResultList::back() const {
-    return _datas.back();
-}
-
-const SqlResultRow& SqlResultList::get(size_t idx) const {
-    return _datas[idx];
-}
-
-const SqlResultRow& SqlResultList::operator[](size_t idx) const {
-    return _datas[idx];
-}
-
-std::deque<SqlResultRow>::const_iterator SqlResultList::begin() const {
-    return _datas.begin();
-}
-
-std::deque<SqlResultRow>::const_iterator SqlResultList::end() const {
-    return _datas.end();
-}
-
 void SqlBuilder::split_section(const std::string& section_str, std::deque<std::string>& sections) {
     sections.clear();
     if (section_str.empty()) {
@@ -231,7 +183,8 @@ bool SqlBuilder::get_list_val(const Model* model, const std::deque<std::string>&
     return false;
 }
 
-bool SqlBuilder::append_sql(std::string& sql, const std::string& val, bool need_quote, bool need_escape) {
+bool SqlBuilder::append_sql(std::string& sql, const std::string& val, bool need_quote,
+        bool need_escape) {
     if (need_quote) {
         sql += '\'';
     }

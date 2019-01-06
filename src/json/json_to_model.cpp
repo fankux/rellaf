@@ -17,7 +17,7 @@
 
 #include <memory>
 #include "json/json.h"
-#include "json_to_model.h"
+#include "json/json_to_model.h"
 
 namespace rellaf {
 

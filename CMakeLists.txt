@@ -29,7 +29,9 @@ if (WITH_JSON)
     find_library(JSONCPP_LIB jsoncpp)
     find_path(JSONCPP_INC json/json.h)
 
-    include_directories(${JSONCPP_INC} include/json)
+    include_directories(
+            ${JSONCPP_INC}
+    )
     file(GLOB JSON_SRC
             src/json/*.h
             src/json/*.hpp
@@ -44,7 +46,9 @@ if (WITH_MYSQL)
     find_library(MYSQL_LIB mysqlclient)
     find_path(MYSQL_INC mysql.h)
 
-    include_directories(${MYSQL_INC} src/mysql)
+    include_directories(
+            ${MYSQL_INC}
+    )
     file(GLOB MYSQL_SRC
             src/mysql/*.h
             src/mysql/*.hpp
@@ -66,7 +70,6 @@ if (WITH_BRPC_EXT)
 
     include_directories(
             ${BRPC_INC}
-            include/brpc
     )
     file(GLOB BRPC_SRC
             include/brpc/*.h

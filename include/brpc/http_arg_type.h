@@ -21,7 +21,7 @@
 
 namespace rellaf {
 
-class HttpArgTypeEnum : public IEnum {
+class HttpArgTypeEnum : public Enum {
 rellaf_enum_dcl(HttpArgTypeEnum);
 
 rellaf_enum_item_code_def(1, REQ_BODY);

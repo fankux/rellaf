@@ -269,7 +269,7 @@ C/C++枚举（`enum`）能力很有限，只是一个数字，没有从字符串
 `Rellaf`实现了灵活的枚举类，使用同样非常简单。与`Object`类似，配合相关的宏使用。
 
 ```C++
-class DemoEnum : public IEnum {
+class DemoEnum : public Enum {
 rellaf_enum_dcl(DemoEnum);
 
 //  按照 code(int)，name(std::string) 定义，都保证唯一。

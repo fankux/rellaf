@@ -146,7 +146,7 @@ C/C++枚举（`enum`）能力很有限，只是一个数字，没有从字符串
 `Rellaf`实现了灵活的枚举类，使用同样非常简单。
 1. 包含头文件`"enum.h"`，申明枚举类
 ```c++
-class DemoEnum : public IEnum {
+class DemoEnum : public Enum {
 rellaf_enum_dcl(DemoEnum);
 
 //  按照 code(int)，name(std::string) 定义，都保证唯一。
@@ -293,5 +293,5 @@ relief（得到解脱），reflection（反射），relax（放松），3个单�
 * C++ SQL SqlBuilder
 
 ## 最后
-本人能力有限，精力也有限，存在很多不足，欢迎交流指出。
-fankux@gmail.com（经常看邮件）
+本人能力有限，精力也有限，存在不足，欢迎交流指出。
+fankux@gmail.com

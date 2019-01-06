@@ -36,7 +36,7 @@ const std::map<int, std::string>& codes() const override {                      
     return _code_refs;                                                          \
 }                                                                               \
 private:                                                                        \
-    explicit _clazz_(const std::string& name): IEnum(name) {}                   \
+    explicit _clazz_(const std::string& name): Enum(name) {}                   \
     class Reg {                                                                 \
     public:                                                                     \
         Reg(_clazz_* inst, int c, const std::string& n);                        \
@@ -78,9 +78,9 @@ private:                                                                        
     const Reg _reg_##_name_{this, _code_, #_name_}
 
 
-class IEnum {
+class Enum {
 public:
-    virtual ~IEnum() = default;
+    virtual ~Enum() = default;
 
     class EnumItem {
     RELLAF_DEFMOVE_NO_CTOR(EnumItem)
@@ -131,11 +131,11 @@ public:
     bool exist(int code) const;
 
 protected:
-    explicit IEnum(const std::string& name) : _name(name) {}
+    explicit Enum(const std::string& name) : _name(name) {}
 
 protected:
     std::string _name;
 };
 
-typedef IEnum::EnumItem EnumItem;
+typedef Enum::EnumItem EnumItem;
 }
