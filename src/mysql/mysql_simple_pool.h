@@ -85,11 +85,7 @@ public:
     ////////////////// sql executor API //////////////////
     int select(const std::string& sql, SqlResult& res) override;
 
-    int insert(const std::string& sql) override;
-
-    int update(const std::string& sql) override;
-
-    int del(const std::string& sql) override;
+    int execute(const std::string& sql) override;
 
     ////////////////// transactional /////////////////////
     int select(const std::string& sql, SqlResult& res, SqlTx* tx);

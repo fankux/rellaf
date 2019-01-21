@@ -186,18 +186,22 @@ protected:
             if (retval <= 0) {
                 return retval;
             }
-//
-//            for (SqlRow row = res.fetch_row(); row.notnull();) {
-//                if (ret.rellaf_type() == ModelTypeEnum::e().OBJECT) {
-//                    if (!((Object*)&ret)->set_plain(row., entry.second)) {
-//                        RELLAF_DEBUG("select impl set result key %s failed", entry.first.c_str());
-//                        return -1;
-//                    }
-//                } else if (is_plain(&ret)) {
-//                    ret->set_parse(row.get())
-//                }
-//            }
-            return retval;
+
+            SqlRow row = res.fetch_row();
+            if (ret.rellaf_type() == ModelTypeEnum::e().OBJECT) {
+                for (uint32_t i = 0; i < res.field_count(); ++i) {
+                    const std::string& key = res.field_name(i);
+                    if (!((Object*)&ret)->set_plain(key, row.get(i))) {
+                        RELLAF_DEBUG("select impl set result key %s failed", key.c_str());
+                        return -1;
+                    }
+                }
+
+            } else if (is_plain(&ret)) {
+                ((Model*)&ret)->set_parse(row.get(0));
+            }
+
+            return 1;
         }
         return 0;
     }
@@ -213,23 +217,29 @@ protected:
             return -1;
         }
         if (sql == &sql_inner && _executor != nullptr) {
-//            std::deque<SqlResultRow> results;
-//            int retval = _s_select_func(*sql, dao_ret_list);
-//            if (retval <= 0) {
-//                return retval;
-//            }
-//
-//            for (auto& item : dao_ret_list) {
-//                Ret ret;
-//                for (const auto& entry : item.row()) {
-//                    if (!ret.set(entry.first, entry.second)) {
-//                        RELLAF_DEBUG("select impl set result key %s failed", entry.first.c_str());
-//                        return -1;
-//                    }
-//                }
-//                ret_list.emplace_back(ret);
-//            }
-//            return retval;
+            SqlResult res;
+            int retval = _executor->select(*sql, res);
+            if (retval <= 0) {
+                return retval;
+            }
+
+            for (SqlRow row = res.fetch_row(); row.notnull();) {
+                Ret ret;
+                if (ret.rellaf_type() == ModelTypeEnum::e().OBJECT) {
+                    for (uint32_t i = 0; i < res.field_count(); ++i) {
+                        const std::string& key = res.field_name(i);
+                        if (!((Object*)&ret)->set_plain(key, row.get(i))) {
+                            RELLAF_DEBUG("select impl set result key %s failed", key.c_str());
+                            return -1;
+                        }
+                    }
+
+                } else if (is_plain(&ret)) {
+                    ((Model*)&ret)->set_parse(row.get(0));
+                }
+                ret_list.emplace_back(ret);
+            }
+            return (int)(ret_list.size());
         }
         return 0;
     }
@@ -243,9 +253,10 @@ protected:
         if (!prepare_statement(method, *sql, args...)) {
             return -1;
         }
-//        if (sql == &sql_inner && _s_execute_func) {
-//            return _s_execute_func(*sql);
-//        }
+
+        if (sql == &sql_inner && _executor != nullptr) {
+            return _executor->execute(*sql);
+        }
         return 0;
     }
 

@@ -79,6 +79,7 @@ public:
 
     size_t field_count() const;
 
+    std::string field_name(size_t index) const;
 
 private:
     uint32_t _index = 0;
@@ -141,11 +142,7 @@ class SqlExecutor {
 public:
     virtual int select(const std::string& sql, SqlResult& res) = 0;
 
-    virtual int insert(const std::string& sql) = 0;
-
-    virtual int update(const std::string& sql) = 0;
-
-    virtual int del(const std::string& sql) = 0;
+    virtual int execute(const std::string& sql) = 0;
 };
 
 } // namespace rellaf

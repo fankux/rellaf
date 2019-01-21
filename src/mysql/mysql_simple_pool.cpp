@@ -391,16 +391,8 @@ int MysqlSimplePool::select(const std::string& sql, SqlResult& res) {
     return select(sql, res, nullptr);
 }
 
-int MysqlSimplePool::insert(const std::string& sql) {
+int MysqlSimplePool::execute(const std::string& sql) {
     return insert(sql, nullptr);
-}
-
-int MysqlSimplePool::update(const std::string& sql) {
-    return update(sql, nullptr);
-}
-
-int MysqlSimplePool::del(const std::string& sql) {
-    return del(sql, nullptr);
 }
 
 ////////////////// transactional /////////////////////

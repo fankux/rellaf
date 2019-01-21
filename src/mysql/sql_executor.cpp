@@ -101,5 +101,10 @@ size_t SqlResult::field_count() const {
     return _fields.size();
 }
 
+std::string SqlResult::field_name(size_t index) const {
+    assert(index < _fields.size());
+    return _fields[index].name();
+}
+
 
 } // namespace rellaf
