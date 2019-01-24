@@ -317,7 +317,7 @@ constexpr int DemoEnum::A_code;
 **Enum方法列表:**  
 
 | 方法名 | 说明 | 返回值 | 参数 |
-| ----- | ---- | ------ | ------ |
+| ------- | ------- | ------ | ------ |
 | **names** | 枚举名字合集 | std::map<std::string, int>& | N/A |
 | **codes** | 枚举编码合集 | std::map<int, std::string>& | N/A | 
 | **get** | 获得枚举值 | EnumItem, 如果不存在EnumItem.available() == false | 有两个重载: int, 根据code查找; std::string, 根据name查找 | 
@@ -499,7 +499,7 @@ const std::string& rellaf_tag() const;
 `placeholder`可以支持`点分`的形式，例如 `#{a.b.c}`，用来处理嵌套的`Model`或者多个传入参数，规则如下：
 
 | 占位符 | Plain | Object | List | Model.tag("a") | 
-| ----- | ----- | ------ | ---- | -------------- | 
+| ---------- | ----- | ------ | ---- | -------------- | 
 | #{a} | 值（a可以是任意字符串） | 字段a的值，必须是Plain | N/A | Model为Plain时取其值，其他N/A |
 | #{a.b} | N/A | 字段a的必须是Object，取其成员b，其必须是Plain | N/A | 对Model执行`#{b}`规则 | 
 | #{a.<1>} | N/A | 字段a必须是List，取第1个（0开始）成员，且必须是Plain | N/A | N/A |
@@ -507,7 +507,7 @@ const std::string& rellaf_tag() const;
 | #[] | N/A | N/A | 成员必须是Plain，把所有值按逗号分隔拼接 | N/A |
 | #[a] | N/A | 成员a必须是List，其成员必须是Plain，把所有值按逗号分隔拼接 | N/A | Model为List时执行`#[]`规则，其他N/A |
 | #[a.b] | N/A | 成员a必须Object, 取其成员b，其必须是List，其成员必须是Plain，把所有值按逗号分隔拼接 | N/A | 对Model执行`#[b]`规则 |
-| #[a.<1>] | N/A | 成员a必须List，取其弟1个成员，其必须是List，其成员也必须是Plain，把所有值按逗号分隔拼接 | N/A | N/A |
+| #[a.<1>] | N/A | 成员a必须List，取其第1个成员，其必须是List，其成员必须是Plain，把所有值按逗号分隔拼接 | N/A | N/A |
 | #[a.<1>.b] | N/A | 成员a必须List，取其第1个成员，其必须是Object，取其字段b，其必须是List，其成员必须是Plain，把所有值按逗号分隔拼接 | N/A | N/A |
 
 `#{placeholder}`的最后一部分必须是`Plain`   
