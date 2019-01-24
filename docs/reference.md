@@ -374,7 +374,7 @@ bool **model_to_json**(const Model* model, std::string& json_str, bool is_format
 bool **json_to_model**(const std::string& json_str, Model* model);
 
 根据字面意思，就是字符串表示的Json与`Model`类型的相互转换，`is_format`表示是否换行缩进。注意几点：
-- `model_to_jso`总是返回true，`Object`或者`List`成员如果是nullptr，则输出Json的null value。
+- `model_to_json`总是返回true，`Object`或者`List`成员如果是nullptr，则输出Json的null value。
 - `json_to_model`如果输入字符串parse json失败，返回false，否则返回true。
 - `Model`定义的结构可能与输入的Json不一样，结构不一致的部分会跳过转换。
 - Json object为null value的成员，不会进行转换。
@@ -395,8 +395,143 @@ bool **json_to_model**(const std::string& json_str, Model* model);
 | DOUBLE  | Json::realValue |
 | STR  | Json::stringValue |
 
-### Sql
-TODO。。。
+### SqlBuilder
+
+**头文件:** `sql_builder.h`
+
+这是一个“拼SQL器”，或者说“DAO”？当然，我们不会去做过度的包装，屏蔽SQL语法而直接去做数据操作映射，对于C++界来说，这种设计“太过了”。所以参考了Java界的Mybatis的那种感觉，配置一个SQL模板，设置一系列`占位符`，同时生成调用方法，用户访问这个SQL，直接调用这个方法，传入对应的Model类即可。
+
+我们来看一个简单的例子，从select语句着手。
+
+1. 首先，定义参数和返回值相关`Model`, 这个与前面介绍一致。
+```C++
+// 参数类
+class Arg : public Object {
+rellaf_model_dcl(Arg);
+
+rellaf_model_def_str(cond, "condition");
+rellaf_model_def_list(ids, Plain<int>);
+};
+rellaf_model_def(Arg);
+
+// 返回值类
+class Ret : public Object {
+rellaf_model_dcl(Ret);
+
+rellaf_model_def_str(a, "");
+rellaf_model_def_int(b, 0);
+rellaf_model_def_float(c, 0);
+};
+rellaf_model_def(Ret);
+```
+
+2. 继承`SqlBuilder`，并用宏`rellaf_sql_select`来定义`sql_builder`。
+```C++
+// 定义sql_builder
+class DemoBuilder : public SqlBuilder {
+rellaf_singleton(DemoBuilder);
+
+// 会生成2个方法，签名如下:
+// 这个方法会执行SQL，ret是传出结果集， arg是可变参模板函数，要求是Model子类
+// int select_func(Ret& ret, Arg& ...arg);
+// 这个方法不执行SQL，仅通过sql传出拼接完的结果SQL， arg是可变参模板函数，要求是Model子类
+// int select_func_sql(std::string& sql, Arg& ...arg);
+rellaf_sql_select(select_func, "SELECT a, b, c FROM table WHERE cond=#{cond}", Ret);
+
+// 在定义一个生成列表的
+rellaf_sql_select(select_func_ids, "SELECT a, b, c FROM table WHERE id IN (#[ids])", Ret);
+
+};
+```
+
+3. 此时，我们已经ok了，可以使用了
+```C++
+// 调用
+Ret ret;
+Arg arg;
+Plain<int> id = 1;
+arg.ids().push_back(id);
+id = 2;
+arg.ids().push_back(id);
+
+std::string sql;
+DemoBuilder::instance().select_func_sql(sql, arg);
+// sql为: SELECT a, b, c FROM table WHERE cond='condition'
+DemoBuilder::instance().select_func(ret, arg);
+// 执行sql, ret从上述SQL在DB中执行结果返回第一行记录(如果有), 
+// 取a,b,c三个字段的值, 根据类型自动转换, 然后放入ret对应的字段中。
+
+DemoBuilder::instance().select_func_ids_sql(sql, id);
+// sql为: SELECT a, b, c FROM table WHERE id IN (1, 2)
+// 执行与上面类似, 略
+```
+
+上面介绍都是单个参数，下面来看多个参数，我们延续上面的例子，再定义一个SQL模板：
+```C++
+// 生成两个方法，除了方法名，其他与上面一致，因为参数是可变的。
+// int select_multi(Ret& ret, Arg& ...arg);
+// int select_multi_sql(std::string& sql, Arg& ...arg);
+rellaf_sql_select(select_multi,
+        "SELECT a, b, c FROM table WHERE cond=#{a.cond} AND id IN (#[b.ids])", Ret);
+```
+调用：
+```C++
+// 再定义一个参数
+Arg arg2;
+arg2.set_cond("condition2");
+
+DemoBuilder::instance().select_multi_sql(sql, arg2.tag("a"), arg.tag("b"));
+// sql为: SELECT a, b, c FROM table WHERE cond='condition2' AND id IN (1, 2)
+```
+为了支持多个参数，我们引入了`tag`概念，给`Model`增加一个标签，同时两个占位符分别加上了`a.`和`b.`，  
+这就是为了区分数据要从两个不同的参数中去取，同时，这种机制也不要求传入参数的顺序，根据`tag`对应即可。
+
+**tag方法:**   
+T& tag(const std::string& tag_str);   
+给`Model`设置一个字符串表示的标签。  
+对应的，也有获取tag的方法：  
+const std::string& rellaf_tag() const;  
+这两个方法都在`Model`基类定义。
+
+现在我们来详细讲一下上面的`占位符`，分两种：**单值**占位符，`#{placeholder}`，**列表**占位符，`#[placeholder]`。  
+`单值`就是把变量转换为SQL的表示方式；`列表`是指，传入值是个List，则生成`逗号分隔`的SQL值。  
+值都会进行`转义`操作，目前是借助了`mysql_real_escape()`等价的代码实现的（基于单引号`'`），仅实现了utf8和gbk两种编码。  
+`placeholder`可以支持`点分`的形式，例如 `#{a.b.c}`，用来处理嵌套的`Model`或者多个传入参数，规则如下：
+
+| 占位符 | Plain | Object | List | Model.tag("a") | 
+| ----- | ----- | ------ | ---- | -------------- | 
+| #{a} | 值（a可以是任意字符串） | 字段a的值，必须是Plain | N/A | Model为Plain时取其值，其他N/A |
+| #{a.b} | N/A | 字段a的必须是Object，取其成员b，其必须是Plain | N/A | 对Model执行`#{b}`规则 | 
+| #{a.<1>} | N/A | 字段a必须是List，取第1个（0开始）成员，且必须是Plain | N/A | N/A |
+| #{a.<1>.b} | N/A | 字段a必须是List，且其成员必须是Object，取第1个成员的字段b，其必须是Plain | N/A | N/A |
+| #[] | N/A | N/A | 成员必须是Plain，把所有值按逗号分隔拼接 | N/A |
+| #[a] | N/A | 成员a必须是List，其成员必须是Plain，把所有值按逗号分隔拼接 | N/A | Model为List时执行`#[]`规则，其他N/A |
+| #[a.b] | N/A | 成员a必须Object, 取其成员b，其必须是List，其成员必须是Plain，把所有值按逗号分隔拼接 | N/A | 对Model执行`#[b]`规则 |
+| #[a.<1>] | N/A | 成员a必须List，取其弟1个成员，其必须是List，其成员也必须是Plain，把所有值按逗号分隔拼接 | N/A | N/A |
+| #[a.<1>.b] | N/A | 成员a必须List，取其第1个成员，其必须是Object，取其字段b，其必须是List，其成员必须是Plain，把所有值按逗号分隔拼接 | N/A | N/A |
+
+`#{placeholder}`的最后一部分必须是`Plain`   
+`#[placeholder]`的最后一部分必须是`List`
+
+**SqlBuilder相关宏和方法：**   
+
+| 宏名 | 生成的接口签名 |
+| -------------------------------------------- | --------- |
+| rellaf_sql_select(func, pattern, Ret) | int _func_(Ret& ret, Arg& ...args) <br/> int _func_ _sql(std::string& sql, Arg& ...args) |  
+| rellaf_sql_select_list(func, pattern, Ret) | int _func_(std::deque\<Ret\>& ret, Arg& ...args) <br/> int _func_ _sql(std::string& sql, Arg& ...args) | 
+| rellaf_sql_insert(func, pattern) | int _func_(Arg& ...args) <br/> int _func_ _sql(std::string& sql, Arg& ...args) | | 
+| rellaf_sql_update(func, pattern) | int _func_(Arg& ...args) <br/> int _func_ _sql(std::string& sql, Arg& ...args) | | 
+| rellaf_sql_delete(func, pattern) | int _func_(Arg& ...args) <br/> int _func_ _sql(std::string& sql, Arg& ...args) | | 
+
+**说明：**  
+参数`func`是方法名；`pattern`是SQL模板；`Ret`是返回值类型，必须是`Model`子类。  
+`rellaf_sql_select_list`，`rellaf_sql_select`区别是一个返回多行数据，放到`std::deque`里，一个只返回单行数据。  
+返回值，`-1`表示失败，值`大于等与0`对于`select`表示`返回的行数`，对于`insert`，`update`，`delete`表示`受影响的行数`。
+
+TODO... SQL executor接口
+
+关于if else选择器，待调研一下。
+
 
 ### Brpc
 

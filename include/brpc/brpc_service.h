@@ -116,7 +116,7 @@ bool prepare_args(HttpContext& ctx, const std::string& body, Args ... args) {
 
     bool s;
     for (Model* arg : model_args) {
-        if (arg->rellaf_tags().front() == HttpArgTypeEnum::e().REQ_BODY.name) {
+        if (arg->rellaf_tag() == HttpArgTypeEnum::e().REQ_BODY.name) {
             if (is_plain(arg)) {
                 s = arg->set_parse(body);
             } else {
@@ -128,7 +128,7 @@ bool prepare_args(HttpContext& ctx, const std::string& body, Args ... args) {
             continue;
         }
 
-        if (arg->rellaf_tags().front() == HttpArgTypeEnum::e().REQ_PARAM.name) {
+        if (arg->rellaf_tag() == HttpArgTypeEnum::e().REQ_PARAM.name) {
 
             if (is_object(arg)) {
                 const brpc::URI& uri = ctx.request_header.uri();
@@ -139,7 +139,7 @@ bool prepare_args(HttpContext& ctx, const std::string& body, Args ... args) {
             continue;
         }
 
-        if (arg->rellaf_tags().front() == HttpArgTypeEnum::e().PATH_VAR.name) {
+        if (arg->rellaf_tag() == HttpArgTypeEnum::e().PATH_VAR.name) {
 
             if (is_object(arg)) {
                 for (auto& entry : ctx.path_vars) {

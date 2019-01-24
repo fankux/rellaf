@@ -184,17 +184,13 @@ public:
      * markup current model with a tag which is Enum
      */
     template<class T=Model>
-    T& tag(const std::string& tag_enum) {
-        _tags.emplace_back(tag_enum);
+    T& tag(const std::string& tag_str) {
+        _tag = tag_str;
         return *((T*)this);
     }
 
-    void clear_tags() {
-        _tags.clear();
-    }
-
-    const std::deque<std::string>& rellaf_tags() const {
-        return _tags;
+    const std::string& rellaf_tag() const {
+        return _tag;
     }
 
     virtual Model* create() const = 0;
@@ -221,7 +217,7 @@ public:
 
 protected:
     ModelType _type;
-    std::deque<std::string> _tags;
+    std::string _tag;
 };
 
 class Void : public Model {

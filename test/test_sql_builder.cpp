@@ -187,10 +187,10 @@ rellaf_sql_select(select, "SELECT a, b, c FROM table WHERE cond=#{cond}", Ret);
 rellaf_sql_select(select_single, "SELECT a, b, c FROM table WHERE cond=#{a.cond}", Ret);
 
 rellaf_sql_select(select_multi,
-        "SELECT a, b, c FROM table WHERE cond=#{a.cond} AND id IN #[b.ids]", Ret);
+        "SELECT a, b, c FROM table WHERE cond=#{a.cond} AND id IN (#[b.ids])", Ret);
 
 rellaf_sql_select_list(select_list,
-        "SELECT a, b, c FROM table WHERE cond=#{a.cond} AND id IN #[b.ids]", Ret);
+        "SELECT a, b, c FROM table WHERE cond=#{a.cond} AND id IN (#[b.ids])", Ret);
 
 rellaf_sql_insert(insert,
         "INSERT table(a, b, c) VALUES (#{a}, #{b}, #{c})");
@@ -258,11 +258,16 @@ TEST_F(TestSqlPattern, test_split_section) {
 TEST_F(TestSqlPattern, test_sql_mapper) {
     Ret ret;
     Arg arg;
+    Arg argb;
     Plain<int> id = 1;
     arg.ids().push_back(id);
-    id.set(2);
+    argb.ids().push_back(id);
     id = 2;
     arg.ids().push_back(id);
+    argb.ids().push_back(id);
+
+    Plain<int> idb = 2;
+    Plain<int> idc = 2;
 
     std::string sql;
 
@@ -279,25 +284,27 @@ TEST_F(TestSqlPattern, test_sql_mapper) {
     ASSERT_EQ(bd.select_single(ret, arg), -1);
     ASSERT_EQ(bd.select_single_sql(sql, arg), -1);
 
-    ASSERT_GE(bd.select_multi(ret, arg.tag("a"), arg.tag("b")), 0);
-    ASSERT_GE(bd.select_multi_sql(sql, arg.tag("a"), arg.tag("b")), 0);
+    ASSERT_GE(bd.select_multi(ret, arg.tag("a"), argb.tag("b")), 0);
+    ASSERT_GE(bd.select_multi_sql(sql, arg.tag("a"), argb.tag("b")), 0);
     ASSERT_STREQ(sql.c_str(),
             R"(SELECT a, b, c FROM table WHERE cond='str\' cond' AND id IN ('1','2'))");
 
-    ASSERT_GE(bd.select_multi(ret, arg.tag("a"), id.tag("b")), -1);
-    ASSERT_GE(bd.select_multi_sql(sql, arg.tag("a"), id.tag("b")), -1);
+    ASSERT_GE(bd.select_multi(ret, arg.tag("a"), idb.tag("b")), -1);
+    ASSERT_GE(bd.select_multi_sql(sql, arg.tag("a"), idb.tag("b")), -1);
 
-    ASSERT_GE(bd.insert(id.tag("a"), id.tag("b"), id.tag("c")), 0);
-    ASSERT_GE(bd.insert_sql(sql, id.tag("a"), id.tag("b"), id.tag("c")), 0);
+    ASSERT_GE(bd.insert(id.tag("a"), idb.tag("b"), idc.tag("c")), 0);
+    ASSERT_GE(bd.insert_sql(sql, id.tag("a"), idb.tag("b"), idc.tag("c")), 0);
     ASSERT_STREQ(sql.c_str(), R"(INSERT table(a, b, c) VALUES (2, 2, 2))");
 
-    ASSERT_GE(bd.update(id.tag("a"), id.tag("b"), id.tag("c")), 0);
-    ASSERT_GE(bd.update_sql(sql, id.tag("a"), id.tag("b"), id.tag("c")), 0);
+    ASSERT_GE(bd.update(id.tag("a"), idb.tag("b"), idc.tag("c")), 0);
+    ASSERT_GE(bd.update_sql(sql, id.tag("a"), idb.tag("b"), idc.tag("c")), 0);
     ASSERT_STREQ(sql.c_str(), R"(UPDTE table SET a=2, b=2, c=2 WHERE 1=1)");
 
-    ASSERT_GE(bd.del(id.tag("a"), id.tag("b"), id.tag("c")), 0);
-    ASSERT_GE(bd.del_sql(sql, id.tag("a"), id.tag("b"), id.tag("c")), 0);
+    ASSERT_GE(bd.del(id.tag("a"), idb.tag("b"), idc.tag("c")), 0);
+    ASSERT_GE(bd.del_sql(sql, id.tag("a"), idb.tag("b"), idc.tag("c")), 0);
     ASSERT_STREQ(sql.c_str(), R"(DELETE FROM table WHERE a=2 AND b=2 AND c=2)");
+
+
 }
 
 }

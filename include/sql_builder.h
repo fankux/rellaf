@@ -70,29 +70,20 @@ protected:
     };
 
     template<class T>
-    void collect_models(std::map<std::string, Model*>& models, T& arg) {
+    void collect_models(std::map<std::string, const Model*>& models, T& arg) {
         if (!std::is_base_of<Model, T>::value) {
             return;
         }
-        if (arg.rellaf_tags().empty()) {
-            models.emplace("", &arg);
-            return;
-        }
-        for (auto& tag : arg.rellaf_tags()) {
-            models.emplace(tag, &arg);
-        }
+        models.emplace(arg.rellaf_tag(), &arg);
     }
 
     template<class ...Args>
-    bool prepare_statement(const std::string& method, std::string& sql, Args& ...args) {
+    bool prepare_statement(const std::string& method, std::string& sql, const Args& ...args) {
         sql.clear();
 
-        std::map<std::string, Model*> models;
+        std::map<std::string, const Model*> models;
         bool arr[] = {(collect_models(models, args), true)...}; // for arguments expansion
         (void)(arr);// suppress warning
-        for (auto& entry : models) {
-            entry.second->clear_tags();
-        }
 
         auto entry = _pices.find(method);
         if (entry == _pices.end()) {
@@ -153,7 +144,6 @@ protected:
                 if (!get_list_val(model_box.front(), sections, vals)) {
                     return false;
                 }
-                sql += '(';
                 for (auto& val : vals) {
                     if (!append_sql(sql, val, true, true)) {
                         return false;
@@ -161,9 +151,7 @@ protected:
                     sql += ',';
                 }
                 if (sql.back() == ',') {
-                    sql.back() = ')';
-                } else {
-                    sql += ')';
+                    sql.pop_back();
                 }
             }
         }

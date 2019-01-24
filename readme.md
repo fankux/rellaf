@@ -5,7 +5,7 @@
 - [反射类](docs/reference.md)
 - [反射枚举](docs/reference.md#Enum)
 - [Json序列化](docs/reference.md#Json)
-- [SQL Builder](docs/reference.md#Sql)
+- [SQL Builder](docs/reference.md#SqlBuilder)
 - [BRPC](https://github.com/brpc/brpc) [HTTP接口映射分发](docs/reference.md#Brpc)
 
 
@@ -196,15 +196,15 @@ const std::map<int, std::string>& codes = DemoEnum::e().codes();
 ```
 ## [Json序列化](docs/reference.md#Json)
    
-实现**Rellaf**对象Json相互转换。
+实现**Rellaf**对象Json相互转换。详细使用见 [API文档](docs/reference.md#Json)。
 
-## [SQL Builder](docs/reference.md#Sql)
+## [SQL Builder](docs/reference.md#SqlBuilder)
 这是一个`Java Mybatis like`的SQL语句生成器。并不是说使用方式和语法与`Mybatis`一样，我们强调写代码体验，`Rellaf`做到的是在写Dao的体验上，尽可能靠近`Mybatis`，简单灵活而'自动化'。用户简单配置一个SQL模板，然后`Rellaf`将生成Dao执行方法，运行过程中'自动'将`Model`填入SQL模板，生成可执行SQL语句，*执行SQL*（需要实现Mysql数据传递接口）后，将返回值'自动'转换为Model对象返回用户。
 
 `src/mysql`  
 包含一个简单的Mysql连接池实现，这个模块为了对接SQL生成后的执行过程。
 
-demo TODO。。
+详细使用见 [API文档](docs/reference.md#SqlBuilder)。
 
 ## [BRPC](https://github.com/brpc/brpc) [HTTP接口映射分发](docs/reference.md#Brpc)
 `brpc`是baidu内部的rpc组件，真正意义上终结了公司内部网络传输组件的混乱之治，统一RPC场景。内部叫`baidu-rpc`，第一次接触大概是在2016年，那会儿还没开源，项目需要做HTTP服务端，“看上去可用”基本只有这一款，使用后，惊为天人，接入简单，protobuf直接定义接口，一个端口，支持多种协议，性能极高，自带的bthread还可以扩展到非RPC的通用并发场景。几年下来，稳定可靠，体验极佳。
