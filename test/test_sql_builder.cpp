@@ -304,7 +304,6 @@ TEST_F(TestSqlPattern, test_sql_mapper) {
     ASSERT_GE(bd.del_sql(sql, id.tag("a"), idb.tag("b"), idc.tag("c")), 0);
     ASSERT_STREQ(sql.c_str(), R"(DELETE FROM table WHERE a=2 AND b=2 AND c=2)");
 
-
 }
 
 }

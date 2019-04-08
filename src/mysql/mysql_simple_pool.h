@@ -30,11 +30,11 @@
 #include "cast.hpp"
 #include "common.h"
 
-#include "mysql/sql_executor.h"
+#include "mysql/mysql_simple_result.h"
 
 namespace rellaf {
 
-struct MyResult {
+struct InnerResult {
     int status;
     int row_count;
     std::string message;
@@ -44,7 +44,7 @@ struct MyResult {
 struct MyContext {
     std::string sql;
     Latch latch;
-    MyResult** result;
+    InnerResult** result;
 };
 
 class MysqlSimplePool;
@@ -65,14 +65,9 @@ class MyTxEx;
 
 class MysqlSimplePool : public SqlExecutor {
 public:
-    virtual ~MysqlSimplePool() {
-        mysql_thread_end();
-    }
+    virtual ~MysqlSimplePool();
 
-    static MysqlSimplePool& instance() {
-        static MysqlSimplePool mysql_acc;
-        return mysql_acc;
-    }
+    static MysqlSimplePool& instance();
 
     void stop();
 
@@ -83,12 +78,12 @@ public:
 
 
     ////////////////// sql executor API //////////////////
-    int select(const std::string& sql, SqlResult& res) override;
+    SqlResult* select(const std::string& sql) override;
 
     int execute(const std::string& sql) override;
 
     ////////////////// transactional /////////////////////
-    int select(const std::string& sql, SqlResult& res, SqlTx* tx);
+    int select(const std::string& sql, MyResult& res, SqlTx* tx);
 
     int insert(const std::string& sql, SqlTx* tx);
 
@@ -105,16 +100,11 @@ public:
     bool rollback(SqlTx& tx);
 
 private:
-    MysqlSimplePool() : _action_idx(0) {
-        if (mysql_library_init(0, nullptr, nullptr) != 0) {
-            RELLAF_DEBUG("init mysql lib failed");
-            exit(-1);
-        }
-    }
+    MysqlSimplePool();
 
-    void execute(const std::string& sql, MyResult** result_ptr);
+    void execute(const std::string& sql, InnerResult** result_ptr);
 
-    void tx_execute(SqlTx* tx, const std::string& sql, MyResult** result_ptr);
+    void tx_execute(SqlTx* tx, const std::string& sql, InnerResult** result_ptr);
 
     static bool connect(MYSQL* mysql);
 

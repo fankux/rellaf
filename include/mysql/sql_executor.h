@@ -24,124 +24,52 @@
 
 #include "common.h"
 #include "cast.hpp"
+#include "model.h"
 
 namespace rellaf {
 
-class SqlField {
-RELLAF_DEFMOVE_NO_CTOR(SqlField);
-
-public:
-    friend class SqlResult;
-
-    SqlField() = default;
-
-    friend class MyRes;
-
-    const std::string& name() const {
-        return _name;
-    }
-
-    enum_field_types type() const {
-        return _type;
-    }
-
-private:
-    SqlField(const std::string& name, enum_field_types type) : _name(name), _type(type) {}
-
-private:
-    std::string _name;
-    enum_field_types _type;
-};
-
-class SqlRow;
-
 class SqlResult {
-RELLAF_AVOID_COPY(SqlResult)
-
 public:
-    SqlResult() = default;
+    virtual ~SqlResult() = default;
 
-    virtual ~SqlResult();
+    virtual size_t row_count() const = 0;
 
-    void reset();
+    virtual size_t field_count() const = 0;
 
-    bool init(void* context);
+    /**
+     * @brief fetch filed name through specific index
+     */
+    virtual std::string field_name(size_t index) const = 0;
 
-    size_t row_count() const;
+    /**
+     * @brief determine if there is next row exist, move index to next if exist.
+     */
+    virtual bool next() = 0;
 
-    void operator()(MYSQL_RES* res);
+    /**
+     * @brief fetch field value through `index` to the `value` at current index row
+     */
+    virtual std::string fetch(size_t index) const = 0;
 
-    SqlRow fetch_row();
-
-    bool gen_row(size_t& index, std::deque<std::string>& data);
-
-    size_t field_index(const std::string& name) const;
-
-    size_t field_count() const;
-
-    std::string field_name(size_t index) const;
-
-private:
-    uint32_t _index = 0;
-    MYSQL_RES* _res = nullptr;
-    std::deque<SqlField> _fields;
-};
-
-class SqlRow {
-RELLAF_DEFMOVE_NO_CTOR(SqlRow)
-
-public:
-    friend class SqlResult;
-
-    template<class T=std::string>
-    inline T get(size_t index) {
-        assert(_result == nullptr);
-        assert(index < _result->field_count());
-        return cast<T>(_datas[index]);
-    }
-
-    template<class T=std::string>
-    inline T get(const std::string& name) {
-        assert(_result == nullptr);
-        size_t index = _result->field_index(name);
-        assert(index != SIZE_MAX);
-        return cast<T>(_datas[index]);
-    }
-
-    inline std::string operator[](const size_t idx) {
-        return get(idx);
-    }
-
-    inline std::string operator[](const std::string& name) {
-        return get(name);
-    }
-
-    inline bool isnull() const {
-        return _result == nullptr;
-    }
-
-    inline bool notnull() const {
-        return !isnull();
-    }
-
-    inline size_t index() {
-        return _index;
-    }
-
-private:
-    SqlRow(const SqlResult* result, size_t index, const std::deque<std::string>& datas) :
-            _result(result), _index(index), _datas(datas) {};
-
-private:
-    const SqlResult* _result = nullptr;
-    size_t _index = 0;
-    const std::deque<std::string>& _datas;
+    /**
+     * @brief convert current index row to model
+     * @return if success
+     */
+    virtual bool to_model(Model* model) const = 0;
 };
 
 class SqlExecutor {
 public:
-    virtual int select(const std::string& sql, SqlResult& res) = 0;
+    /**
+     * @brief execute select action to mysql
+     * @return result set, memory resource MUST be clean after using by caller
+     */
+    virtual SqlResult* select(const std::string& sql) = 0;
 
+    /**
+     * @brief   execute sql
+     * @return  affected rows count
+     */
     virtual int execute(const std::string& sql) = 0;
 };
 

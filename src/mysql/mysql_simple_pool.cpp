@@ -35,6 +35,22 @@ std::deque<MyThread*> MysqlSimplePool::_s_pool;
 pthread_mutex_t MysqlSimplePool::_s_tx_lock = PTHREAD_MUTEX_INITIALIZER;
 std::map<uint64_t, SqlTx> MysqlSimplePool::_s_tx_pool;
 
+MysqlSimplePool::MysqlSimplePool() : _action_idx(0) {
+    if (mysql_library_init(0, nullptr, nullptr) != 0) {
+        RELLAF_DEBUG("init mysql lib failed");
+        exit(-1);
+    }
+}
+
+MysqlSimplePool::~MysqlSimplePool() {
+    mysql_thread_end();
+}
+
+MysqlSimplePool& MysqlSimplePool::instance() {
+    static MysqlSimplePool mysql_acc;
+    return mysql_acc;
+}
+
 void MysqlSimplePool::stop() {
     for (uint32_t i = 0; i < MysqlSimplePool::_s_thread_count; ++i) {
         _s_pool[i]->status = 0;
@@ -74,7 +90,7 @@ bool MysqlSimplePool::init(const std::string& host, uint16_t port, const std::st
         }
 
         thread->status = 1;
-        thread->tid = 0;
+        thread->tid = nullptr;
         thread->inst = this;
         thread->tasks = new(std::nothrow) Queue<MyContext*>(MysqlSimplePool::_s_task_queue_size,
                 true);
@@ -150,7 +166,7 @@ void* MysqlSimplePool::thd_routine(void* ptr) {
 
         const std::string& sql = context->_data->sql;
 
-        MyResult* result = new(std::nothrow) MyResult;
+        InnerResult* result = new(std::nothrow) InnerResult;
         if (result == nullptr) {
             RELLAF_DEBUG("exec sql failed, alloc result error");
             context->_data->latch.count_down();
@@ -271,15 +287,15 @@ bool MysqlSimplePool::begin(SqlTx& tx) {
         return false;
     }
 
-    MyResult* result = nullptr;
+    InnerResult* result = nullptr;
     MyContext context;
     context.sql = "BEGIN";
     context.result = &result;
 
     thread->tasks->add_block(&context);
-    RELLAF_DEBUG("tx latch waiting, txid : %u", tx_id);
+    RELLAF_DEBUG("tx latch waiting, txid : %llu", tx_id);
     context.latch.wait();
-    RELLAF_DEBUG("tx latch wait done, txid : %u", tx_id);
+    RELLAF_DEBUG("tx latch wait done, txid : %llu", tx_id);
 
     tx.thread = thread;
     tx.tx_id = tx_id;
@@ -305,7 +321,7 @@ bool MysqlSimplePool::tx_end(SqlTx& tx, const std::string& sql) {
     }
     MyThread* thread = entry->second.thread;
 
-    MyResult* result = nullptr;
+    InnerResult* result = nullptr;
     MyContext context;
     context.sql = sql;
     context.result = &result;
@@ -339,7 +355,7 @@ bool MysqlSimplePool::rollback(SqlTx& tx) {
     return tx_end(tx, "ROLLBACK");
 }
 
-void MysqlSimplePool::tx_execute(SqlTx* tx, const std::string& sql, MyResult** result_ptr) {
+void MysqlSimplePool::tx_execute(SqlTx* tx, const std::string& sql, InnerResult** result_ptr) {
     pthread_mutex_lock(&_s_tx_lock);
     auto entry = _s_tx_pool.find(tx->tx_id);
     pthread_mutex_unlock(&_s_tx_lock);
@@ -365,7 +381,7 @@ void MysqlSimplePool::tx_execute(SqlTx* tx, const std::string& sql, MyResult** r
     RELLAF_DEBUG("tx latch wait done, txid : %u", tx->tx_id);
 }
 
-void MysqlSimplePool::execute(const std::string& sql, MyResult** result_ptr) {
+void MysqlSimplePool::execute(const std::string& sql, InnerResult** result_ptr) {
     auto tasks = fetch_thread();
     if (tasks == nullptr) {
         RELLAF_DEBUG("fetch mysql thread failed");
@@ -387,8 +403,16 @@ void MysqlSimplePool::execute(const std::string& sql, MyResult** result_ptr) {
 }
 
 ////////////////// sql executor API //////////////////
-int MysqlSimplePool::select(const std::string& sql, SqlResult& res) {
-    return select(sql, res, nullptr);
+SqlResult* MysqlSimplePool::select(const std::string& sql) {
+    MyResult* res = new(std::nothrow) MyResult;
+    if (res == nullptr) {
+        return nullptr;
+    }
+    if (!select(sql, *res, nullptr)) {
+        delete res;
+        return nullptr;
+    }
+    return res;
 }
 
 int MysqlSimplePool::execute(const std::string& sql) {
@@ -396,8 +420,8 @@ int MysqlSimplePool::execute(const std::string& sql) {
 }
 
 ////////////////// transactional /////////////////////
-int MysqlSimplePool::select(const std::string& sql, SqlResult& res, SqlTx* tx) {
-    MyResult* result = nullptr;
+int MysqlSimplePool::select(const std::string& sql, MyResult& res, SqlTx* tx) {
+    InnerResult* result = nullptr;
     if (tx != nullptr) {
         tx_execute(tx, sql, &result);
     } else {
@@ -424,7 +448,7 @@ int MysqlSimplePool::select(const std::string& sql, SqlResult& res, SqlTx* tx) {
 }
 
 int MysqlSimplePool::insert(const std::string& sql, uint64_t& keyid, SqlTx* tx) {
-    MyResult* result = nullptr;
+    InnerResult* result = nullptr;
     if (tx != nullptr) {
         tx_execute(tx, sql, &result);
     } else {
@@ -444,7 +468,7 @@ int MysqlSimplePool::insert(const std::string& sql, uint64_t& keyid, SqlTx* tx) 
 }
 
 int MysqlSimplePool::insert(const std::string& sql, SqlTx* tx) {
-    MyResult* result = nullptr;
+    InnerResult* result = nullptr;
     if (tx != nullptr) {
         tx_execute(tx, sql, &result);
     } else {
@@ -463,7 +487,7 @@ int MysqlSimplePool::insert(const std::string& sql, SqlTx* tx) {
 }
 
 int MysqlSimplePool::update(const std::string& sql, SqlTx* tx) {
-    MyResult* result = nullptr;
+    InnerResult* result = nullptr;
     if (tx != nullptr) {
         tx_execute(tx, sql, &result);
     } else {
@@ -482,7 +506,7 @@ int MysqlSimplePool::update(const std::string& sql, SqlTx* tx) {
 }
 
 int MysqlSimplePool::del(const std::string& sql, SqlTx* tx) {
-    MyResult* result = nullptr;
+    InnerResult* result = nullptr;
     if (tx != nullptr) {
         tx_execute(tx, sql, &result);
     } else {

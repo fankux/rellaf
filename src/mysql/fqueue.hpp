@@ -19,6 +19,7 @@
 
 #include <stdlib.h>
 #include <pthread.h>
+#include <errno.h>
 #include <signal.h>
 #include <string>
 #include "flist.hpp"

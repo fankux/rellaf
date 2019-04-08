@@ -316,7 +316,7 @@ TEST_F(TestModel, test_list) {
     ASSERT_EQ(obj.val_list().size(), 0);
 
     // push list
-    obj.val_list().push_back(&subobj);
+    obj.val_list().push_back(subobj);
     RELLAF_DEBUG("list size : %zu", obj.val_list().size());
 
     ASSERT_EQ(obj.val_list().size(), 1);
@@ -344,7 +344,7 @@ TEST_F(TestModel, test_list) {
 
     // push another to list
     subobj.set_list_id(222);
-    obj.val_list().push_back(&subobj);
+    obj.val_list().push_back(subobj);
     ASSERT_EQ(obj.val_list().size(), 2);
     ASSERT_NE(obj.val_list().front(), obj.val_list().back());
 
@@ -410,11 +410,11 @@ TEST_F(TestModel, test_plain) {
 
     }
 
-    object.plain_list().push_back(&list_int);
+    object.plain_list().push_back(list_int);
     RELLAF_DEBUG("lists lists size : %zu", object.plain_list().size());
 
     list_int.set(3);
-    object.plain_list().push_back(&list_int);
+    object.plain_list().push_back(list_int);
     RELLAF_DEBUG("lists lists size : %zu", object.plain_list().size());
 
     Model* model = object.plain_list().front();

@@ -15,7 +15,7 @@
 // Author: Fankux (fankux@gmail.com)
 //
 //
-// mybatis like sql dao framework
+// sql builder framework
 //
 
 #include <assert.h>

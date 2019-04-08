@@ -70,6 +70,7 @@ if (WITH_BRPC_EXT)
 
     include_directories(
             ${BRPC_INC}
+            include/brpc
     )
     file(GLOB BRPC_SRC
             include/brpc/*.h

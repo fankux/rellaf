@@ -526,6 +526,7 @@ public:
         _items.push_front(model.clone());
     }
 
+    // FIXME.. mac compile over write
     void push_back(Model* model);
 
     template<class T>

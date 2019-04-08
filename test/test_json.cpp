@@ -198,14 +198,14 @@ TEST_F(TestJson, test_list_only) {
     ASSERT_STREQ(json_str.c_str(), json2str(json).c_str());
 
     Plain<int> int_item(111);
-    list_only.list().push_back(&int_item);
+    list_only.list().push_back(int_item);
     ASSERT_TRUE(model_to_json(&list_only, json_str));
     json.clear();
     json["list"].append(111);
     ASSERT_STREQ(json_str.c_str(), json2str(json).c_str());
 
     int_item.set(222);
-    list_only.list().push_back(&int_item);
+    list_only.list().push_back((Model*)&int_item);
     ASSERT_TRUE(model_to_json(&list_only, json_str));
     json["list"].append(222);
     ASSERT_STREQ(json_str.c_str(), json2str(json).c_str());
