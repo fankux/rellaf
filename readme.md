@@ -228,8 +228,8 @@ const std::map<int, std::string>& codes = DemoEnum::e().codes();
 | ------- | ----- | ------- | --------- | 
 | WITH_JSON | ON | json扩展 | jsoncpp |  
 | WITH_MYSQL | ON | 简单mysql连接池 |  mysqlclient |  
-| WITH_BRPC_EXT | ON | brpc接口映射 | brpc |  
-| WITH_TEST | ON | 单元测试 | gtest |   
+| WITH_BRPC_EXT | OFF | brpc接口映射 | brpc |  
+| WITH_TEST | OFF | 单元测试 | gtest |   
 
 安装依赖（可选）：  
 **ubuntu**

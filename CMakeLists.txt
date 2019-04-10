@@ -22,7 +22,7 @@ include_directories(
 option(WITH_JSON "enable rellaf model to json converter" ON)
 option(WITH_MYSQL "enable simple mysql connection pool" ON)
 option(WITH_BRPC_EXT "enable brpc invoker" ON)
-option(WITH_TEST "enable test" ON)
+option(WITH_TEST "enable test" OFF)
 
 set(THIRD_DEPS)
 if (WITH_JSON)
@@ -141,10 +141,34 @@ if (WITH_TEST)
     add_executable(test_mapper test/test_sql_builder.cpp)
 
     if (WITH_BRPC_EXT)
-        file(GLOB PROTOS
-                test/proto/*.pb.*
-                )
-        add_executable(test_brpc_serive test/test_brpc_service.cpp ${PROTOS})
+
+        # protobuf
+        include(FindProtobuf)
+
+        file(GLOB PROTO_FILES "${CMAKE_SOURCE_DIR}/test/proto/*.proto")
+        file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/proto)
+        foreach (PROTO ${PROTO_FILES})
+            message(proto : ${PROTO})
+            get_filename_component(PROTO_WE ${PROTO} NAME_WE)
+            list(APPEND PROTO_SRCS "${CMAKE_CURRENT_BINARY_DIR}/proto/${PROTO_WE}.pb.cc")
+            execute_process(
+                    COMMAND ${PROTOBUF_PROTOC_EXECUTABLE}
+                    --cpp_out=${CMAKE_CURRENT_BINARY_DIR}/proto
+                    --proto_path=${PROTOBUF_INCLUDE_DIRS}
+                    --proto_path=${CMAKE_SOURCE_DIR}/test/proto ${PROTO}
+                    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+                    ERROR_VARIABLE PROTO_ERROR
+                    RESULT_VARIABLE PROTO_RESULT
+            )
+            if (${PROTO_RESULT} EQUAL 0)
+            else ()
+                message(FATAL_ERROR "Fail to generate cpp of ${PROTO} : ${PROTO_ERROR}")
+            endif ()
+        endforeach ()
+        message("protoc : ${PROTOBUF_PROTOC_EXECUTABLE}, proto srcs : ${PROTO_SRCS}")
+
+        include_directories(${CMAKE_CURRENT_BINARY_DIR}/proto)
+        add_executable(test_brpc_serive test/test_brpc_service.cpp ${PROTO_SRCS})
     endif ()
 
     if (WITH_JSON)

@@ -61,8 +61,8 @@ List& List::operator=(List&& o) noexcept {
 
 std::string List::debug_str() const {
     std::string buf = "[";
-    for (auto _item : _items) {
-        buf += _item->debug_str();
+    for (auto& item : _items) {
+        buf += item == nullptr ? "NULL" : item->debug_str();
         buf += ", ";
     }
     if (buf.back() == ' ') {
@@ -154,7 +154,8 @@ std::string Object::debug_str() const {
         buf += entry.first + ": " + entry.second.debug_str() + ", ";
     }
     for (auto& entry : get_objects()) {
-        buf += entry.first + ": " + entry.second->debug_str() + ", ";
+        buf += entry.first + ": " +
+                (entry.second == nullptr ? "NULL" : entry.second->debug_str()) + ", ";
     }
     if (buf.back() == ' ') {
         buf.pop_back();
