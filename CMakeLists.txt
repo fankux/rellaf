@@ -22,7 +22,7 @@ include_directories(
 option(WITH_JSON "enable rellaf model to json converter" ON)
 option(WITH_MYSQL "enable simple mysql connection pool" ON)
 option(WITH_BRPC_EXT "enable brpc invoker" ON)
-option(WITH_TEST "enable test" OFF)
+option(WITH_TEST "enable test" ON)
 
 set(THIRD_DEPS)
 if (WITH_JSON)
@@ -144,6 +144,8 @@ if (WITH_TEST)
 
         # protobuf
         include(FindProtobuf)
+
+        message("protoc : ${PROTOBUF_PROTOC_EXECUTABLE}, proto include : ${PROTOBUF_INCLUDE_DIRS}")
 
         file(GLOB PROTO_FILES "${CMAKE_SOURCE_DIR}/test/proto/*.proto")
         file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/proto)

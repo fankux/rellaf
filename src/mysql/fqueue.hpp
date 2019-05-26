@@ -66,7 +66,7 @@ public:
                     pthread_cond_wait(&_full_cond, &_mutex);
                 }
             } else {
-                struct timespec tspec;
+                struct timespec tspec{};
                 clock_gettime(CLOCK_REALTIME, &tspec);
                 tspec.tv_sec += timeout_mills / 1000;
                 while (!_full_signal) {
@@ -116,7 +116,7 @@ public:
                     pthread_cond_wait(&_empty_cond, &_mutex);
                 }
             } else {
-                struct timespec tspec;
+                struct timespec tspec{};
                 clock_gettime(CLOCK_REALTIME, &tspec);
                 tspec.tv_sec += timeout_mills / 1000;
                 while (!_empty_signal) {

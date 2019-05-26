@@ -90,7 +90,7 @@ bool MysqlSimplePool::init(const std::string& host, uint16_t port, const std::st
         }
 
         thread->status = 1;
-        thread->tid = nullptr;
+        thread->tid = 0;
         thread->inst = this;
         thread->tasks = new(std::nothrow) Queue<MyContext*>(MysqlSimplePool::_s_task_queue_size,
                 true);
@@ -243,7 +243,7 @@ void* MysqlSimplePool::thd_routine(void* ptr) {
 
 Queue<MyContext*>* MysqlSimplePool::fetch_thread() {
     uint32_t idx = RELLAF_ATOMIC_INC(_action_idx) % MysqlSimplePool::_s_thread_count;
-    RELLAF_DEBUG("mysql thread %u fetched, tid : %x", idx, MysqlSimplePool::_s_pool[idx]->tid);
+    RELLAF_DEBUG("mysql thread %u fetched, tid : %lx", idx, MysqlSimplePool::_s_pool[idx]->tid);
     return MysqlSimplePool::_s_pool[idx]->tasks;
 }
 
@@ -278,12 +278,12 @@ MyThread* MysqlSimplePool::new_thread() {
 
 bool MysqlSimplePool::begin(SqlTx& tx) {
     uint64_t tx_id = RELLAF_ATOMIC_INC(_action_idx);
-    RELLAF_DEBUG("mysql transaction begin : %llu, current tx_pool size : %zu", tx_id,
+    RELLAF_DEBUG("mysql transaction begin : %lu, current tx_pool size : %zu", tx_id,
             _s_tx_pool.size());
 
     MyThread* thread = new_thread();
     if (thread == nullptr) {
-        RELLAF_DEBUG("fetch mysql thread failed, tx_id : %llu", tx_id);
+        RELLAF_DEBUG("fetch mysql thread failed, tx_id : %lu", tx_id);
         return false;
     }
 
@@ -293,9 +293,9 @@ bool MysqlSimplePool::begin(SqlTx& tx) {
     context.result = &result;
 
     thread->tasks->add_block(&context);
-    RELLAF_DEBUG("tx latch waiting, txid : %llu", tx_id);
+    RELLAF_DEBUG("tx latch waiting, txid : %lu", tx_id);
     context.latch.wait();
-    RELLAF_DEBUG("tx latch wait done, txid : %llu", tx_id);
+    RELLAF_DEBUG("tx latch wait done, txid : %lu", tx_id);
 
     tx.thread = thread;
     tx.tx_id = tx_id;
@@ -309,14 +309,14 @@ bool MysqlSimplePool::begin(SqlTx& tx) {
 }
 
 bool MysqlSimplePool::tx_end(SqlTx& tx, const std::string& sql) {
-    RELLAF_DEBUG("mysql transaction %s : %llu, current tx_pool size : %zu",
+    RELLAF_DEBUG("mysql transaction %s : %lu, current tx_pool size : %zu",
             sql.c_str(), tx.tx_id, _s_tx_pool.size());
 
     pthread_mutex_lock(&_s_tx_lock);
     auto entry = _s_tx_pool.find(tx.tx_id);
     pthread_mutex_unlock(&_s_tx_lock);
     if (entry == _s_tx_pool.end()) {
-        RELLAF_DEBUG("no transaction, tx_id : %llu", tx.tx_id);
+        RELLAF_DEBUG("no transaction, tx_id : %lu", tx.tx_id);
         return false;
     }
     MyThread* thread = entry->second.thread;
@@ -326,17 +326,17 @@ bool MysqlSimplePool::tx_end(SqlTx& tx, const std::string& sql) {
     context.sql = sql;
     context.result = &result;
     thread->tasks->add_block(&context);
-    RELLAF_DEBUG("tx latch waiting, txid : %u", tx.tx_id);
+    RELLAF_DEBUG("tx latch waiting, txid : %lu", tx.tx_id);
     context.latch.wait();
-    RELLAF_DEBUG("tx latch wait done, txid : %u", tx.tx_id);
+    RELLAF_DEBUG("tx latch wait done, txid : %lu", tx.tx_id);
 
-    RELLAF_DEBUG("mysql transaction %s, join thread start, tx_id : %llu", sql.c_str(), tx.tx_id);
+    RELLAF_DEBUG("mysql transaction %s, join thread start, tx_id : %lu", sql.c_str(), tx.tx_id);
     thread->status = 0;
     thread->tasks->clear();
     pthread_join(thread->tid, nullptr);
     delete thread->tasks;
     delete thread;
-    RELLAF_DEBUG("mysql transaction %s, join thread end, tx_id : %llu", sql.c_str(), tx.tx_id);
+    RELLAF_DEBUG("mysql transaction %s, join thread end, tx_id : %lu", sql.c_str(), tx.tx_id);
 
     pthread_mutex_lock(&_s_tx_lock);
     _s_tx_pool.erase(tx.tx_id);
@@ -360,7 +360,7 @@ void MysqlSimplePool::tx_execute(SqlTx* tx, const std::string& sql, InnerResult*
     auto entry = _s_tx_pool.find(tx->tx_id);
     pthread_mutex_unlock(&_s_tx_lock);
     if (entry == _s_tx_pool.end()) {
-        RELLAF_DEBUG("no transaction, tx_id : %llu", tx->tx_id);
+        RELLAF_DEBUG("no transaction, tx_id : %lu", tx->tx_id);
         return;
     }
     MyThread* thread = entry->second.thread;
@@ -375,10 +375,10 @@ void MysqlSimplePool::tx_execute(SqlTx* tx, const std::string& sql, InnerResult*
         *result_ptr = nullptr;
         return;
     }
-    RELLAF_DEBUG("tx latch waiting, txid : %u", tx->tx_id);
+    RELLAF_DEBUG("tx latch waiting, txid : %lu", tx->tx_id);
 //    FM_NOTICE("tx sql : %s", sql.c_str());
     context.latch.wait();
-    RELLAF_DEBUG("tx latch wait done, txid : %u", tx->tx_id);
+    RELLAF_DEBUG("tx latch wait done, txid : %lu", tx->tx_id);
 }
 
 void MysqlSimplePool::execute(const std::string& sql, InnerResult** result_ptr) {

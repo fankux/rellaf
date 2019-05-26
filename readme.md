@@ -232,11 +232,14 @@ const std::map<int, std::string>& codes = DemoEnum::e().codes();
 | WITH_TEST | OFF | 单元测试 | gtest |   
 
 安装依赖（可选）：  
-**ubuntu**
+**ubuntu/WSL**
 ```shell
-sudo apt-get install libjsoncpp-dev libmysqlclient-dev libgtest-dev
+sudo apt-get install libssl-dev libjsoncpp-dev libmysqlclient-dev libgtest-dev 
 # 注意，libgtest-dev这个源安装是源码，需要进入目录/usr/src/gtest(也可能是/usr/src/googletest/googletest)
 # 执行 sudo mkdir build && cd build && sudo cmake .. && sudo make && sudo make install
+
+# 开启brpc还需要额外安装以下依赖：
+sudo apt-get install libprotobuf-dev libprotoc-dev protobuf-compiler libleveldb-dev libgoogle-perftools-dev
 ```
 
 **centos**
@@ -288,9 +291,6 @@ TODO 实现细节
 
 **'Rellaf'单词什么意思？**  
 relief（得到解脱），reflection（反射），relax（放松），3个单词组合一下，得到'**Rellaf**'。
-
-## TODO
-* C++ SQL SqlBuilder
 
 ## 最后
 本人能力有限，精力也有限，存在不足，欢迎交流指出。
