@@ -184,7 +184,7 @@ public:
     template<class T=Model>
     T& tag(const std::string& tag_str) {
         _tag = tag_str;
-        return *((T*)this);
+        return *((T*) this);
     }
 
     const std::string& rellaf_tag() const {
@@ -299,7 +299,7 @@ public:
     inline Model* clone() const override {
         Model* inst = create();
         if (inst != nullptr) {
-            *((Plain <T>*)inst) = *((Plain < T > *)
+            *((Plain <T>*) inst) = *((Plain < T > *)
             this);
         }
         return inst;
@@ -309,7 +309,7 @@ public:
         if (rellaf_type() != val->rellaf_type()) {
             return;
         }
-        Plain* ptr = (Plain*)val;
+        Plain* ptr = (Plain*) val;
         _val = ptr->_val;
         _parse_func = ptr->_parse_func;
         _str_func = ptr->_str_func;
@@ -490,7 +490,7 @@ public:
     }
 
     inline Model* clone() const override {
-        List* inst = (List*)create();
+        List* inst = (List*) create();
         *inst = *this;
         return inst;
     }
@@ -500,7 +500,7 @@ public:
             return;
         }
 
-        List* ptr = (List*)val;
+        List* ptr = (List*) val;
         clear();
         for (auto& entry : ptr->_items) {
             Model* m = entry->clone();
@@ -540,25 +540,25 @@ public:
     template<class T=Model>
     T* front() {
         static_assert(std::is_base_of<Model, T>::value, "class not model");
-        return (T*)(_items.front());
+        return (T*) (_items.front());
     }
 
     template<class T=Model>
     const T* front() const {
         static_assert(std::is_base_of<Model, T>::value, "class not model");
-        return (T*)(_items.front());
+        return (T*) (_items.front());
     }
 
     template<class T=Model>
     T* back() {
         static_assert(std::is_base_of<Model, T>::value, "class not model");
-        return (T*)_items.back();
+        return (T*) _items.back();
     }
 
     template<class T=Model>
     const T* back() const {
         static_assert(std::is_base_of<Model, T>::value, "class not model");
-        return (T*)_items.back();
+        return (T*) _items.back();
     }
 
     void set(size_t idx, Model* model);
@@ -569,7 +569,7 @@ public:
         if (idx >= _items.size()) {
             return nullptr;
         }
-        return (T*)(_items.at(idx));
+        return (T*) (_items.at(idx));
     }
 
     template<class T=Model>
@@ -578,7 +578,7 @@ public:
         if (idx >= _items.size()) {
             return nullptr;
         }
-        return (T*)(_items.at(idx));
+        return (T*) (_items.at(idx));
     }
 
     const Model* operator[](size_t idx) const;
@@ -637,7 +637,7 @@ public:
         if (!is_plain_member(key)) {
             return nullptr;
         }
-        return (Plain < T > *)(_plains.find(key)->second);
+        return (Plain<T>*) (_plains.find(key)->second);
     }
 
     template<class T>
@@ -645,7 +645,7 @@ public:
         if (!is_plain_member(key)) {
             return nullptr;
         }
-        return (Plain < T > *)(_plains.find(key)->second);
+        return (Plain<T>*) (_plains.find(key)->second);
     }
 
     Model* get_plain(const std::string& key);
@@ -716,10 +716,7 @@ public:                                                                         
         return _plain_##_name_.set(val);                                                \
     }                                                                                   \
     _type_ _name_##_default() const {                                                   \
-        return _sign_##_value(_s_plain_names[#_name_]);                                 \
-    }                                                                                   \
-    static _type_ _sign_##_value(Model* ptr) {                                          \
-        return ((Plain<_type_>*)ptr)->value();                                          \
+        return ((Plain<_type_>*)(_s_plain_names[#_name_]))->value();                    \
     }                                                                                   \
 private:                                                                                \
     Plain<_type_> _plain_##_name_{_dft_};                                               \

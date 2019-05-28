@@ -1,0 +1,18 @@
+option cc_generic_services = true;
+
+package rellaf;
+
+message CWebRequest {
+};
+message CWebResponse {
+};
+
+service CWebService {
+    rpc add (CWebRequest) returns (CWebResponse);
+
+    rpc del (CWebRequest) returns (CWebResponse);
+
+    rpc update (CWebRequest) returns (CWebResponse);
+
+    rpc query (CWebRequest) returns (CWebResponse);
+}

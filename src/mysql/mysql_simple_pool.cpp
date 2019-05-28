@@ -92,8 +92,7 @@ bool MysqlSimplePool::init(const std::string& host, uint16_t port, const std::st
         thread->status = 1;
         thread->tid = 0;
         thread->inst = this;
-        thread->tasks = new(std::nothrow) Queue<MyContext*>(MysqlSimplePool::_s_task_queue_size,
-                true);
+        thread->tasks = new(std::nothrow) Queue<MyContext*>(MysqlSimplePool::_s_task_queue_size, true);
         if (thread->tasks == nullptr) {
             delete thread->tasks;
             delete thread;
@@ -138,7 +137,7 @@ void MysqlSimplePool::retry(MYSQL* mysql) {
 }
 
 void* MysqlSimplePool::thd_routine(void* ptr) {
-    MyThread* arg = (MyThread*)ptr;
+    MyThread* arg = (MyThread*) ptr;
     Queue<MyContext*>* tasks = arg->tasks;
 
     MYSQL mysql;
@@ -151,7 +150,7 @@ void* MysqlSimplePool::thd_routine(void* ptr) {
     ListNode<MyContext*>* context = nullptr;
     while (arg->status) {
         arg->status = 2;
-        RELLAF_DEBUG("mysql acc task count : %zu", tasks->size());
+//        RELLAF_DEBUG("mysql acc task count : %zu", tasks->size());
         int ret_list = tasks->pop_block(&context, 3000);
         if (ret_list == -1) {
             RELLAF_DEBUG("mysql thread worker fatal");
@@ -159,8 +158,8 @@ void* MysqlSimplePool::thd_routine(void* ptr) {
             break;
         }
         if (ret_list == 1 || context == nullptr) {
-            RELLAF_DEBUG("pop task timeout, ret : %d, context : %lx", ret_list,
-                    reinterpret_cast<unsigned long>(context));
+//            RELLAF_DEBUG("pop task timeout, ret : %d, context : %lx", ret_list,
+//                    reinterpret_cast<unsigned long>(context));
             continue;
         }
 
@@ -214,11 +213,11 @@ void* MysqlSimplePool::thd_routine(void* ptr) {
                 if (mysql_real_query(&mysql, sql.c_str(), sql.size()) == 0) {
                     if (strncasecmp(sql.c_str(), "INSERT", sizeof("INSERT") - 1) == 0) {
                         uint64_t keyid = mysql_insert_id(&mysql);
-                        result->data = (void*)keyid;
+                        result->data = (void*) keyid;
                     }
-                    result->row_count = (int)mysql_affected_rows(&mysql);
+                    result->row_count = (int) mysql_affected_rows(&mysql);
                     if (strncasecmp(sql.c_str(), "SELECT", sizeof("SELECT") - 1) == 0) {
-                        result->data = (void*)mysql_store_result(&mysql);
+                        result->data = (void*) mysql_store_result(&mysql);
                     }
                     break;
                 }
@@ -238,7 +237,7 @@ void* MysqlSimplePool::thd_routine(void* ptr) {
     RELLAF_DEBUG("mysql thread end");
     MysqlSimplePool::close(&mysql);
     mysql_thread_end();
-    return (void*)nullptr;
+    return (void*) nullptr;
 }
 
 Queue<MyContext*>* MysqlSimplePool::fetch_thread() {
@@ -419,6 +418,10 @@ int MysqlSimplePool::execute(const std::string& sql) {
     return insert(sql, nullptr);
 }
 
+int MysqlSimplePool::execute(const std::string& sql, uint64_t& key_id) {
+    return insert(sql, key_id, nullptr);
+}
+
 ////////////////// transactional /////////////////////
 int MysqlSimplePool::select(const std::string& sql, MyResult& res, SqlTx* tx) {
     InnerResult* result = nullptr;
@@ -444,7 +447,7 @@ int MysqlSimplePool::select(const std::string& sql, MyResult& res, SqlTx* tx) {
         mysql_free_result(mysql_res);
         return -1;
     }
-    return (int)(res.row_count());
+    return (int) (res.row_count());
 }
 
 int MysqlSimplePool::insert(const std::string& sql, uint64_t& keyid, SqlTx* tx) {

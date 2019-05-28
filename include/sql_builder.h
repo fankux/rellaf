@@ -83,7 +83,7 @@ protected:
 
         std::map<std::string, const Model*> models;
         bool arr[] = {(collect_models(models, args), true)...}; // for arguments expansion
-        (void)(arr);// suppress warning
+        (void) (arr);// suppress warning
 
         auto entry = _pices.find(method);
         if (entry == _pices.end()) {
@@ -176,7 +176,7 @@ protected:
             }
 
             if (res->next()) {
-                if (!res->to_model((Model*)&ret)) {
+                if (!res->to_model((Model*) &ret)) {
                     return -1;
                 }
             }
@@ -204,18 +204,18 @@ protected:
 
             while (res->next()) {
                 Ret ret;
-                if (!res->to_model((Model*)&ret)) {
+                if (!res->to_model((Model*) &ret)) {
                     return -1;
                 }
                 ret_list.emplace_back(ret);
             }
-            return (int)(ret_list.size());
+            return (int) (ret_list.size());
         }
         return 0;
     }
 
     template<class ...Args>
-    int execute_impl(const std::string& method, std::string* sql, Args& ...args) {
+    int execute_impl(const std::string& method, uint64_t& key_id, std::string* sql, Args& ...args) {
         std::string sql_inner;
         if (sql == nullptr) {
             sql = &sql_inner;
@@ -225,7 +225,7 @@ protected:
         }
 
         if (sql == &sql_inner && _executor != nullptr) {
-            return _executor->execute(*sql);
+            return _executor->execute(*sql, key_id);
         }
         return 0;
     }
@@ -280,10 +280,24 @@ Reg _reg_##_method_{this, #_method_, _pattern_}
 #define rellaf_sql_insert(_method_, _pattern_)                                      \
 public:                                                                             \
 template<class ...Args> int _method_(Args& ...args) {                               \
-    return execute_impl(#_method_, nullptr, args...);                               \
+    uint64_t key_id = 0;                                                            \
+    return execute_impl(#_method_, key_id, nullptr, args...);                       \
 }                                                                                   \
 template<class ...Args> int _method_##_sql(std::string& sql, Args& ...args) {       \
-    return execute_impl(#_method_, &sql, args...);                                  \
+    uint64_t key_id = 0;                                                            \
+    return execute_impl(#_method_, key_id, &sql, args...);                          \
+}                                                                                   \
+private:                                                                            \
+Reg _reg_##_method_{this, #_method_, _pattern_}
+
+#define rellaf_sql_insert_retid(_method_, _pattern_)                                \
+public:                                                                             \
+template<class ...Args> int _method_(uint64_t& key_id, Args& ...args) {             \
+    return execute_impl(#_method_, key_id, nullptr, args...);                       \
+}                                                                                   \
+template<class ...Args> int _method_##_sql(std::string& sql, Args& ...args) {       \
+    uint64_t key_id = 0;                                                            \
+    return execute_impl(#_method_, key_id, &sql, args...);                          \
 }                                                                                   \
 private:                                                                            \
 Reg _reg_##_method_{this, #_method_, _pattern_}

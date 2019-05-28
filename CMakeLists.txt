@@ -23,8 +23,16 @@ option(WITH_JSON "enable rellaf model to json converter" ON)
 option(WITH_MYSQL "enable simple mysql connection pool" ON)
 option(WITH_BRPC_EXT "enable brpc invoker" ON)
 option(WITH_TEST "enable test" ON)
+option(WITH_DEMO "CURD web demo" ON)
 
 set(THIRD_DEPS)
+
+if (WITH_DEMO)
+    set(WITH_JSON ON)
+    set(WITH_MYSQL ON)
+    set(WITH_BRPC_EXT ON)
+endif ()
+
 if (WITH_JSON)
     find_library(JSONCPP_LIB jsoncpp)
     find_path(JSONCPP_INC json/json.h)
@@ -176,4 +184,37 @@ if (WITH_TEST)
     if (WITH_JSON)
         add_executable(test_json test/test_json.cpp)
     endif ()
+endif ()
+
+if (WITH_DEMO)
+    link_libraries(rellaf)
+
+    file(GLOB DEMO_SRC
+            demo/*.h
+            demo/*.hpp
+            demo/*.cpp
+            )
+
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/demo)
+    list(APPEND DEMO_SRC "${CMAKE_CURRENT_BINARY_DIR}/demo/cweb_service.pb.cc")
+    execute_process(
+            COMMAND ${PROTOBUF_PROTOC_EXECUTABLE}
+            --cpp_out=${CMAKE_CURRENT_BINARY_DIR}/demo
+            --proto_path=${PROTOBUF_INCLUDE_DIRS}
+            --proto_path=${CMAKE_SOURCE_DIR}/demo ${CMAKE_SOURCE_DIR}/demo/cweb_service.proto
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+            ERROR_VARIABLE PROTO_ERROR
+            RESULT_VARIABLE PROTO_RESULT
+    )
+    if (${PROTO_RESULT} EQUAL 0)
+    else ()
+        message(FATAL_ERROR "Fail to generate cpp of cweb_service.pb.cc : ${PROTO_ERROR}")
+    endif ()
+
+    include_directories(
+            demo
+            ${CMAKE_CURRENT_BINARY_DIR}/demo
+    )
+    add_executable(cweb_demo ${DEMO_SRC})
+
 endif ()

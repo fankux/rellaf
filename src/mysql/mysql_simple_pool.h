@@ -82,12 +82,15 @@ public:
 
     int execute(const std::string& sql) override;
 
+    int execute(const std::string& sql, uint64_t& key_id) override;
+
     ////////////////// transactional /////////////////////
-    int select(const std::string& sql, MyResult& res, SqlTx* tx);
 
     int insert(const std::string& sql, SqlTx* tx);
 
     int insert(const std::string& sql, uint64_t& keyid, SqlTx* tx = nullptr);
+
+    int select(const std::string& sql, MyResult& res, SqlTx* tx);
 
     int update(const std::string& sql, SqlTx* tx);
 

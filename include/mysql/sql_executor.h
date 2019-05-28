@@ -70,7 +70,12 @@ public:
      * @brief   execute sql
      * @return  affected rows count
      */
-    virtual int execute(const std::string& sql) = 0;
+    virtual int execute(const std::string& sql) {
+        uint64_t key_id;
+        return execute(sql, key_id);
+    }
+
+    virtual int execute(const std::string& sql, uint64_t& key_id) = 0;
 };
 
 } // namespace rellaf

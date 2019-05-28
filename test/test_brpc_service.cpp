@@ -759,7 +759,7 @@ TEST_F(TestBrpcService, echo_service) {
 
     Json::Value json;
     json["status"] = 233;
-    http_test_st_body_item("hello", 200, json2str(json).c_str(), false);
+    http_test_st_body_item("hello", 404, json2str(json).c_str(), false);
 
     http_test_st_body_item("", 200, "111", false);
 }
