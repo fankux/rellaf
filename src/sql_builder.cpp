@@ -25,6 +25,12 @@ namespace rellaf {
 
 rellaf_enum_def(SqlBuilder::Charset);
 
+SqlExecutor* SqlBuilder::_executor = nullptr;
+
+void SqlBuilder::set_executor(SqlExecutor* executor) {
+    _executor = executor;
+}
+
 void SqlBuilder::split_section(const std::string& section_str, std::deque<std::string>& sections) {
     sections.clear();
     if (section_str.empty()) {
@@ -97,7 +103,7 @@ bool SqlBuilder::get_plain_val(const Model* model, const std::deque<std::string>
             return get_plain_val_str(travel, val, need_quote, need_escape);
 
         } else if (is_object(travel)) {
-            Object* obj = (Object*)travel;
+            Object* obj = (Object*) travel;
             if (obj->is_plain_member(section)) {
                 travel = obj->get_plain(section);
             } else if (obj->is_list_member(section)) {
@@ -117,7 +123,7 @@ bool SqlBuilder::get_plain_val(const Model* model, const std::deque<std::string>
             }
 
             size_t idx = strtoul(section.c_str() + 1, nullptr, 10);
-            travel = ((List*)travel)->at(idx);
+            travel = ((List*) travel)->at(idx);
         }
     }
 
@@ -146,7 +152,7 @@ bool SqlBuilder::get_list_val(const Model* model, const std::deque<std::string>&
         }
 
         if (is_object(model)) {
-            Object* obj = (Object*)travel;
+            Object* obj = (Object*) travel;
             if (obj->is_plain_member(section)) {
                 travel = obj->get_plain(section);
             } else if (obj->is_list_member(section)) {
@@ -164,12 +170,12 @@ bool SqlBuilder::get_list_val(const Model* model, const std::deque<std::string>&
             }
 
             size_t idx = strtoul(section.c_str() + 1, nullptr, 10);
-            travel = ((List*)travel)->at(idx);
+            travel = ((List*) travel)->at(idx);
         }
     }
 
     if (is_list(travel)) { // convert to array list
-        for (const Model* m : *((List*)travel)) {
+        for (const Model* m : *((List*) travel)) {
             if (!is_plain(m)) {
                 continue;
             }

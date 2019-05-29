@@ -39,6 +39,8 @@ namespace rellaf {
 class SqlBuilder {
 
 public:
+    static void set_executor(SqlExecutor* executor);
+
     class Charset : public Enum {
     rellaf_enum_dcl(Charset);
 
@@ -245,7 +247,7 @@ protected:
     bool append_sql(std::string& sql, const std::string& val, bool need_quote, bool need_escape);
 
 protected:
-    SqlExecutor* _executor = nullptr;
+    static SqlExecutor* _executor;
 
 private:
     CharsetType _charset = Charset::e().UTF8;

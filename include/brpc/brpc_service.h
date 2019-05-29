@@ -108,7 +108,7 @@ void flatten_args(std::deque<Model*>& args, T& arg) {
 }
 
 template<class ...Args>
-bool prepare_args(HttpContext& ctx, const std::string& body, Args ... args) {
+bool prepare_args(HttpContext& ctx, const std::string& body, Args& ... args) {
 
     std::deque<Model*> model_args;
     bool arr[] = {(flatten_args(model_args, args), true)...}; // for arguments expansion

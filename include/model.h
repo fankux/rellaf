@@ -66,6 +66,7 @@ inline void assign(const Model* val) override {                                 
         return;                                                                         \
     }                                                                                   \
     _clazz_* ptr = (_clazz_*)val;                                                       \
+    _tag = ptr->rellaf_tag();                                                           \
     for (auto& entry : _plains) {                                                       \
         entry.second->assign(ptr->_plains[entry.first]);                                \
     }                                                                                   \

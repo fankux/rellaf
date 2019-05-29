@@ -88,7 +88,8 @@ public:
     static bool explode_path_vars(const std::string& path, std::map<uint32_t, std::string>& vars,
             PatternErr& err);
 
-    static bool fetch_path_vars(const std::string& path, std::map<uint32_t, std::string>& vars,
+    static bool fetch_path_vars(const std::string& path,
+            const std::map<uint32_t, std::string>& vars,
             std::map<std::string, std::string>& vals);
 };
 

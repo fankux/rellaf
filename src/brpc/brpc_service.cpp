@@ -50,7 +50,7 @@ void BrpcService::bind_api_sign(const std::string& sign, const std::string& api)
         RELLAF_DEBUG("ignore empty api of %s", sign.c_str());
         return;
     }
-    _api_sign_mapper.emplace(api, sign);
+    _api_sign_mapper.emplace(api.front() != '/' ? ('/' + api) : api, sign);
     RELLAF_DEBUG("api sign map : %s <==> %s", api.c_str(), sign.c_str());
 }
 

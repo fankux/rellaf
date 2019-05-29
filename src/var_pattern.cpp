@@ -303,7 +303,7 @@ bool UrlPattern::explode_path_vars(const std::string& path, std::map<uint32_t, s
 }
 
 bool UrlPattern::fetch_path_vars(const std::string& path,
-        std::map<uint32_t, std::string>& vars,
+        const std::map<uint32_t, std::string>& vars,
         std::map<std::string, std::string>& vals) {
     vals.clear();
 

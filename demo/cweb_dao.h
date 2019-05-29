@@ -32,7 +32,7 @@ rellaf_sql_select_list(query_infos, "SELECT id, content, create_time, update_tim
 
 rellaf_sql_delete(delete_info, "DELETE FROM info WHERE id=#{id}");
 
-rellaf_sql_update(update_info, "UPDATE info SET content=#{content} AND update_time=NOW() WHERE id=#{id}");
+rellaf_sql_update(update_info, "UPDATE info SET content=#{content}, update_time=NOW() WHERE id=#{id}");
 
 };
 

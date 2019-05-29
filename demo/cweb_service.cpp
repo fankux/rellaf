@@ -15,7 +15,6 @@
 // Author: Fankux (fankux@gmail.com)
 //
 
-#include <mysql/mysql_simple_pool.h>
 #include "cweb_service.h"
 
 namespace rellaf {
@@ -23,10 +22,10 @@ namespace rellaf {
 rellaf_brpc_http_def(CWebSerivceImpl);
 
 Plain<int> CWebSerivceImpl::add(HttpContext& ctx, const Info& info) {
-    LOG(INFO) << "add input : " << info.debug_str();
+    LOG(INFO) << "add info : " << info.debug_str();
 
     uint64_t key_id = 0;
-    if (_dao.add_info(key_id, info)) {
+    if (_dao.add_info(key_id, info) <= 0) {
         return -1;
     }
     return key_id;
@@ -44,8 +43,8 @@ Plain<int> CWebSerivceImpl::update(HttpContext& ctx, const Info& info) {
     return _dao.update_info(info) >= 0;
 }
 
-List CWebSerivceImpl::query(HttpContext& ctx, const Limit& limit) {
-    LOG(INFO) << "query input : " << limit.debug_str();
+List CWebSerivceImpl::query(HttpContext& ctx, const Limit& limit, const Plain<uint64_t>& id) {
+    LOG(INFO) << "query " << id.debug_str() << " input : " << limit.debug_str();
 
     List ret;
 
@@ -58,28 +57,4 @@ List CWebSerivceImpl::query(HttpContext& ctx, const Limit& limit) {
     return ret;
 }
 
-}
-
-int main() {
-
-    bool ret = rellaf::MysqlSimplePool::instance().init("127.0.0.1", 3306, "root", "root", "rellaf");
-    if (!ret) {
-        LOG(ERROR) << "connect to db failed";
-        return -1;
-    }
-
-    brpc::Server server;
-
-    rellaf::BrpcDispatcher::instance().reg_http_serivces(server);
-    brpc::ServerOptions options;
-    options.idle_timeout_sec = 30;
-    options.has_builtin_services = false;
-
-    // it run background
-    if (server.Start(8124, &options) < 0) {
-        LOG(ERROR) << "start server failed";
-        return -1;
-    }
-
-    return server.Join();
 }

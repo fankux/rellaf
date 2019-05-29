@@ -35,7 +35,7 @@ rellaf_brpc_http_def_post_pathvar(del, "/rellaf/demo/del/{id}", del, Plain<int>,
 
 rellaf_brpc_http_def_post_body(update, "/rellaf/demo/update", update, Plain<int>, Info);
 
-rellaf_brpc_http_def_get_pathvar(query, "/rellaf/demo/query/{start}", query, List, Limit);
+rellaf_brpc_http_def_get(query, "/rellaf/demo/query/{id}", query, List, Limit, Plain<uint64_t>);
 
 
 private:

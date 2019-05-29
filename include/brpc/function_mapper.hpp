@@ -54,7 +54,7 @@ rellaf_singleton(FunctionMapper)
 public:
     std::string fetch_name(const HttpHeader& header) {
         const std::string& api = header.uri().path();
-        auto entry = _api_hdrs.find(api);
+        auto entry = _api_hdrs.find(api.front() == '/' ? api : ('/' + api));
         if (entry == _api_hdrs.end()) {
             RELLAF_DEBUG("api not exist : %s", api.c_str());
             return "";
@@ -95,6 +95,9 @@ private:
     void reg_api(const std::string& api, const std::string& name) {
         std::string api_filter = api;
         trim(api_filter);
+        if (api_filter.front() != '/') {
+            api_filter = '/' + api_filter;
+        }
         FunctionMapper::instance()._api_hdrs.emplace(api_filter, name);
 
         PatternErr err;
