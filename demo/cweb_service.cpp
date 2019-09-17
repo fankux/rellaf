@@ -16,12 +16,15 @@
 //
 
 #include "cweb_service.h"
+#include "log.h"
 
 namespace rellaf {
 
 rellaf_brpc_http_def(CWebSerivceImpl);
 
 Plain<int> CWebSerivceImpl::add(HttpContext& ctx, const Info& info) {
+    FLOG(INFO) << std::map<std::string, std::string>{{"ccc", "bbb"}};
+
     LOG(INFO) << "add info : " << info.debug_str();
 
     uint64_t key_id = 0;

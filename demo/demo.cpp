@@ -21,7 +21,8 @@
 
 int main() {
 
-    bool ret = rellaf::MysqlSimplePool::instance().init("127.0.0.1", 3306, "root", "root", "rellaf");
+    bool ret = rellaf::MysqlSimplePool::instance().connect("127.0.0.1", 3306, "root", "root",
+            "rellaf");
     if (!ret) {
         LOG(ERROR) << "connect to db failed";
         return -1;

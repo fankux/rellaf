@@ -40,7 +40,7 @@ List::List(const List& o) : Model() {
     assign(&o);
 }
 
-List::List(List&& o) noexcept  : Model() {
+List::List(List&& o) noexcept : Model() {
     _type = ModelTypeEnum::e().LIST;
     assign(&o);
     o.clear();

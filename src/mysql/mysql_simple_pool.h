@@ -71,7 +71,7 @@ public:
 
     void stop();
 
-    bool init(const std::string& host, uint16_t port, const std::string& username,
+    bool connect(const std::string& host, uint16_t port, const std::string& username,
             const std::string& password, const std::string& database,
             const std::string& charset = "utf8", uint32_t thread_count = 3,
             uint32_t task_queue_size = 10);

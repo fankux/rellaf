@@ -319,7 +319,7 @@ bool UrlPattern::fetch_path_vars(const std::string& path,
             if (c == '/') {
                 if (!section.empty()) {
                     if (vars.count(idx) == 1) {
-                        vals.emplace(vars[idx], section);
+                        vals.emplace(vars.at(idx), section);
                     }
                     section.clear();
                     if (start_flag) {
@@ -351,7 +351,7 @@ bool UrlPattern::fetch_path_vars(const std::string& path,
         case STATE_INIT:
         case STATE_MATCH_TOKEN:
             if (vars.count(idx) == 1 && !section.empty()) {
-                vals.emplace(vars[idx], section);
+                vals.emplace(vars.at(idx), section);
             }
             break;
         default:

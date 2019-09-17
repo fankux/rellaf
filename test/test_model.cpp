@@ -15,7 +15,7 @@
 // Author: Fankux (fankux@gmail.com)
 //
 // TODO... valgrind mem check
-// TODO... split file, static init check
+// TODO... split file, static connect check
 
 #include "gtest/gtest.h"
 #include "test_common.h"

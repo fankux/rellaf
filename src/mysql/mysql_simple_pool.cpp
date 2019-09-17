@@ -37,7 +37,7 @@ std::map<uint64_t, SqlTx> MysqlSimplePool::_s_tx_pool;
 
 MysqlSimplePool::MysqlSimplePool() : _action_idx(0) {
     if (mysql_library_init(0, nullptr, nullptr) != 0) {
-        RELLAF_DEBUG("init mysql lib failed");
+        RELLAF_DEBUG("connect mysql lib failed");
         exit(-1);
     }
 }
@@ -69,7 +69,7 @@ void MysqlSimplePool::stop() {
     }
 }
 
-bool MysqlSimplePool::init(const std::string& host, uint16_t port, const std::string& username,
+bool MysqlSimplePool::connect(const std::string& host, uint16_t port, const std::string& username,
         const std::string& password, const std::string& database, const std::string& charset,
         uint32_t thread_count, uint32_t task_queue_size) {
 

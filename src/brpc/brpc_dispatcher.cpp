@@ -31,7 +31,7 @@ int BrpcDispatcher::reg_http_serivces(brpc::Server& server) {
     for (auto& entry : _services) {
         BrpcService* service = entry.second;
         if (service == nullptr) {
-            RELLAF_DEBUG("service %s init failed", entry.first.c_str());
+            RELLAF_DEBUG("service %s connect failed", entry.first.c_str());
             return -1;
         }
 
