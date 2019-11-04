@@ -518,19 +518,33 @@ const std::string& rellaf_tag() const;
 | 宏名 | 生成的接口签名 |
 | -------------------------------------------- | --------- |
 | rellaf_sql_select(func, pattern, Ret) | int _func_(Ret& ret, Arg& ...args) <br/> int _func_ _sql(std::string& sql, Arg& ...args) |  
-| rellaf_sql_select_list(func, pattern, Ret) | int _func_(std::deque\<Ret\>& ret, Arg& ...args) <br/> int _func_ _sql(std::string& sql, Arg& ...args) | 
+| rellaf_sql_select_list(func, pattern, Ret) | int _func_(ListType& ret, Arg& ...args) <br/> int _func_ _sql(std::string& sql, Arg& ...args) | 
 | rellaf_sql_insert(func, pattern) | int _func_(Arg& ...args) <br/> int _func_ _sql(std::string& sql, Arg& ...args) | | 
 | rellaf_sql_update(func, pattern) | int _func_(Arg& ...args) <br/> int _func_ _sql(std::string& sql, Arg& ...args) | | 
 | rellaf_sql_delete(func, pattern) | int _func_(Arg& ...args) <br/> int _func_ _sql(std::string& sql, Arg& ...args) | | 
 
 **说明：**  
 参数`func`是方法名；`pattern`是SQL模板；`Ret`是返回值类型，必须是`Model`子类。  
-`rellaf_sql_select_list`，`rellaf_sql_select`区别是一个返回多行数据，放到`std::deque`里，一个只返回单行数据。  
-返回值，`-1`表示失败，值`大于等与0`对于`select`表示`返回的行数`，对于`insert`，`update`，`delete`表示`受影响的行数`。
 
-TODO... SQL executor接口
+关于rellaf_sql_select_list：  
+`rellaf_sql_select_list`，`rellaf_sql_select`区别是一个返回多行数据，一个只返回单行数据。  
+返回值，`-1`表示失败，值`大于等与0`对于`select`表示`返回的行数`，对于`insert`，`update`，`delete`表示`受影响的行数`。  
 
-关于if else选择器，待调研一下。
+这个接口最重要的是，上图中的ListType能`灵活`的传入。可以是：
+- std::vector\<Plain\>
+- std::vector\<Model\>
+- std::vector\<int\>
+- std::vector\<std::string\>
+- std::deque\<Plain\>
+- std::deque\<Model\>
+- std::deque\<int\>
+- std::deque\<std::string\>
+
+实际上这个地方有两个类型，一个是`容器类型`，只要支持和STL一致的`emplace_back`方法即可。另一个是`成员类型`，只要是`Model`的继承类或者`Plain`能支持的基础类就行，自由组合。
+
+TODO...   
+- 实现了基本类作为返回list类型，感觉思路一下子被打开了，后面规划支持更多直接传基本类型。    
+- SQL executor接口
 
 
 ### Brpc

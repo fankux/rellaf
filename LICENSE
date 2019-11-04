@@ -200,6 +200,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 
+===================================================================================================
 
 MySQL Server 5.7
 
@@ -258,6 +259,7 @@ in any of several formats at the URL given earlier in this file.
 Source distributions include a local copy of the manual in the
 Docs directory.
 
+===================================================================================================
 
 The JsonCpp library's source code, including accompanying documentation,
 tests and demonstration applications, are licensed under the following

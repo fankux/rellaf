@@ -17,6 +17,15 @@
 
 #pragma once
 
+#include <vector>
+#include <deque>
+#include <map>
+#include <unordered_map>
+#include <set>
+#include <unordered_set>
+#include <sstream>
+#include <iostream>
+
 namespace rellaf {
 
 class LogStream {

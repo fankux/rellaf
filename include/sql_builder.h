@@ -34,6 +34,8 @@
 #include "mysql_escape.h"
 #include "mysql/sql_executor.h"
 
+// TODO... basic type as args
+
 namespace rellaf {
 
 class SqlBuilder {
@@ -187,18 +189,16 @@ protected:
         return 0;
     }
 
-    template<class Ret, class ...Args>
-    int select_list_impl(const std::string& method, std::string* sql, std::deque<Ret>& ret_list,
-            const Args& ...args) {
-        std::string sql_inner;
-        if (sql == nullptr) {
-            sql = &sql_inner;
-        }
-        if (!prepare_statement(method, *sql, args...)) {
+    template<class RetList, class Ret, class ...Args>
+    typename std::enable_if<
+            std::is_base_of<Model, Ret>::value || std::is_same<std::string, Ret>::value, int>::type
+    select_list_impl(const std::string& method, RetList& ret_list, const Args& ...args) {
+        std::string sql;
+        if (!prepare_statement(method, sql, args...)) {
             return -1;
         }
-        if (sql == &sql_inner && _executor != nullptr) {
-            std::unique_ptr<SqlResult> res(_executor->select(*sql));
+        if (_executor != nullptr) {
+            std::unique_ptr<SqlResult> res(_executor->select(sql));
             if (res == nullptr) {
                 RELLAF_DEBUG("select impl action failed");
                 return -1;
@@ -212,6 +212,40 @@ protected:
                 ret_list.emplace_back(ret);
             }
             return (int) (ret_list.size());
+        }
+        return 0;
+    }
+
+    template<class RetList, class Ret, class ...Args>
+    typename std::enable_if<std::is_arithmetic<Ret>::value, int>::type
+    select_list_impl(const std::string& method, RetList& ret_list, const Args& ...args) {
+        std::string sql;
+        if (!prepare_statement(method, sql, args...)) {
+            return -1;
+        }
+        if (_executor != nullptr) {
+            std::unique_ptr<SqlResult> res(_executor->select(sql));
+            if (res == nullptr) {
+                RELLAF_DEBUG("select impl action failed");
+                return -1;
+            }
+
+            while (res->next()) {
+                Plain<Ret> ret;
+                if (!res->to_model((Model*) &ret)) {
+                    return -1;
+                }
+                ret_list.emplace_back(ret.value());
+            }
+            return (int) (ret_list.size());
+        }
+        return 0;
+    }
+
+    template<class ...Args>
+    int select_list_impl_sql(const std::string& method, std::string& sql, const Args& ...args) {
+        if (!prepare_statement(method, sql, args...)) {
+            return -1;
         }
         return 0;
     }
@@ -270,11 +304,11 @@ Reg _reg_##_method_{this, #_method_, _pattern_}
 
 #define rellaf_sql_select_list(_method_, _pattern_, _Ret_)                          \
 public:                                                                             \
-template<class ...Args> int _method_(std::deque<_Ret_>& ret, Args& ...args) {       \
-    return select_list_impl(#_method_, nullptr, ret, args...);                      \
+template<class RetList, class ...Args> int _method_(RetList& ret, Args& ...args) {  \
+    return select_list_impl<RetList, _Ret_, Args...>(#_method_, ret, args...);      \
 }                                                                                   \
 template<class ...Args> int _method_##_sql(std::string& sql, Args& ...args) {       \
-    return select_list_impl(#_method_, &sql, {}, args...);                          \
+    return select_list_impl_sql(#_method_, sql, args...);                           \
 }                                                                                   \
 private:                                                                            \
 Reg _reg_##_method_{this, #_method_, _pattern_}

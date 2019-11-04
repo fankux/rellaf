@@ -192,6 +192,12 @@ rellaf_sql_select(select_multi,
 rellaf_sql_select_list(select_list,
         "SELECT a, b, c FROM table WHERE cond=#{a.cond} AND id IN (#[b.ids])", Ret);
 
+rellaf_sql_select_list(select_list_base_type,
+        "SELECT a FROM table WHERE cond=#{a.cond} AND id IN (#[b.ids])", int);
+
+rellaf_sql_select_list(select_list_str,
+        "SELECT a FROM table WHERE cond=#{a.cond} AND id IN (#[b.ids])", std::string);
+
 rellaf_sql_insert(insert,
         "INSERT table(a, b, c) VALUES (#{a}, #{b}, #{c})");
 
@@ -304,6 +310,26 @@ TEST_F(TestSqlPattern, test_sql_mapper) {
     ASSERT_GE(bd.del_sql(sql, id.tag("a"), idb.tag("b"), idc.tag("c")), 0);
     ASSERT_STREQ(sql.c_str(), R"(DELETE FROM table WHERE a=2 AND b=2 AND c=2)");
 
+    std::vector<Ret> results;
+    ASSERT_GE(bd.select_list(results, arg.tag("a"), argb.tag("b")), 0);
+    ASSERT_GE(bd.select_list_sql(sql, arg.tag("a"), argb.tag("b")), 0);
+    ASSERT_STREQ(sql.c_str(),
+            R"(SELECT a, b, c FROM table WHERE cond='str\' cond' AND id IN ('1','2'))");
+
+    std::deque<Ret> dq_results;
+    ASSERT_GE(bd.select_list(dq_results, arg.tag("a"), argb.tag("b")), 0);
+
+    std::vector<int> base_type_results;
+    ASSERT_GE(bd.select_list_base_type(base_type_results, arg.tag("a"), argb.tag("b")), 0);
+    ASSERT_GE(bd.select_list_base_type_sql(sql, arg.tag("a"), argb.tag("b")), 0);
+    ASSERT_STREQ(sql.c_str(),
+            R"(SELECT a FROM table WHERE cond='str\' cond' AND id IN ('1','2'))");
+
+    std::vector<std::string> str_results;
+    ASSERT_GE(bd.select_list_str(str_results, arg.tag("a"), argb.tag("b")), 0);
+    ASSERT_GE(bd.select_list_str_sql(sql, arg.tag("a"), argb.tag("b")), 0);
+    ASSERT_STREQ(sql.c_str(),
+            R"(SELECT a FROM table WHERE cond='str\' cond' AND id IN ('1','2'))");
 }
 
 }

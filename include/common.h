@@ -19,6 +19,7 @@
 #pragma once
 
 #include <pthread.h>
+#include "log.h"
 
 namespace rellaf {
 
