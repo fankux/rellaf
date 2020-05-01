@@ -17,7 +17,6 @@
 
 #include "gtest/gtest.h"
 #include "json/json.h"
-#include "common.h"
 #include "model.h"
 #include "test_common.h"
 #include "json/json_to_model.h"

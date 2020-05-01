@@ -18,7 +18,7 @@
 class Obj : public Object {     // 继承 rellaf::Object
 rellaf_model_dcl(Obj);          // 申明这个类是一个Model对象反射类
 rellaf_model_def_int(id, -222); // rellaf_model_def_${type}宏用来定义类型，字段名和默认值
-}；
+};
 ```
 2. 在源文件中定义反射类
 ```c++
@@ -216,8 +216,6 @@ const std::map<int, std::string>& codes = DemoEnum::e().codes();
 
 这么几个问题，都是长期使用过程中总结的，由于BRPC定位并不是`Spring`那样“包办一切”，我自己也持续开发出了一套封装方法，并用到了线上，尽可能做到“简单可依赖”。于是，我把这个部分提取出来，作为`rellaf`的一个扩展。
 
-同样的，基于这种思路，对于brpc_std协议也可以进行同样的封装。（TODO）
-
 详细使用见 [API文档](docs/reference.md#Brpc)。
 
 ##  编译
@@ -228,8 +226,8 @@ const std::map<int, std::string>& codes = DemoEnum::e().codes();
 | ------- | ----- | ------- | --------- | 
 | WITH_JSON | ON | json扩展 | jsoncpp |  
 | WITH_MYSQL | ON | 简单mysql连接池 |  mysqlclient |  
-| WITH_BRPC_EXT | OFF | brpc接口映射 | brpc |  
-| WITH_TEST | OFF | 单元测试 | gtest |   
+| WITH_BRPC_EXT | ON | brpc接口映射 | brpc |  
+| WITH_TEST | ON | 单元测试 | gtest |   
 
 安装依赖（可选）：  
 **ubuntu/WSL**
@@ -239,7 +237,7 @@ sudo apt-get install libssl-dev libjsoncpp-dev libmysqlclient-dev libgtest-dev
 # 执行 sudo mkdir build && cd build && sudo cmake .. && sudo make && sudo make install
 
 # 开启brpc还需要额外安装以下依赖：
-sudo apt-get install libprotobuf-dev libprotoc-dev protobuf-compiler libleveldb-dev libgoogle-perftools-dev
+sudo apt-get install libssl-dev libgflags-dev libprotobuf-dev libprotoc-dev protobuf-compiler libleveldb-dev libgoogle-perftools-dev
 ```
 
 **centos**
@@ -256,7 +254,7 @@ brew install jsoncpp mysql-connector-c
 最小化编译：  
 ```shell
 mkdir build && cd build
-cmake —DWITH_JSON=OFF -DWITH_MYSQL=OFF -DWITH_TEST=OFF .. && make
+cmake —DWITH_JSON=OFF -DWITH_MYSQL=OFF -DWITH_BRPC_EXT=OFF -DWITH_TEST=OFF .. && make
 ```
 
 **意义何在？**  

@@ -114,7 +114,7 @@ bool prepare_args(HttpContext& ctx, const std::string& body, Args& ... args) {
     bool arr[] = {(flatten_args(model_args, args), true)...}; // for arguments expansion
     (void)(arr);// suppress warning
 
-    bool s;
+    bool s = false;
     for (Model* arg : model_args) {
         if (arg->rellaf_tag() == HttpArgTypeEnum::e().REQ_BODY.name) {
             if (is_plain(arg)) {
@@ -142,7 +142,7 @@ bool prepare_args(HttpContext& ctx, const std::string& body, Args& ... args) {
         if (arg->rellaf_tag() == HttpArgTypeEnum::e().PATH_VAR.name) {
 
             if (is_object(arg)) {
-                for (auto& entry : ctx.path_vars) {
+                for (const auto & entry : ctx.path_vars) {
                     ((Object*)arg)->set_plain(entry.first, entry.second);
                 }
             }

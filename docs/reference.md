@@ -539,6 +539,7 @@ const std::string& rellaf_tag() const;
 - std::deque\<Model\>
 - std::deque\<int\>
 - std::deque\<std::string\>
+- 等等
 
 实际上这个地方有两个类型，一个是`容器类型`，只要支持和STL一致的`emplace_back`方法即可。另一个是`成员类型`，只要是`Model`的继承类或者`Plain`能支持的基础类就行，自由组合。
 
