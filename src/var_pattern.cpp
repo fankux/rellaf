@@ -17,6 +17,7 @@
 
 #include "var_pattern.h"
 #include "common.h"
+#include "str.hpp"
 
 namespace rellaf {
 
@@ -358,6 +359,96 @@ bool UrlPattern::fetch_path_vars(const std::string& path,
             break;
     }
     return true;
+}
+
+bool UrlPattern::fetch_path_vars_prefix(const std::string& path, std::string& prefix) {
+    auto pos = path.find("/{");
+    if (pos == std::string::npos) {
+        return false;
+    }
+    prefix = path.substr(0, pos);
+    return true;
+}
+
+UrlTrie::~UrlTrie() {
+    clear(&_entrys);
+}
+
+void UrlTrie::clear(UrlTrie::UrlTrieNode* node) {
+    if (node != nullptr) {
+        for (auto& entry : node->nexts) {
+            clear(entry.second);
+            delete entry.second;
+            entry.second = nullptr;
+        }
+        node->nexts.clear();
+
+        if (node->var.second != nullptr) {
+            delete node->var.second;
+        }
+        node->var = {"", nullptr};
+    }
+}
+
+bool UrlTrie::put(const std::string& path, const std::string& name) {
+    std::vector<std::string> sections;
+    split(path, sections, "/");
+
+    UrlTrieNode* node = &_entrys;
+    for (auto& section :sections) {
+        if (section.front() == '{' && section.back() == '}') {
+            if (node->var.second == nullptr) {
+                node->var = {section.substr(1, section.size() - 2), new UrlTrieNode()};
+            }
+            node = node->var.second;
+            continue;
+        }
+
+        auto item = node->nexts.find(section);
+        if (item != node->nexts.end()) {
+            node = item->second;
+        } else {
+            auto new_node = new UrlTrieNode();
+            node->nexts.emplace(section, new_node);
+            node = new_node;
+        }
+    }
+    if (node != nullptr) {
+        node->end = true;
+        node->name = name;
+    }
+    return !sections.empty();
+}
+
+/**
+ * input: /aa/bb/cc
+ * api:   /aa/{}/dd     not match
+ *        /{}/bb/cc     match
+ * TODO... backtrace
+ */
+bool UrlTrie::fetch_vars(const std::string& path, std::string& name,
+        std::map<std::string, std::string>& vals) {
+    std::vector<std::string> sections;
+    split(path, sections, "/");
+    UrlTrieNode* node = &_entrys;
+    for (auto& section :sections) {
+        auto entry = node->nexts.find(section);
+        if (entry == node->nexts.end()) {
+            if (node->var.second != nullptr) {
+                vals.emplace(node->var.first, section);
+                node = node->var.second;
+            } else {
+                return false;
+            }
+        } else {
+            node = entry->second;
+        }
+    }
+    if (node->end) {
+        name = node->name;
+        return true;
+    }
+    return false;
 }
 
 }

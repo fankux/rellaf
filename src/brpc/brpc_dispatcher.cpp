@@ -44,8 +44,13 @@ int BrpcDispatcher::reg_http_serivces(brpc::Server& server) {
         for (auto& api_entry : service->get_api_sign_mapper()) {
             api_str += api_entry.first + " => " + api_entry.second + ",\n";
         }
-        api_str.pop_back();
-        api_str.pop_back();
+        for (auto& api_entry : service->get_api_path_var_sign_mapper()) {
+            api_str += api_entry.first + "/* => " + api_entry.second + ",\n";
+        }
+        if (!api_str.empty()) {
+            api_str.pop_back();
+            api_str.pop_back();
+        }
 
         RELLAF_DEBUG("%s api sign :  %s", entry.first.c_str(), api_str.c_str());
         if (server.AddService(dynamic_cast<google::protobuf::Service*> (service),

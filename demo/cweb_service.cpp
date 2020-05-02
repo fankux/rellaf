@@ -46,7 +46,7 @@ Plain<int> CWebSerivceImpl::update(HttpContext& ctx, const Info& info) {
     return _dao.update_info(info) >= 0;
 }
 
-List CWebSerivceImpl::query(HttpContext& ctx, const Limit& limit, const Plain<uint64_t>& id) {
+List CWebSerivceImpl::query(HttpContext& ctx, const Limit& limit, const Plain<std::string>& id) {
     LOG(INFO) << "query " << id.debug_str() << " input : " << limit.debug_str();
 
     List ret;

@@ -21,7 +21,7 @@
 #include <unordered_map>
 #include <memory>
 #include "common.h"
-#include "trim.hpp"
+#include "str.hpp"
 
 #include "var_pattern.h"
 #include "json/json_to_model.h"
@@ -52,29 +52,45 @@ class FunctionMapper {
 rellaf_singleton(FunctionMapper)
 
 public:
-    std::string fetch_name(const HttpHeader& header) {
-        const std::string& api = header.uri().path();
-        auto entry = _api_hdrs.find(api.front() == '/' ? api : ('/' + api));
-        if (entry == _api_hdrs.end()) {
+    /**
+     * @param header    HTTP header
+     * @param vars      path variables, <variable name, input value>
+     * @return
+     */
+    std::string fetch_name(const HttpHeader& header, std::map<std::string, std::string>& vars) {
+        std::string api = header.uri().path();
+        FLOG(DEBUG) << "input api: " << api;
+        if (api.front() != '/') {
+            api = "/" + api;
+        }
+        // FIXME.. generalize HTTP API
+
+        auto entry = _api_hdrs.find(api);
+        if (entry != _api_hdrs.end()) {
+            return entry->second;
+        }
+
+        std::string name;
+        if (!_path_vars.fetch_vars(api, name, vars)) {
             RELLAF_DEBUG("api not exist : %s", api.c_str());
             return "";
         }
-        return entry->second;
+        FLOG(DEBUG) << "vars: " << vars << ", name: " << name;
+        return name;
     }
 
-    int invoke(const std::string& name, brpc::Controller* cntl, std::string& ret_body) {
+    /**
+     * @param name      handler name
+     * @param vars      path variables, <variable name, input value>
+     * @param cntl      http context
+     * @param ret_body
+     * @return
+     */
+    int invoke(const std::string& name, const std::map<std::string, std::string>& vars,
+            brpc::Controller* cntl, std::string& ret_body) {
         auto func_entry = _funcs.find(name);
         if (func_entry == _funcs.end()) {
             return -1;
-        }
-
-        std::map<std::string, std::string> vars;
-        auto var_entry = _path_vars.find(name);
-        if (var_entry != _path_vars.end()) {
-            if (!UrlPattern::fetch_path_vars(cntl->http_request().uri().path(),
-                    var_entry->second, vars)) {
-                return -1;
-            }
         }
 
         HttpContext ctx(cntl->http_request(), cntl->request_attachment(), vars,
@@ -93,6 +109,7 @@ public:
 
 private:
     void reg_api(const std::string& api, const std::string& name) {
+        // FIXME.. generalize HTTP API
         std::string api_filter = api;
         trim(api_filter);
         if (api_filter.front() != '/') {
@@ -100,23 +117,18 @@ private:
         }
         FunctionMapper::instance()._api_hdrs.emplace(api_filter, name);
 
-        PatternErr err;
-        std::map<uint32_t, std::string> vars;
-        if (!UrlPattern::explode_path_vars(api_filter, vars, err)) {
-            RELLAF_DEBUG("api %s invalid, explode path vars failed : %d", api_filter.c_str(), err);
-            return;
+        std::string path_var_prefix;
+        if (UrlPattern::fetch_path_vars_prefix(api_filter, path_var_prefix)) {
+            _path_vars.put(api_filter, name);
         }
-
-        _path_vars.emplace(api_filter, vars);
     }
 
 private:
 
-    // api ==> name
+    // <api, name>
     std::unordered_map<std::string, std::string> _api_hdrs;
 
-    // api ==> indexes to path variables
-    std::unordered_map<std::string, std::map<uint32_t, std::string>> _path_vars;
+    UrlTrie _path_vars;
 
     // request body as json string parsing to model,
     // return value as model convert json string as well

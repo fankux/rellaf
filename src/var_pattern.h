@@ -21,6 +21,8 @@
 #include <string>
 #include <deque>
 #include <map>
+#include <unordered_map>
+#include <unordered_set>
 
 namespace rellaf {
 
@@ -91,6 +93,39 @@ public:
     static bool fetch_path_vars(const std::string& path,
             const std::map<uint32_t, std::string>& vars,
             std::map<std::string, std::string>& vals);
+
+    static bool fetch_path_vars_prefix(const std::string& path, std::string& prefix);
+};
+
+/**
+ *
+             aa
+          /  |  \
+        bb  cc   {}
+        /    |   | \
+       {}   {}  dd  ee
+ *
+ */
+class UrlTrie {
+public:
+    struct UrlTrieNode {
+        std::unordered_map<std::string, UrlTrieNode*> nexts;
+        std::pair<std::string, UrlTrieNode*> var;
+        bool end = false;
+        std::string name;
+    };
+
+    virtual ~UrlTrie();
+
+    void clear(UrlTrieNode* node);
+
+    bool put(const std::string& path, const std::string& name);
+
+    bool fetch_vars(const std::string& path, std::string& name,
+            std::map<std::string, std::string>& vals);
+
+private:
+    UrlTrieNode _entrys;
 };
 
 }

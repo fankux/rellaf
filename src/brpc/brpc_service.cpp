@@ -29,7 +29,8 @@ void BrpcService::entry(RpcController* controller, Message* req, Message* resp,
     brpc::ClosureGuard done_guard(done);
     brpc::Controller* cntl = dynamic_cast<brpc::Controller*>(controller);
 
-    std::string name = FunctionMapper::instance().fetch_name(cntl->http_request());
+    std::map<std::string, std::string> vars;
+    std::string name = FunctionMapper::instance().fetch_name(cntl->http_request(), vars);
     if (name.empty()) {
         cntl->http_response().set_status_code(brpc::HTTP_STATUS_NOT_FOUND);
         return_response(cntl, "");
@@ -37,7 +38,7 @@ void BrpcService::entry(RpcController* controller, Message* req, Message* resp,
     }
 
     std::string ret_body;
-    int status = FunctionMapper::instance().invoke(name, cntl, ret_body);
+    int status = FunctionMapper::instance().invoke(name, vars, cntl, ret_body);
     if (status == -1) {
         cntl->http_request().set_status_code(brpc::HTTP_STATUS_INTERNAL_SERVER_ERROR);
     }
@@ -49,8 +50,28 @@ void BrpcService::bind_api_sign(const std::string& sign, const std::string& api)
         RELLAF_DEBUG("ignore empty api of %s", sign.c_str());
         return;
     }
-    _api_sign_mapper.emplace(api.front() != '/' ? ('/' + api) : api, sign);
-    RELLAF_DEBUG("api sign map : %s <==> %s", api.c_str(), sign.c_str());
+    // FIXME.. generalize HTTP API
+    std::string path_in;
+    bool exist_path_var = UrlPattern::fetch_path_vars_prefix(api, path_in);
+    if (!exist_path_var) {
+        path_in = api;
+    }
+
+    if (path_in.back() == '/') {
+        path_in.pop_back();
+    }
+    if (path_in.front() != '/') {
+        path_in = "/" + path_in;
+    }
+
+    if (exist_path_var) {
+        _api_path_var_sign_mapper.emplace(path_in, sign);
+        FLOG(DEBUG) << "api path var sign map: " << api << " to " << path_in
+                    << "/* <==> " << sign;
+    } else {
+        _api_sign_mapper.emplace(path_in, sign);
+        RELLAF_DEBUG("api sign map : %s <==> %s", path_in.c_str(), sign.c_str());
+    }
 }
 
 void BrpcService::return_response(brpc::Controller* cntl, const std::string& raw) {

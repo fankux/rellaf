@@ -56,6 +56,10 @@ public:
         return _api_sign_mapper;
     }
 
+    const std::unordered_map<std::string, std::string>& get_api_path_var_sign_mapper() const {
+        return _api_path_var_sign_mapper;
+    };
+
 protected:
     virtual void bind_api_sign(const std::string& sign, const std::string& api);
 
@@ -65,8 +69,15 @@ private:
     void return_response(brpc::Controller* cntl, const std::string& raw);
 
 protected:
+    // protobuf method name
     std::unordered_set<std::string> _sign_entrys;
+    // <http path start with '/', protobuf method name>
     std::unordered_map<std::string, std::string> _api_sign_mapper;
+
+    // <http path prefix start with '/', protobuf method name>
+    // prefix is that api from start to the postion before first '{':
+    // the prefix of '/aa/bb/{cc}/dd' is '/aa/bb/', then bind with sign '/aa/bb/*'
+    std::unordered_map<std::string, std::string> _api_path_var_sign_mapper;
 };
 
 #define rellaf_brpc_http_dcl(_clazz_, _pb_req_t_, _pb_resp_t_)                                  \
@@ -140,11 +151,13 @@ bool prepare_args(HttpContext& ctx, const std::string& body, Args& ... args) {
         }
 
         if (arg->rellaf_tag() == HttpArgTypeEnum::e().PATH_VAR.name) {
-
+            FLOG(DEBUG) << "context path vars: " << ctx.path_vars;
             if (is_object(arg)) {
-                for (const auto & entry : ctx.path_vars) {
+                for (const auto& entry : ctx.path_vars) {
                     ((Object*)arg)->set_plain(entry.first, entry.second);
                 }
+            } else if (is_plain(arg) && !ctx.path_vars.empty()) {
+                arg->set_parse(ctx.path_vars.begin()->second);
             }
             continue;
         }

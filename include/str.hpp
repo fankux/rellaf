@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include <algorithm>
+
 namespace rellaf {
 
 inline void trim_left(std::string& s, const std::string& any_of = "") {
@@ -50,6 +52,29 @@ inline void trim_right(std::string& s, const std::string& any_of = "") {
 inline void trim(std::string& s, const std::string& any_of = "") {
     trim_left(s);
     trim_right(s);
+}
+
+/**
+ * split string to sections, omit empty string
+ * @param str
+ * @param cont
+ * @param delims default " "
+ */
+template<class Input = std::string, class Container = std::vector<std::string>>
+inline void split(const Input& str, Container& cont, const std::string& delims = " ") {
+    std::size_t current;
+    std::size_t previous = 0;
+    current = str.find(delims);
+    while (current != std::string::npos) {
+        if (previous < current) {
+            cont.emplace_back(str.substr(previous, current - previous));
+        }
+        previous = current + 1;
+        current = str.find(delims, previous);
+    }
+    if (previous < str.size()) {
+        cont.emplace_back(str.substr(previous, current - previous));
+    }
 }
 
 }

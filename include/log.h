@@ -30,13 +30,23 @@ namespace rellaf {
 
 class LogStream {
 public:
-    explicit LogStream(int level) : _level(level) {
+    // TODO.. time
+    explicit LogStream(int level, const std::string& file, const int line) :
+            _level(level), _file(file), _line(line) {
+#ifndef NDEBUG
+        if (_level == 0) {
+            _pre_str = "D [" + file + ":" + std::to_string(line) + "] ";
+            return;
+        }
+#endif
         if (_level == 1) {
-            _level_str = "[INFO] ";
+            _pre_str = "I [" + file + ":" + std::to_string(line) + "] ";
         } else if (_level == 2) {
-            _level_str = "[WARN] ";
+            _pre_str = "W [" + file + ":" + std::to_string(line) + "] ";
         } else if (_level == 3) {
-            _level_str = "[FATAL] ";
+            _pre_str = "E [" + file + ":" + std::to_string(line) + "] ";
+        } else if (_level == 4) {
+            _pre_str = "F [" + file + ":" + std::to_string(line) + "] ";
         }
     }
 
@@ -171,7 +181,7 @@ public:
         *this << "{";
         size_t i = 0;
         for (auto iter = t.begin(); iter != t.end(); ++iter) {
-            *this << "(" << iter->first << "," << iter->second << ")";
+            *this << "(" << iter->first << ":" << iter->second << ")";
             if (i++ != t.size() - 1) {
                 *this << ",";
             }
@@ -180,22 +190,24 @@ public:
     }
 
     void flush() {
-        std::cout << _level_str << _ss.str() << std::endl;
+        std::cout << _pre_str << _ss.str() << std::endl;
         _ss.clear();
     }
 
 private:
     std::stringstream _ss;
     int _level;
-    std::string _level_str;
+    const std::string& _file;
+    const int _line;
+    std::string _pre_str;
 };
 
 template<typename T>
 class LogMessage {
 public:
-    explicit LogMessage(int line, int level) {
+    explicit LogMessage(int level, const std::string& file, const int line) {
         if (_stream == nullptr) {
-            _stream = new T(level);
+            _stream = new T(level, file, line);
         }
     }
 
@@ -211,10 +223,17 @@ public:
 
 private:
     T* _stream = nullptr;
-    int _level = 0;
 };
 
 }
 
-#define FLOG_INFO rellaf::LogMessage<rellaf::LogStream>(__LINE__, 1).stream()
+#ifdef NDEBUG
+#define FLOG_DEBUG
+#else
+#ifndef FLOG_DEBUG
+#define FLOG_DEBUG rellaf::LogMessage<rellaf::LogStream>(0, __FILE__, __LINE__).stream()
+#endif
+#endif
+
+#define FLOG_INFO rellaf::LogMessage<rellaf::LogStream>(1, __FILE__, __LINE__).stream()
 #define FLOG(level)  FLOG_##level
